@@ -10,6 +10,12 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import CategoryPage from "./pages/CategoryPage";
 import SearchPage from "./pages/SearchPage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import GDPR from "./pages/GDPR";
+import Terms from "./pages/Terms";
+import CookiePolicy from "./pages/CookiePolicy";
+import EditorialPolicy from "./pages/EditorialPolicy";
+import Advertise from "./pages/Advertise";
 
 function Router() {
   return (
@@ -20,6 +26,12 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/category/:slug" component={CategoryPage} />
       <Route path="/search" component={SearchPage} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/gdpr" component={GDPR} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/cookie-policy" component={CookiePolicy} />
+      <Route path="/editorial-policy" component={EditorialPolicy} />
+      <Route path="/advertise" component={Advertise} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

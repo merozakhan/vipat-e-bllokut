@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO categories (name, slug, description) VALUES\n('Politics', 'politics', 'Political news and analysis from Albania and the region'),\n('Economy', 'economy', 'Business, finance, and economic developments'),\n('Culture', 'culture', 'Arts, entertainment, and cultural events'),\n('Sports', 'sports', 'Sports news and coverage'),\n('Technology', 'technology', 'Tech news and digital innovation'),\n('International', 'international', 'Global news and international affairs');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute INSERT INTO categories (name, slug, description) VALUES\n('Politics', 'politics', 'Political news and analysis from Albania and the region'),\n('Economy', 'economy', 'Business, finance, and economic developments'),\n('Culture', 'culture', 'Arts, entertainment, and cultural events'),\n('Sports', 'sports', 'Sports news and coverage'),\n('Technology', 'technology', 'Tech news and digital innovation'),\n('International', 'international', 'Global news and international affairs');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 212
+}

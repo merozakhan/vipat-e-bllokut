@@ -1,0 +1,15 @@
+{
+  "query": "SELECT \n  (SELECT COUNT(*) FROM articles) as total_articles,\n  (SELECT COUNT(*) FROM articles WHERE featuredImage IS NULL OR featuredImage = '') as articles_no_image,\n  (SELECT COUNT(*) FROM articles WHERE featuredImage IS NOT NULL AND featuredImage != '') as articles_with_image;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute SELECT \n  (SELECT COUNT(*) FROM articles) as total_articles,\n  (SELECT COUNT(*) FROM articles WHERE featuredImage IS NULL OR featuredImage = '') as articles_no_image,\n  (SELECT COUNT(*) FROM articles WHERE featuredImage IS NOT NULL AND featuredImage != '') as articles_with_image;",
+  "rows": [
+    {
+      "total_articles": "94",
+      "articles_no_image": "12",
+      "articles_with_image": "82"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_articles\tarticles_no_image\tarticles_with_image\n94\t12\t82\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

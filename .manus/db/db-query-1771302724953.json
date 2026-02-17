@@ -1,0 +1,34 @@
+{
+  "query": "SHOW CREATE TABLE articles;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute SHOW CREATE TABLE articles;",
+  "rows": [
+    {
+      "Table": "articles",
+      "Create Table": "CREATE TABLE `articles` ("
+    }
+  ],
+  "messages": [
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,",
+    "  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,",
+    "  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,",
+    "  `excerpt` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `content` text COLLATE utf8mb4_unicode_ci NOT NULL,",
+    "  `featuredImage` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `featuredImageKey` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `status` enum('draft','published') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'published',",
+    "  `authorId` int(11) DEFAULT NULL,",
+    "  `publishedAt` timestamp NULL DEFAULT NULL,",
+    "  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,",
+    "  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,",
+    "  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,",
+    "  UNIQUE KEY `articles_slug_unique` (`slug`),",
+    "  KEY `author_idx` (`authorId`),",
+    "  KEY `status_idx` (`status`),",
+    "  KEY `published_at_idx` (`publishedAt`),",
+    "  KEY `slug_idx` (`slug`)",
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=60001"
+  ],
+  "stdout": "Table\tCreate Table\narticles\tCREATE TABLE `articles` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `excerpt` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `content` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `featuredImage` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `featuredImageKey` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `status` enum('draft','published') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'published',\n  `authorId` int(11) DEFAULT NULL,\n  `publishedAt` timestamp NULL DEFAULT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,\n  UNIQUE KEY `articles_slug_unique` (`slug`),\n  KEY `author_idx` (`authorId`),\n  KEY `status_idx` (`status`),\n  KEY `published_at_idx` (`publishedAt`),\n  KEY `slug_idx` (`slug`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=60001\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

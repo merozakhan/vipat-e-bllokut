@@ -168,3 +168,21 @@
 - [x] Update ArticleImage component to load from S3 directly (no proxy needed)
 - [x] Keep proxy as fallback for edge cases
 - [x] Test full flow - 82/94 articles have S3 images, 12 have no image in source
+
+## RSS Feed Optimization - Replace Feeds Without Images
+- [x] Audit current feeds to identify which provide images and which don't
+- [x] Remove feeds that don't reliably provide article images
+- [x] Find new Albanian media RSS feeds that include images
+- [x] Update RSS importer with optimized feed list
+- [x] Delete articles without images from database
+- [x] Re-import from new feeds and verify all articles have images
+
+## Strict Article Validation Rule
+- [x] Enforce strict validation: articles MUST have title + description/content + image to be published
+- [x] Skip any article missing title, content, or image during RSS import (no exceptions)
+- [x] Remove Balkanweb, Lapsi.al, Panorama feeds (don't provide images)
+- [x] Add Reporter.al feed (100% images)
+- [x] Add Telegrafi.com feed (100% images)
+- [x] Add Albeu.com feed (100% images)
+- [x] Delete all existing articles with NULL images from database
+- [x] Update tests to verify strict validation rule

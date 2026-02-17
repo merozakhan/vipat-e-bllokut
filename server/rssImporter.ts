@@ -4,6 +4,13 @@
  * Fetches articles from multiple Albanian media RSS feeds every 3 hours,
  * scrapes full content, downloads images to S3, detects duplicates,
  * and imports new articles with permanent S3 image URLs.
+ * 
+ * STRICT RULE: Articles are ONLY published if they have ALL three:
+ *   1. Title (non-empty)
+ *   2. Content/Description (minimum 50 characters)
+ *   3. Image (successfully downloaded and uploaded to S3)
+ * 
+ * Any article missing ANY of these three fields is SKIPPED entirely.
  */
 
 import { getDb } from "./db";
@@ -19,20 +26,18 @@ interface FeedSource {
   defaultCategory: string;
 }
 
+// Only feeds that reliably provide images (80%+ image rate)
 const RSS_FEEDS: FeedSource[] = [
-  // Koha.net - main feed
+  // Koha.net - main feed (95% with images)
   { name: "Koha.net", url: "https://www.koha.net/rss", defaultCategory: "aktualitet" },
-  // Gazeta Express
+  // Gazeta Express (100% with images)
   { name: "Gazeta Express", url: "https://www.gazetaexpress.com/feed/", defaultCategory: "aktualitet" },
-  // Balkanweb - multiple category feeds
-  { name: "Balkanweb", url: "https://www.balkanweb.com/feed/", defaultCategory: "aktualitet" },
-  { name: "Balkanweb Sport", url: "https://www.balkanweb.com/kategoria/sport/feed/", defaultCategory: "sport" },
-  { name: "Balkanweb Ekonomi", url: "https://www.balkanweb.com/kategoria/ekonomi/feed/", defaultCategory: "aktualitet" },
-  { name: "Balkanweb Aktualitet", url: "https://www.balkanweb.com/kategoria/aktualitet/feed/", defaultCategory: "aktualitet" },
-  // Lapsi.al
-  { name: "Lapsi.al", url: "https://lapsi.al/feed/", defaultCategory: "aktualitet" },
-  // Panorama
-  { name: "Panorama", url: "https://www.panorama.com.al/feed/", defaultCategory: "aktualitet" },
+  // Reporter.al (100% with images)
+  { name: "Reporter.al", url: "https://reporter.al/feed/", defaultCategory: "aktualitet" },
+  // Telegrafi.com (100% with images)
+  { name: "Telegrafi.com", url: "https://telegrafi.com/feed/", defaultCategory: "aktualitet" },
+  // Albeu.com (100% with images)
+  { name: "Albeu.com", url: "https://albeu.com/rss", defaultCategory: "aktualitet" },
 ];
 
 // Category keyword mapping
@@ -158,6 +163,30 @@ function detectCategory(title: string, description: string, defaultCat: string):
   }
   
   return defaultCat;
+}
+
+// ─── Article Validation ─────────────────────────────────────────────
+
+/**
+ * STRICT VALIDATION: An article is only valid for publishing if it has
+ * ALL three required fields. No exceptions.
+ */
+interface ValidationResult {
+  valid: boolean;
+  reason?: string;
+}
+
+function validateArticle(title: string, content: string, imageUrl: string | null): ValidationResult {
+  if (!title || title.trim().length === 0) {
+    return { valid: false, reason: "Missing title" };
+  }
+  if (!content || content.trim().length < 50) {
+    return { valid: false, reason: "Missing or insufficient content (min 50 chars)" };
+  }
+  if (!imageUrl || imageUrl.trim().length === 0) {
+    return { valid: false, reason: "Missing image" };
+  }
+  return { valid: true };
 }
 
 // ─── Image Download & S3 Upload ─────────────────────────────────────
@@ -333,16 +362,32 @@ function cleanArticleHtml(html: string): string {
     .replace(/<aside[\s\S]*?<\/aside>/gi, "")
     .replace(/<footer[\s\S]*?<\/footer>/gi, "")
     .replace(/<form[\s\S]*?<\/form>/gi, "")
-    .replace(/<!--[\s\S]*?-->/g, "");
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    // Remove inline CSS/JS that leaked through
+    .replace(/\{[^}]*(?:display|color|font|margin|padding|background|border|position|width|height)[^}]*\}/gi, "")
+    .replace(/window\.[\s\S]*?;/g, "")
+    .replace(/document\.[\s\S]*?;/g, "")
+    .replace(/function\s*\([^)]*\)\s*\{[\s\S]*?\}/g, "");
 
   // Extract paragraphs
   const paragraphs = cleaned.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
   const text = paragraphs
     .map(p => stripHtml(p))
-    .filter(p => p.length > 20)
+    .filter(p => {
+      // Filter out CSS/JS fragments and very short lines
+      if (p.length < 20) return false;
+      // Skip lines that look like CSS or JS
+      if (/^[.#@]|\{.*\}|var\(--|font-|margin|padding|display:|background|border-radius/i.test(p)) return false;
+      if (/window\.|document\.|function\(|addEventListener|querySelector/i.test(p)) return false;
+      return true;
+    })
     .join("\n\n");
 
-  return text || stripHtml(cleaned);
+  // Cap content at 50000 chars to prevent DB overflow
+  const result = text || stripHtml(cleaned);
+  return result.substring(0, 50000);
 }
 
 // ─── Slug Generation ─────────────────────────────────────────────────
@@ -397,7 +442,7 @@ async function insertArticle(
   slug: string,
   content: string,
   excerpt: string,
-  imageUrl: string | null,
+  imageUrl: string,
   categoryId: number | null,
   publishedAt: Date
 ): Promise<number | null> {
@@ -446,6 +491,8 @@ export interface ImportResult {
   totalFetched: number;
   newArticles: number;
   duplicatesSkipped: number;
+  skippedNoImage: number;
+  skippedNoContent: number;
   errors: number;
   imagesMigrated: number;
   sources: string[];
@@ -460,6 +507,8 @@ export async function runRssImport(): Promise<ImportResult> {
     totalFetched: 0,
     newArticles: 0,
     duplicatesSkipped: 0,
+    skippedNoImage: 0,
+    skippedNoContent: 0,
     errors: 0,
     imagesMigrated: 0,
     sources: [],
@@ -514,6 +563,13 @@ export async function runRssImport(): Promise<ImportResult> {
             continue;
           }
 
+          // ── STRICT VALIDATION: Step 1 - Must have image in RSS ──
+          if (!parsed.imageUrl) {
+            console.log(`[RSS Import] SKIPPED (no image in RSS): ${parsed.title.substring(0, 60)}`);
+            result.skippedNoImage++;
+            continue;
+          }
+
           // Scrape full content
           let fullContent = parsed.description;
           if (parsed.link) {
@@ -523,15 +579,32 @@ export async function runRssImport(): Promise<ImportResult> {
             }
           }
 
+          // Truncate content to prevent DB overflow (MEDIUMTEXT max ~16MB, but cap at 50KB)
+          if (fullContent.length > 50000) {
+            fullContent = fullContent.substring(0, 50000);
+          }
+
+          // ── STRICT VALIDATION: Step 2 - Must have sufficient content ──
           if (fullContent.length < 50) {
-            result.errors++;
+            console.log(`[RSS Import] SKIPPED (insufficient content): ${parsed.title.substring(0, 60)}`);
+            result.skippedNoContent++;
             continue;
           }
 
-          // Download image and upload to S3
-          let s3ImageUrl: string | null = null;
-          if (parsed.imageUrl) {
-            s3ImageUrl = await downloadAndUploadImage(parsed.imageUrl);
+          // ── STRICT VALIDATION: Step 3 - Must successfully upload image to S3 ──
+          const s3ImageUrl = await downloadAndUploadImage(parsed.imageUrl);
+          if (!s3ImageUrl) {
+            console.log(`[RSS Import] SKIPPED (image download/upload failed): ${parsed.title.substring(0, 60)}`);
+            result.skippedNoImage++;
+            continue;
+          }
+
+          // All three validations passed - proceed with publishing
+          const validation = validateArticle(parsed.title, fullContent, s3ImageUrl);
+          if (!validation.valid) {
+            console.log(`[RSS Import] SKIPPED (${validation.reason}): ${parsed.title.substring(0, 60)}`);
+            result.errors++;
+            continue;
           }
 
           // Generate slug
@@ -549,19 +622,20 @@ export async function runRssImport(): Promise<ImportResult> {
             }
           }
 
-          // Insert article with S3 image URL (or null if upload failed)
+          // Insert article with S3 image URL (guaranteed non-null at this point)
           const articleId = await insertArticle(
             parsed.title,
             slug,
             fullContent,
             parsed.description.substring(0, 300) + (parsed.description.length > 300 ? "..." : ""),
-            s3ImageUrl, // S3 URL instead of external URL
+            s3ImageUrl,
             categoryId,
             publishedAt
           );
 
           if (articleId) {
             result.newArticles++;
+            console.log(`[RSS Import] ✓ Published: ${parsed.title.substring(0, 60)}`);
           } else {
             result.errors++;
           }
@@ -585,11 +659,11 @@ export async function runRssImport(): Promise<ImportResult> {
   }
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`[RSS Import] Complete in ${duration}s: ${result.newArticles} new, ${result.duplicatesSkipped} duplicates, ${result.errors} errors, ${result.imagesMigrated} images migrated to S3`);
+  console.log(`[RSS Import] Complete in ${duration}s: ${result.newArticles} new, ${result.duplicatesSkipped} duplicates, ${result.skippedNoImage} skipped (no image), ${result.skippedNoContent} skipped (no content), ${result.errors} errors, ${result.imagesMigrated} images migrated to S3`);
 
   return result;
 }
 
 // ─── Export feed list for testing ────────────────────────────────────
-export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, downloadAndUploadImage };
+export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, downloadAndUploadImage, validateArticle };
 export type { FeedSource, ParsedArticle };

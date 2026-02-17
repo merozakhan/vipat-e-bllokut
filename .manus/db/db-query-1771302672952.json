@@ -1,0 +1,22 @@
+{
+  "query": "\n-- First check counts\nSELECT 'total' as label, COUNT(*) as cnt FROM articles\nUNION ALL\nSELECT 'no_image' as label, COUNT(*) as cnt FROM articles WHERE featuredImage IS NULL OR featuredImage = ''\nUNION ALL\nSELECT 'with_image' as label, COUNT(*) as cnt FROM articles WHERE featuredImage IS NOT NULL AND featuredImage != '';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute \n-- First check counts\nSELECT 'total' as label, COUNT(*) as cnt FROM articles\nUNION ALL\nSELECT 'no_image' as label, COUNT(*) as cnt FROM articles WHERE featuredImage IS NULL OR featuredImage = ''\nUNION ALL\nSELECT 'with_image' as label, COUNT(*) as cnt FROM articles WHERE featuredImage IS NOT NULL AND featuredImage != '';\n",
+  "rows": [
+    {
+      "label": "total",
+      "cnt": "104"
+    },
+    {
+      "label": "with_image",
+      "cnt": "92"
+    },
+    {
+      "label": "no_image",
+      "cnt": "12"
+    }
+  ],
+  "messages": [],
+  "stdout": "label\tcnt\ntotal\t104\nwith_image\t92\nno_image\t12\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

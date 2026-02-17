@@ -1,0 +1,15 @@
+{
+  "query": "\nSELECT \n  (SELECT COUNT(*) FROM articles) as total_articles,\n  (SELECT COUNT(*) FROM articles WHERE featuredImage IS NULL OR featuredImage = '') as no_image_articles,\n  (SELECT COUNT(*) FROM articles WHERE featuredImage LIKE '%manus-storage%' OR featuredImage LIKE '%cloudfront%') as s3_articles;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute \nSELECT \n  (SELECT COUNT(*) FROM articles) as total_articles,\n  (SELECT COUNT(*) FROM articles WHERE featuredImage IS NULL OR featuredImage = '') as no_image_articles,\n  (SELECT COUNT(*) FROM articles WHERE featuredImage LIKE '%manus-storage%' OR featuredImage LIKE '%cloudfront%') as s3_articles;\n",
+  "rows": [
+    {
+      "total_articles": "106",
+      "no_image_articles": "0",
+      "s3_articles": "106"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_articles\tno_image_articles\ts3_articles\n106\t0\t106\n",
+  "stderr": "",
+  "execution_time_ms": 68
+}

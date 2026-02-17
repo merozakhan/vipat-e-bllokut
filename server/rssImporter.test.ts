@@ -5,6 +5,7 @@ import {
   generateSlug,
   stripHtml,
   decodeHtmlEntities,
+  validateArticle,
   RSS_FEEDS,
   type FeedSource,
 } from "./rssImporter";
@@ -97,6 +98,78 @@ describe("RSS Importer", () => {
     });
   });
 
+  describe("validateArticle - STRICT RULE: title + content + image required", () => {
+    it("accepts article with all three required fields", () => {
+      const result = validateArticle(
+        "Test Title",
+        "This is a long enough content that exceeds the minimum 50 character requirement for articles.",
+        "https://example.com/image.jpg"
+      );
+      expect(result.valid).toBe(true);
+      expect(result.reason).toBeUndefined();
+    });
+
+    it("rejects article with missing title", () => {
+      const result = validateArticle(
+        "",
+        "This is a long enough content that exceeds the minimum 50 character requirement.",
+        "https://example.com/image.jpg"
+      );
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain("title");
+    });
+
+    it("rejects article with missing content", () => {
+      const result = validateArticle(
+        "Test Title",
+        "Short",
+        "https://example.com/image.jpg"
+      );
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain("content");
+    });
+
+    it("rejects article with missing image (null)", () => {
+      const result = validateArticle(
+        "Test Title",
+        "This is a long enough content that exceeds the minimum 50 character requirement.",
+        null
+      );
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain("image");
+    });
+
+    it("rejects article with empty image string", () => {
+      const result = validateArticle(
+        "Test Title",
+        "This is a long enough content that exceeds the minimum 50 character requirement.",
+        ""
+      );
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain("image");
+    });
+
+    it("rejects article with whitespace-only title", () => {
+      const result = validateArticle(
+        "   ",
+        "This is a long enough content that exceeds the minimum 50 character requirement.",
+        "https://example.com/image.jpg"
+      );
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain("title");
+    });
+
+    it("rejects article with content under 50 characters", () => {
+      const result = validateArticle(
+        "Test Title",
+        "Only 49 characters of content here, not enough!",
+        "https://example.com/image.jpg"
+      );
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain("content");
+    });
+  });
+
   describe("parseRssFeed", () => {
     const testFeed: FeedSource = {
       name: "Test Feed",
@@ -151,6 +224,23 @@ describe("RSS Importer", () => {
       expect(articles[0].imageUrl).toBe("https://example.com/image.jpg");
     });
 
+    it("returns null imageUrl when no image is present", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0">
+          <channel>
+            <item>
+              <title>Article without Image</title>
+              <link>https://example.com/article</link>
+              <description>No image here</description>
+            </item>
+          </channel>
+        </rss>`;
+
+      const articles = parseRssFeed(xml, testFeed);
+      expect(articles).toHaveLength(1);
+      expect(articles[0].imageUrl).toBeNull();
+    });
+
     it("handles empty feed", () => {
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
         <rss version="2.0">
@@ -200,11 +290,21 @@ describe("RSS Importer", () => {
       }
     });
 
-    it("includes major Albanian media sources", () => {
+    it("includes reliable Albanian media sources with images", () => {
       const names = RSS_FEEDS.map(f => f.name.toLowerCase());
       expect(names.some(n => n.includes("koha"))).toBe(true);
-      expect(names.some(n => n.includes("balkanweb"))).toBe(true);
       expect(names.some(n => n.includes("gazeta"))).toBe(true);
+      expect(names.some(n => n.includes("reporter"))).toBe(true);
+      expect(names.some(n => n.includes("telegrafi"))).toBe(true);
+      expect(names.some(n => n.includes("albeu"))).toBe(true);
+    });
+
+    it("does NOT include feeds without reliable images", () => {
+      const names = RSS_FEEDS.map(f => f.name.toLowerCase());
+      // These feeds were removed because they don't provide images
+      expect(names.some(n => n.includes("balkanweb"))).toBe(false);
+      expect(names.some(n => n.includes("lapsi"))).toBe(false);
+      expect(names.some(n => n.includes("panorama"))).toBe(false);
     });
   });
 });

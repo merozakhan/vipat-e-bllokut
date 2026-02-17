@@ -24,6 +24,7 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import { getLastImportResult, isImportRunning, triggerManualImport } from "./cronScheduler";
 
 // Helper function to generate URL-friendly slug
 function generateSlug(title: string): string {
@@ -287,6 +288,23 @@ export const appRouter = router({
         await deleteCategory(input.id);
         return { success: true };
       }),
+  }),
+
+  // RSS Import status and controls
+  rssImport: router({
+    // Get last import status
+    status: publicProcedure.query(() => {
+      return {
+        lastResult: getLastImportResult(),
+        isRunning: isImportRunning(),
+      };
+    }),
+
+    // Manually trigger an import
+    trigger: publicProcedure.mutation(async () => {
+      const result = await triggerManualImport();
+      return { success: !!result, result };
+    }),
   }),
 });
 

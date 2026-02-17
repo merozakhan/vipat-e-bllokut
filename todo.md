@@ -136,3 +136,13 @@
 - [x] Simplify categories to 4 (Aktualitet, Sport, Kultërë, Botë)
 - [x] Ensure article images are imported from source sites
 - [x] Re-run import successfully with all fixes
+
+## Automated RSS Import (Every 3 Hours)
+- [x] Create server-side RSS parser module
+- [x] Build article content scraper for full article extraction
+- [x] Implement duplicate detection to avoid re-importing existing articles
+- [x] Create cron scheduler that runs every 3 hours
+- [x] Configure all Albanian media RSS feed sources (8 feeds)
+- [x] Add proper error handling and logging
+- [x] Write vitest tests for RSS import module (24 tests)
+- [x] Verify auto-import works end-to-end (6 new, 58 duplicates, 0 errors)

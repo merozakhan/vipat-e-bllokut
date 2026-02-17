@@ -77,8 +77,6 @@ export default function ArticleDetail() {
     );
   }
 
-  const paragraphs = article.content.split("\n\n").filter((p) => p.trim());
-
   return (
     <Layout>
       <article>
@@ -171,16 +169,10 @@ export default function ArticleDetail() {
         {/* Article Body */}
         <div className="container pb-12 md:pb-16">
           <div className="max-w-4xl mx-auto">
-            <div className="border-l-2 border-gold/20 pl-4 md:pl-10">
-              {paragraphs.map((paragraph, index) => (
-                <p
-                  key={index}
-                  className="text-foreground/85 text-[15px] md:text-lg leading-relaxed mb-5 md:mb-6 font-sans"
-                >
-                  {paragraph.trim()}
-                </p>
-              ))}
-            </div>
+            <div
+              className="article-content border-l-2 border-gold/20 pl-4 md:pl-10 text-foreground/85 text-[15px] md:text-lg leading-relaxed font-sans"
+              dangerouslySetInnerHTML={{ __html: article.content }}
+            />
 
             {/* Article Footer */}
             <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-border/50">

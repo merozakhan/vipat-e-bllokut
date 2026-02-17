@@ -252,3 +252,6 @@
 - [x] Write controversial Albanian article about infrastructure corruption
 - [x] Publish article via API with Politikë category (ID: 30542)
 - [x] Verify article appears on homepage as #1 trending (score: 14)
+
+## Bug Fix - HTML Tags Showing as Raw Text
+- [x] Fix article detail page to render HTML content instead of showing raw tags (dangerouslySetInnerHTML + article-content CSS)

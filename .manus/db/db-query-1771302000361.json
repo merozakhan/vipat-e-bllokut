@@ -1,0 +1,35 @@
+{
+  "query": "SELECT id, title, featuredImage FROM articles WHERE status = 'published' ORDER BY publishedAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute SELECT id, title, featuredImage FROM articles WHERE status = 'published' ORDER BY publishedAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "30094",
+      "title": "Zelensky paralajmëron për sulme të reja ruse përpara bisedimeve të paqes në Gjenevë",
+      "featuredImage": "NULL"
+    },
+    {
+      "id": "30093",
+      "title": "Rubio: SHBA-të nuk e kundërshtojnë vlerësimin e evropianëve për helmimin e Navalny-t",
+      "featuredImage": "NULL"
+    },
+    {
+      "id": "30092",
+      "title": "\"Paqe apo pjesë e Groenlandës?\" Musk kritikon \"Bordin e Paqes\" të Trump për Gazën",
+      "featuredImage": "NULL"
+    },
+    {
+      "id": "30091",
+      "title": "\"Paqe apo pjesë e Groenlandës?\" Musk kritikon \"Bordin e Paqes\" të Trump për Gazën",
+      "featuredImage": "NULL"
+    },
+    {
+      "id": "30085",
+      "title": "Urimi i Steinmeier, përmend transferin e pushtetit në veri, pret \"hapa tjerë konstruktivë\" dhe angazhim  të vendosur në dialog",
+      "featuredImage": "https://d2xsxph8kpxj0f.cloudfront.net/310419663030573139/3FN2mXfNpKxptvfrsuACXq/articles/images/0j2bf88ext2v.jpg"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tfeaturedImage\n30094\tZelensky paralajmëron për sulme të reja ruse përpara bisedimeve të paqes në Gjenevë\tNULL\n30093\tRubio: SHBA-të nuk e kundërshtojnë vlerësimin e evropianëve për helmimin e Navalny-t\tNULL\n30092\t\"Paqe apo pjesë e Groenlandës?\" Musk kritikon \"Bordin e Paqes\" të Trump për Gazën\tNULL\n30091\t\"Paqe apo pjesë e Groenlandës?\" Musk kritikon \"Bordin e Paqes\" të Trump për Gazën\tNULL\n30085\tUrimi i Steinmeier, përmend transferin e pushtetit në veri, pret \"hapa tjerë konstruktivë\" dhe angazhim  të vendosur në dialog\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663030573139/3FN2mXfNpKxptvfrsuACXq/articles/images/0j2bf88ext2v.jpg\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

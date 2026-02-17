@@ -36,6 +36,57 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Image proxy to bypass hotlink protection from external news sites
+  app.get("/api/image-proxy", async (req, res) => {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) {
+      return res.status(400).json({ error: "Missing url parameter" });
+    }
+
+    try {
+      // Validate URL
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(imageUrl);
+      } catch {
+        return res.status(400).json({ error: "Invalid URL" });
+      }
+
+      const response = await fetch(imageUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+          "Accept-Encoding": "gzip, deflate, br",
+          "Referer": parsedUrl.origin + "/",
+          "Origin": parsedUrl.origin,
+        },
+        signal: AbortSignal.timeout(30000),
+        redirect: "follow",
+      });
+
+      if (!response.ok) {
+        return res.status(response.status).json({ error: "Failed to fetch image" });
+      }
+
+      const contentType = response.headers.get("content-type") || "image/jpeg";
+      const contentLength = response.headers.get("content-length");
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      // Cache for 7 days
+      res.set({
+        "Content-Type": contentType,
+        "Content-Length": String(buffer.byteLength),
+        "Cache-Control": "public, max-age=604800, immutable",
+        "X-Proxy-Source": "veb-image-proxy",
+        "Access-Control-Allow-Origin": "*",
+      });
+      res.send(buffer);
+    } catch (error: any) {
+      console.error("[Image Proxy] Error:", imageUrl, error?.message || error);
+      res.status(500).json({ error: "Failed to proxy image" });
+    }
+  });
   // tRPC API
   app.use(
     "/api/trpc",

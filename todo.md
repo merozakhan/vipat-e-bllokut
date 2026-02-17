@@ -153,3 +153,18 @@
 - [x] Improve category page article display on mobile
 - [x] Ensure all pages are fully responsive for mobile users
 - [x] Test on mobile viewport sizes
+
+## Bug Fix - Broken Images on Mobile (Article Detail)
+- [x] External images blocked by hotlink protection show broken "?" icon on mobile Safari
+- [x] ArticleImage onError fallback not triggering properly on mobile browsers
+- [x] Solution: Build server-side image proxy to serve external images through our own domain
+- [x] Ensure all article images load reliably on all devices
+
+## S3 Image Storage for Articles
+- [x] Modify RSS importer to download article images during import
+- [x] Upload downloaded images to S3 storage
+- [x] Save S3 URLs in database instead of external URLs
+- [x] Re-upload existing article images to S3 (one-time migration) - 67/67 success
+- [x] Update ArticleImage component to load from S3 directly (no proxy needed)
+- [x] Keep proxy as fallback for edge cases
+- [x] Test full flow - 82/94 articles have S3 images, 12 have no image in source

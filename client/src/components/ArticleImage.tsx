@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Newspaper } from "lucide-react";
 
 interface ArticleImageProps {
@@ -10,8 +10,38 @@ interface ArticleImageProps {
 }
 
 /**
- * ArticleImage - A robust image component that handles broken/blocked external images
- * with an elegant gradient fallback showing the article title initial and a newspaper icon.
+ * Checks if a URL is already hosted on our own storage (S3/CDN).
+ * These URLs can be loaded directly without proxying.
+ */
+function isOwnHostedUrl(src: string): boolean {
+  return (
+    src.startsWith("data:") ||
+    src.startsWith("/") ||
+    src.includes("manus-storage") ||
+    src.includes("s3.amazonaws") ||
+    src.includes("cloudfront.net") ||
+    src.includes("manus.space") ||
+    src.includes("forge-api")
+  );
+}
+
+/**
+ * Gets the best URL for loading the image:
+ * - S3/CDN images → load directly (fast, reliable)
+ * - External images → proxy through our server (bypass hotlink protection)
+ */
+function getImageUrl(src: string): string {
+  if (!src) return "";
+  if (isOwnHostedUrl(src)) return src;
+  // Proxy external images through our server
+  return `/api/image-proxy?url=${encodeURIComponent(src)}`;
+}
+
+/**
+ * ArticleImage - A robust image component that:
+ * 1. Loads S3/CDN images directly (for migrated images - fast!)
+ * 2. Proxies external images through our server (for not-yet-migrated images)
+ * 3. Shows an elegant gradient fallback if all loading fails
  */
 export default function ArticleImage({
   src,
@@ -46,7 +76,13 @@ export default function ArticleImage({
   const gradientIndex = alt ? alt.charCodeAt(0) % gradients.length : 0;
   const gradient = gradients[gradientIndex];
 
-  if (!src || hasError) {
+  // Get the best URL for loading the image
+  const imageUrl = useMemo(() => {
+    if (!src) return null;
+    return getImageUrl(src);
+  }, [src]);
+
+  if (!src || !imageUrl || hasError) {
     return (
       <div className={`relative w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center overflow-hidden`}>
         {/* Decorative pattern */}
@@ -73,13 +109,12 @@ export default function ArticleImage({
         <div className="absolute inset-0 shimmer" />
       )}
       <img
-        src={src}
+        src={imageUrl}
         alt={alt}
         className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
         onError={handleError}
         onLoad={handleLoad}
         loading="lazy"
-        referrerPolicy="no-referrer"
       />
       {showOverlay && (
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

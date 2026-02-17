@@ -2,12 +2,15 @@
  * Automated RSS Importer for Albanian News Media
  * 
  * Fetches articles from multiple Albanian media RSS feeds every 3 hours,
- * scrapes full content, detects duplicates, and imports new articles.
+ * scrapes full content, downloads images to S3, detects duplicates,
+ * and imports new articles with permanent S3 image URLs.
  */
 
 import { getDb } from "./db";
 import { articles, categories, articleCategories } from "../drizzle/schema";
-import { eq, or, like, desc } from "drizzle-orm";
+import { eq, or, like, desc, isNull, and, not } from "drizzle-orm";
+import { storagePut } from "./storage";
+import { nanoid } from "nanoid";
 
 // ─── RSS Feed Configuration ─────────────────────────────────────────
 interface FeedSource {
@@ -155,6 +158,118 @@ function detectCategory(title: string, description: string, defaultCat: string):
   }
   
   return defaultCat;
+}
+
+// ─── Image Download & S3 Upload ─────────────────────────────────────
+
+/**
+ * Downloads an image from an external URL and uploads it to S3.
+ * Returns the permanent S3 URL, or null if the download/upload fails.
+ */
+async function downloadAndUploadImage(imageUrl: string): Promise<string | null> {
+  try {
+    // Validate URL
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(imageUrl);
+    } catch {
+      return null;
+    }
+
+    // Download the image with browser-like headers
+    const response = await fetch(imageUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Referer": parsedUrl.origin + "/",
+        "Origin": parsedUrl.origin,
+      },
+      signal: AbortSignal.timeout(30000),
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      console.warn(`[S3 Upload] Failed to download image (${response.status}): ${imageUrl.substring(0, 80)}`);
+      return null;
+    }
+
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    // Skip if image is too small (likely a tracking pixel or placeholder)
+    if (buffer.byteLength < 1000) {
+      return null;
+    }
+
+    // Determine file extension from content type
+    const extMap: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+      "image/avif": "avif",
+      "image/svg+xml": "svg",
+    };
+    const ext = extMap[contentType] || "jpg";
+
+    // Generate unique S3 key
+    const uniqueId = nanoid(12);
+    const s3Key = `articles/images/${uniqueId}.${ext}`;
+
+    // Upload to S3
+    const { url: s3Url } = await storagePut(s3Key, buffer, contentType);
+    
+    console.log(`[S3 Upload] Uploaded: ${s3Key} (${Math.round(buffer.byteLength / 1024)}KB)`);
+    return s3Url;
+  } catch (error: any) {
+    console.warn(`[S3 Upload] Error: ${error?.message || error}`);
+    return null;
+  }
+}
+
+/**
+ * Migrates existing articles with external image URLs to S3.
+ * Called once during import to gradually move all images to our storage.
+ */
+export async function migrateExistingImages(batchSize: number = 10): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  // Find articles with external (non-S3) image URLs
+  const articlesToMigrate = await db
+    .select({ id: articles.id, featuredImage: articles.featuredImage })
+    .from(articles)
+    .where(
+      and(
+        not(like(articles.featuredImage, "%manus-storage%")),
+        not(like(articles.featuredImage, "%s3.amazonaws%")),
+        not(like(articles.featuredImage, "%cloudfront.net%")),
+        // Skip articles with no image
+        not(eq(articles.featuredImage, "")),
+      )
+    )
+    .limit(batchSize);
+
+  let migrated = 0;
+
+  for (const article of articlesToMigrate) {
+    if (!article.featuredImage) continue;
+
+    const s3Url = await downloadAndUploadImage(article.featuredImage);
+    if (s3Url) {
+      await db
+        .update(articles)
+        .set({ featuredImage: s3Url })
+        .where(eq(articles.id, article.id));
+      migrated++;
+    }
+  }
+
+  if (migrated > 0) {
+    console.log(`[S3 Migration] Migrated ${migrated} article images to S3`);
+  }
+
+  return migrated;
 }
 
 // ─── Content Scraping ────────────────────────────────────────────────
@@ -332,6 +447,7 @@ export interface ImportResult {
   newArticles: number;
   duplicatesSkipped: number;
   errors: number;
+  imagesMigrated: number;
   sources: string[];
   timestamp: Date;
 }
@@ -345,6 +461,7 @@ export async function runRssImport(): Promise<ImportResult> {
     newArticles: 0,
     duplicatesSkipped: 0,
     errors: 0,
+    imagesMigrated: 0,
     sources: [],
     timestamp: new Date(),
   };
@@ -411,6 +528,12 @@ export async function runRssImport(): Promise<ImportResult> {
             continue;
           }
 
+          // Download image and upload to S3
+          let s3ImageUrl: string | null = null;
+          if (parsed.imageUrl) {
+            s3ImageUrl = await downloadAndUploadImage(parsed.imageUrl);
+          }
+
           // Generate slug
           const slug = generateUniqueSlug(parsed.title);
 
@@ -426,13 +549,13 @@ export async function runRssImport(): Promise<ImportResult> {
             }
           }
 
-          // Insert article
+          // Insert article with S3 image URL (or null if upload failed)
           const articleId = await insertArticle(
             parsed.title,
             slug,
             fullContent,
             parsed.description.substring(0, 300) + (parsed.description.length > 300 ? "..." : ""),
-            parsed.imageUrl,
+            s3ImageUrl, // S3 URL instead of external URL
             categoryId,
             publishedAt
           );
@@ -453,12 +576,20 @@ export async function runRssImport(): Promise<ImportResult> {
     }
   }
 
+  // After importing new articles, migrate a batch of existing external images to S3
+  try {
+    const migrated = await migrateExistingImages(15); // Migrate 15 images per cycle
+    result.imagesMigrated = migrated;
+  } catch (error) {
+    console.warn("[RSS Import] Image migration batch failed:", error);
+  }
+
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`[RSS Import] Complete in ${duration}s: ${result.newArticles} new, ${result.duplicatesSkipped} duplicates, ${result.errors} errors`);
+  console.log(`[RSS Import] Complete in ${duration}s: ${result.newArticles} new, ${result.duplicatesSkipped} duplicates, ${result.errors} errors, ${result.imagesMigrated} images migrated to S3`);
 
   return result;
 }
 
 // ─── Export feed list for testing ────────────────────────────────────
-export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities };
+export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, downloadAndUploadImage };
 export type { FeedSource, ParsedArticle };

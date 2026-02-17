@@ -122,3 +122,17 @@
 ## Company Registration Update
 - [x] Update footer copyright with official company registration number 16606613
 - [x] Update all references to include proper registration details
+
+## RSS Article Import from Koha.net
+- [x] Fetch and analyze Koha.net RSS feed structure
+- [x] Build import script to extract articles with full content
+- [x] Scrape full article content from each article URL
+- [x] Map Koha.net categories to our categories
+- [x] Import 84 articles with images from 8 Albanian media sources
+- [x] Verify articles display correctly on the website
+
+## Article Import Fixes
+- [x] Fix authorId NOT NULL constraint for imported articles
+- [x] Simplify categories to 4 (Aktualitet, Sport, Kultërë, Botë)
+- [x] Ensure article images are imported from source sites
+- [x] Re-run import successfully with all fixes

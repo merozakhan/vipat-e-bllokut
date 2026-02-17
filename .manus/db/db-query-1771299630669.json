@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM article_categories; DELETE FROM categories; INSERT INTO categories (id, name, slug, description, createdAt, updatedAt) VALUES (1, 'Aktualitet', 'aktualitet', 'Lajme aktuale dhe ngjarje të fundit', NOW(), NOW()), (2, 'Sport', 'sport', 'Lajme sportive dhe rezultate', NOW(), NOW()), (3, 'Botë', 'bote', 'Lajme ndërkombëtare dhe globale', NOW(), NOW()), (4, 'Kulturë', 'kulture', 'Art, kulturë, showbiz dhe lifestyle', NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute DELETE FROM article_categories; DELETE FROM categories; INSERT INTO categories (id, name, slug, description, createdAt, updatedAt) VALUES (1, 'Aktualitet', 'aktualitet', 'Lajme aktuale dhe ngjarje të fundit', NOW(), NOW()), (2, 'Sport', 'sport', 'Lajme sportive dhe rezultate', NOW(), NOW()), (3, 'Botë', 'bote', 'Lajme ndërkombëtare dhe globale', NOW(), NOW()), (4, 'Kulturë', 'kulture', 'Art, kulturë, showbiz dhe lifestyle', NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 300
+}

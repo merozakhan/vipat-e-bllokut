@@ -16,6 +16,7 @@ import {
   getArticleCategories,
 } from "./db";
 import { getLastImportResult, isImportRunning, triggerManualImport } from "./cronScheduler";
+import { sendContactEmail, sendNewsletterConfirmation } from "./emailService";
 
 export const appRouter = router({
   system: systemRouter,
@@ -107,6 +108,35 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await getCategoryById(input.id);
+      }),
+  }),
+
+  // Contact form submission
+  contact: router({
+    submit: publicProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        phone: z.string().optional(),
+        company: z.string().optional(),
+        reason: z.string().min(1),
+        subject: z.string().optional(),
+        message: z.string().min(1),
+        budget: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await sendContactEmail(input);
+        if (!result.success) {
+          throw new Error(result.error || "Failed to send message");
+        }
+        return { success: true };
+      }),
+
+    newsletter: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const result = await sendNewsletterConfirmation(input);
+        return { success: result.success };
       }),
   }),
 

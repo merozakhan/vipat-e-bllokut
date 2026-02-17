@@ -68,11 +68,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const newsletterMutation = trpc.contact.newsletter.useMutation({
+    onSuccess: () => {
+      toast.success("Thank you for subscribing! You'll receive our latest news updates.");
+      setNewsletterEmail("");
+    },
+    onError: () => {
+      toast.error("Something went wrong. Please try again.");
+    },
+  });
+
   const handleNewsletter = (e: React.FormEvent) => {
     e.preventDefault();
     if (newsletterEmail.trim()) {
-      toast.success("Thank you for subscribing! You'll receive our latest news updates.");
-      setNewsletterEmail("");
+      newsletterMutation.mutate({ email: newsletterEmail.trim() });
     }
   };
 

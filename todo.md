@@ -288,3 +288,14 @@
 - [x] Add hreflang tags for Albanian language
 - [x] Optimize HTML head with proper title templates
 - [x] Push changes and verify on social media debuggers
+
+## Bug Fixes
+- [ ] Fix sitemap.xml not working correctly at vipatebllokut.com/sitemap.xml
+
+## Email Forms & Contact
+- [x] Set up email sending backend (Nodemailer with SMTP)
+- [x] Wire Contact form to send email to info@vipatebllokut.com on submit (tRPC endpoint)
+- [x] Wire Advertise page CTA links to Contact form
+- [x] Wire newsletter subscription form in footer (tRPC endpoint)
+- [x] Ensure all email references across site use info@vipatebllokut.com (23 refs, 9 files verified)
+- [ ] Configure SMTP credentials on Railway for actual email delivery

@@ -1,8 +1,9 @@
 import Layout from "@/components/Layout";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, MapPin, Instagram, Send, CheckCircle, ChevronDown, Clock, MessageSquare, HelpCircle } from "lucide-react";
+import { Mail, Phone, MapPin, Instagram, Send, CheckCircle, ChevronDown, Clock, MessageSquare, HelpCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import SEOHead from "@/components/SEOHead";
 
 const contactReasons = [
@@ -56,14 +57,32 @@ export default function Contact() {
   const selectedReason = contactReasons.find((r) => r.value === formData.reason);
   const showBudget = formData.reason === "advertising" || formData.reason === "marketing";
 
+  const contactMutation = trpc.contact.submit.useMutation({
+    onSuccess: () => {
+      setSubmitted(true);
+      toast.success("Message sent successfully!");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to send message. Please try again or email us directly at info@vipatebllokut.com");
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.reason || !formData.message) {
       toast.error("Please fill in all required fields.");
       return;
     }
-    setSubmitted(true);
-    toast.success("Message sent successfully!");
+    contactMutation.mutate({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || undefined,
+      company: formData.company || undefined,
+      reason: formData.reason,
+      subject: formData.subject || undefined,
+      message: formData.message,
+      budget: formData.budget || undefined,
+    });
   };
 
   return (
@@ -111,14 +130,14 @@ export default function Contact() {
               <p className="text-xs text-muted-foreground font-sans">+44 7476 921815</p>
               <p className="text-xs text-muted-foreground/60 font-sans mt-1">Mon-Fri, 9:00-18:00 GMT</p>
             </div>
-            <div className="glass-card rounded-xl p-5 text-center">
-              <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center mx-auto mb-3">
+            <a href="mailto:info@vipatebllokut.com" className="glass-card rounded-xl p-5 text-center group">
+              <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-gold/20 transition-colors">
                 <Mail className="w-6 h-6 text-gold" />
               </div>
               <h3 className="text-xs font-bold text-foreground font-sans uppercase tracking-wider mb-2">Email</h3>
-              <p className="text-xs text-muted-foreground font-sans">info@vipatebllokut.com</p>
+              <p className="text-xs text-gold font-sans">info@vipatebllokut.com</p>
               <p className="text-xs text-muted-foreground/60 font-sans mt-1">We respond within 24h</p>
-            </div>
+            </a>
             <a
               href="https://www.instagram.com/vipat_e_bllokut_al"
               target="_blank"
@@ -150,7 +169,7 @@ export default function Contact() {
                     </div>
                     <h3 className="text-2xl font-bold text-foreground mb-3">Message Sent Successfully</h3>
                     <p className="text-muted-foreground font-sans mb-2 max-w-md mx-auto">
-                      Thank you for reaching out. Your message has been routed to our <strong className="text-foreground">{selectedReason?.label}</strong> team.
+                      Thank you for reaching out. Your message has been sent to <strong className="text-gold">info@vipatebllokut.com</strong> and routed to our <strong className="text-foreground">{selectedReason?.label}</strong> team.
                     </p>
                     {selectedReason && (
                       <div className="flex items-center justify-center gap-2 text-sm text-gold font-sans mb-8">
@@ -175,7 +194,7 @@ export default function Contact() {
                       <h2 className="text-2xl font-bold text-foreground">Send a Message</h2>
                     </div>
                     <p className="text-sm text-muted-foreground font-sans mb-8">
-                      Select a department and fill out the form below. Required fields are marked with an asterisk.
+                      Select a department and fill out the form below. Your message will be sent directly to <strong className="text-gold">info@vipatebllokut.com</strong>. Required fields are marked with an asterisk.
                     </p>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -279,13 +298,13 @@ export default function Contact() {
                               className="w-full px-4 py-3.5 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm appearance-none input-premium"
                             >
                               <option value="">Select budget range...</option>
-                              <option value="under-500">Under £500</option>
-                              <option value="500-1000">£500 - £1,000</option>
-                              <option value="1000-5000">£1,000 - £5,000</option>
-                              <option value="5000-10000">£5,000 - £10,000</option>
-                              <option value="10000-25000">£10,000 - £25,000</option>
-                              <option value="25000+">£25,000+</option>
-                              <option value="discuss">Prefer to discuss</option>
+                              <option value="Under £500">Under £500</option>
+                              <option value="£500 - £1,000">£500 - £1,000</option>
+                              <option value="£1,000 - £5,000">£1,000 - £5,000</option>
+                              <option value="£5,000 - £10,000">£5,000 - £10,000</option>
+                              <option value="£10,000 - £25,000">£10,000 - £25,000</option>
+                              <option value="£25,000+">£25,000+</option>
+                              <option value="Prefer to discuss">Prefer to discuss</option>
                             </select>
                             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                           </div>
@@ -328,10 +347,20 @@ export default function Contact() {
                         </p>
                         <Button
                           type="submit"
-                          className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans px-8 py-3 text-sm uppercase tracking-wider font-semibold"
+                          disabled={contactMutation.isPending}
+                          className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans px-8 py-3 text-sm uppercase tracking-wider font-semibold disabled:opacity-50"
                         >
-                          <Send className="w-4 h-4 mr-2" />
-                          Send Message
+                          {contactMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4 mr-2" />
+                              Send Message
+                            </>
+                          )}
                         </Button>
                       </div>
                     </form>

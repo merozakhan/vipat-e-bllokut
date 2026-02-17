@@ -213,3 +213,9 @@
 - [x] Re-categorize all existing articles with improved logic
 - [x] Verify category tabs on frontend display correct articles
 - [x] Ensure balanced distribution across categories
+
+## Fix Duplicate Articles Across Sources
+- [x] Diagnose how many duplicate/similar articles exist in DB (34 pairs found)
+- [x] Improve deduplication: similarity-based matching (>=70% word overlap) with in-memory cache
+- [x] Clean up existing duplicate articles from database (25 deleted, 198 remaining)
+- [x] Add tests for normalizeTitle and titleSimilarity (70 tests total, all passing)

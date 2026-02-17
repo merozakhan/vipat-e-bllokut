@@ -8,6 +8,8 @@ import {
   validateArticle,
   containsCssJunk,
   isJunkText,
+  normalizeTitle,
+  titleSimilarity,
   RSS_FEEDS,
   type FeedSource,
 } from "./rssImporter";
@@ -385,6 +387,56 @@ describe("RSS Importer", () => {
     it("does NOT flag clean text", () => {
       expect(isJunkText("Presidenti ukrainas Volodymyr Zelensky tha se inteligjenca tregonte.")).toBe(false);
       expect(isJunkText("Frutat janë thelbësore për një ushqyerje të shëndetshme.")).toBe(false);
+    });
+  });
+
+  describe("normalizeTitle", () => {
+    it("lowercases and removes punctuation", () => {
+      expect(normalizeTitle("Hello, World!")).toBe("hello world");
+    });
+
+    it("preserves Albanian diacritical characters", () => {
+      expect(normalizeTitle("Kulturë dhe Art")).toBe("kulturë dhe art");
+    });
+
+    it("collapses whitespace", () => {
+      expect(normalizeTitle("  Hello   World  ")).toBe("hello world");
+    });
+  });
+
+  describe("titleSimilarity - cross-source deduplication", () => {
+    it("returns 1.0 for identical titles", () => {
+      const title = "Zelensky akuzon Rusinë për sulme të reja";
+      expect(titleSimilarity(title, title)).toBe(1);
+    });
+
+    it("returns high similarity for same story from different sources", () => {
+      // Same story, slightly different wording
+      const a = "Trump vendos sanksione të reja ndaj Rusisë";
+      const b = "Trump vendos sanksione ndaj Rusisë";
+      expect(titleSimilarity(a, b)).toBeGreaterThanOrEqual(0.7);
+    });
+
+    it("returns low similarity for completely different articles", () => {
+      const a = "Futbolli: Skuadra fiton kampionatin";
+      const b = "Zelensky akuzon Rusinë për sulme";
+      expect(titleSimilarity(a, b)).toBeLessThan(0.3);
+    });
+
+    it("returns 0 for titles with only short words", () => {
+      expect(titleSimilarity("A B C", "D E F")).toBe(0);
+    });
+
+    it("catches exact duplicate titles from different feeds", () => {
+      const title1 = "Ia vlen ta provoni: Ekspertët thonë se dushi në errësirë mund ta lehtësojë gjumin";
+      const title2 = "Ia vlen ta provoni: Ekspertët thonë se dushi në errësirë mund ta lehtësojë gjumin";
+      expect(titleSimilarity(title1, title2)).toBe(1);
+    });
+
+    it("catches near-duplicate titles with minor differences", () => {
+      const a = "Parashikimi i motit për të martën";
+      const b = "Parashikimi i motit për ditën e martë";
+      expect(titleSimilarity(a, b)).toBeGreaterThanOrEqual(0.6);
     });
   });
 });

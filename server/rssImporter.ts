@@ -553,17 +553,87 @@ async function getCategoryMap(): Promise<Record<string, number>> {
   return map;
 }
 
+/**
+ * Normalize a title for similarity comparison:
+ * lowercase, remove punctuation, collapse whitespace
+ */
+function normalizeTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s\u00C0-\u024F]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Calculate word-overlap similarity between two titles.
+ * Returns a value between 0 and 1.
+ */
+function titleSimilarity(a: string, b: string): number {
+  const wordsA = normalizeTitle(a).split(" ").filter(w => w.length > 3);
+  const wordsB = normalizeTitle(b).split(" ").filter(w => w.length > 3);
+  const setB = new Set(wordsB);
+  if (wordsA.length === 0 || wordsB.length === 0) return 0;
+  const uniqueA = Array.from(new Set(wordsA));
+  let overlap = 0;
+  for (let i = 0; i < uniqueA.length; i++) {
+    if (setB.has(uniqueA[i])) overlap++;
+  }
+  return overlap / Math.min(uniqueA.length, wordsB.length);
+}
+
+// In-memory cache of recent article titles for fast similarity checking
+let recentTitlesCache: string[] = [];
+let cacheLoadedAt = 0;
+
+async function loadRecentTitles(): Promise<string[]> {
+  const now = Date.now();
+  // Refresh cache every 5 minutes
+  if (recentTitlesCache.length > 0 && now - cacheLoadedAt < 5 * 60 * 1000) {
+    return recentTitlesCache;
+  }
+  
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Load titles from the last 7 days for comparison
+  const recent = await db
+    .select({ title: articles.title })
+    .from(articles)
+    .orderBy(desc(articles.publishedAt))
+    .limit(1000);
+  
+  recentTitlesCache = recent.map(r => r.title);
+  cacheLoadedAt = now;
+  return recentTitlesCache;
+}
+
+/**
+ * Check if an article already exists or is too similar to an existing one.
+ * Uses both exact title match AND similarity-based dedup (>=70% word overlap).
+ */
 async function articleExists(title: string): Promise<boolean> {
   const db = await getDb();
   if (!db) return true; // Assume exists if DB unavailable to prevent duplicates
 
+  // Step 1: Exact title match
   const existing = await db
     .select({ id: articles.id })
     .from(articles)
     .where(like(articles.title, title))
     .limit(1);
 
-  return existing.length > 0;
+  if (existing.length > 0) return true;
+
+  // Step 2: Similarity check against recent articles
+  const recentTitles = await loadRecentTitles();
+  for (const existingTitle of recentTitles) {
+    if (titleSimilarity(title, existingTitle) >= 0.70) {
+      return true; // Too similar to an existing article
+    }
+  }
+
+  return false;
 }
 
 async function insertArticle(
@@ -800,5 +870,5 @@ export async function runRssImport(): Promise<ImportResult> {
 }
 
 // ─── Export feed list for testing ────────────────────────────────────
-export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, downloadAndUploadImage, validateArticle, containsCssJunk, isJunkText };
+export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, downloadAndUploadImage, validateArticle, containsCssJunk, isJunkText, normalizeTitle, titleSimilarity };
 export type { FeedSource, ParsedArticle };

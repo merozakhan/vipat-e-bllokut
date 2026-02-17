@@ -240,3 +240,9 @@
 - [x] Improve article card design with bolder headlines and urgency indicators
 - [x] Add "Më Të Lexuarat" sidebar with numbered list
 - [x] Make mobile layout more engaging with full-width images
+
+## Publish Controversial Article - Evis Kushi
+- [x] Upload Evis Kushi photo to S3
+- [x] Write controversial Albanian article about healthcare struggles
+- [x] Publish article via API with proper category (Politikë)
+- [x] Verify article appears on homepage as #1 trending (score: 14)

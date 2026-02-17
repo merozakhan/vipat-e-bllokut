@@ -219,3 +219,8 @@
 - [x] Improve deduplication: similarity-based matching (>=70% word overlap) with in-memory cache
 - [x] Clean up existing duplicate articles from database (25 deleted, 198 remaining)
 - [x] Add tests for normalizeTitle and titleSimilarity (70 tests total, all passing)
+
+## Stricter Deduplication Threshold
+- [x] Lower similarity threshold from 70% to 30% for stricter duplicate detection
+- [x] Clean up newly caught duplicates from database (16 more deleted, 182 remaining)
+- [x] Tests verified (70 passing)

@@ -628,8 +628,8 @@ async function articleExists(title: string): Promise<boolean> {
   // Step 2: Similarity check against recent articles
   const recentTitles = await loadRecentTitles();
   for (const existingTitle of recentTitles) {
-    if (titleSimilarity(title, existingTitle) >= 0.70) {
-      return true; // Too similar to an existing article
+    if (titleSimilarity(title, existingTitle) >= 0.30) {
+      return true; // Too similar to an existing article (strict 30% threshold)
     }
   }
 

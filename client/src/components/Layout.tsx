@@ -1,7 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect } from "react";
-import { Search, Menu, X, Instagram, Mail, Phone, MapPin, ChevronRight, ArrowRight, Globe } from "lucide-react";
+import {
+  Search, Menu, X, Instagram, Mail, Phone, MapPin,
+  ChevronRight, ArrowRight, Globe, Clock, Newspaper,
+  Shield, FileText, BookOpen, Megaphone, Users, ExternalLink,
+  Facebook, Twitter, Youtube, Rss
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -71,7 +76,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const navLinks = [
+  const mainNav = [
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
     { href: "/advertise", label: "Advertise" },
@@ -80,42 +85,55 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Bar */}
-      <div className="bg-navy-dark border-b border-border/30 hidden md:block">
+      {/* ═══════════════ TOP UTILITY BAR ═══════════════ */}
+      <div className="bg-[oklch(0.15_0.01_250)] border-b border-white/5 hidden md:block">
         <div className="container">
-          <div className="flex items-center justify-between py-2 text-xs text-muted-foreground font-sans">
-            <div className="flex items-center gap-6">
+          <div className="flex items-center justify-between py-2 text-[11px] text-white/50 font-sans">
+            <div className="flex items-center gap-5">
               <span className="flex items-center gap-1.5">
-                <MapPin className="w-3 h-3 text-gold/70" />
+                <MapPin className="w-3 h-3 text-gold/60" />
                 London, United Kingdom
               </span>
+              <span className="w-px h-3 bg-white/10" />
               <a href="tel:+447476921815" className="flex items-center gap-1.5 hover:text-gold transition-colors">
-                <Phone className="w-3 h-3 text-gold/70" />
+                <Phone className="w-3 h-3 text-gold/60" />
                 +44 7476 921815
               </a>
+              <span className="w-px h-3 bg-white/10" />
               <a href="mailto:info@vipatebllokut.com" className="flex items-center gap-1.5 hover:text-gold transition-colors">
-                <Mail className="w-3 h-3 text-gold/70" />
+                <Mail className="w-3 h-3 text-gold/60" />
                 info@vipatebllokut.com
               </a>
             </div>
             <div className="flex items-center gap-4">
-              <span>{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
-              <div className="w-[1px] h-3 bg-border/50" />
-              <a
-                href="https://www.instagram.com/vipat_e_bllokut_al"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-gold transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3 h-3 text-gold/60" />
+                {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              </span>
+              <span className="w-px h-3 bg-white/10" />
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://www.instagram.com/vipat_e_bllokut_al"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gold transition-colors"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="w-3.5 h-3.5" />
+                </a>
+                <a href="#" className="hover:text-gold transition-colors" aria-label="Facebook">
+                  <Facebook className="w-3.5 h-3.5" />
+                </a>
+                <a href="#" className="hover:text-gold transition-colors" aria-label="Twitter">
+                  <Twitter className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Header */}
+      {/* ═══════════════ MAIN HEADER ═══════════════ */}
       <header className={`sticky top-0 z-50 transition-all duration-500 ${scrolled ? "bg-background/95 backdrop-blur-xl shadow-lg shadow-black/20" : "bg-background"} border-b border-border/50`}>
         <div className="container">
           <div className="flex items-center justify-between h-20 md:h-24">
@@ -136,7 +154,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
-              {navLinks.map((link) => (
+              {mainNav.map((link) => (
                 <Link key={link.href} href={link.href}>
                   <span
                     className={`px-4 py-2 text-sm font-medium font-sans uppercase tracking-wider transition-colors underline-gold ${
@@ -205,21 +223,50 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-border bg-card/98 backdrop-blur-xl animate-fade-in-up">
-            <div className="container py-4 space-y-1">
-              {navLinks.map((link) => (
-                <Link key={link.href} href={link.href}>
-                  <span
-                    className={`block px-4 py-3 text-sm font-medium font-sans uppercase tracking-wider rounded-lg transition-colors ${
-                      location === link.href
-                        ? "text-gold bg-gold/10"
-                        : "text-foreground/70 hover:text-gold hover:bg-gold/5"
-                    }`}
-                  >
-                    {link.label}
-                  </span>
-                </Link>
-              ))}
-              <div className="pt-3 border-t border-border mt-3">
+            <div className="container py-4">
+              {/* Main Navigation */}
+              <div className="space-y-1 mb-4">
+                {mainNav.map((link) => (
+                  <Link key={link.href} href={link.href}>
+                    <span
+                      className={`block px-4 py-3 text-sm font-medium font-sans uppercase tracking-wider rounded-lg transition-colors ${
+                        location === link.href
+                          ? "text-gold bg-gold/10"
+                          : "text-foreground/70 hover:text-gold hover:bg-gold/5"
+                      }`}
+                    >
+                      {link.label}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Categories in mobile menu */}
+              {categories && categories.length > 0 && (
+                <div className="border-t border-border/50 pt-4 mb-4">
+                  <p className="px-4 text-[10px] text-gold/60 uppercase tracking-[0.2em] font-sans font-semibold mb-2">Categories</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {categories.map((cat) => (
+                      <Link key={cat.id} href={`/category/${cat.slug}`}>
+                        <span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors">
+                          {cat.name}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Legal & Social in mobile menu */}
+              <div className="border-t border-border/50 pt-4">
+                <p className="px-4 text-[10px] text-gold/60 uppercase tracking-[0.2em] font-sans font-semibold mb-2">Legal</p>
+                <div className="grid grid-cols-2 gap-1 mb-4">
+                  <Link href="/privacy-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Privacy Policy</span></Link>
+                  <Link href="/terms"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Terms of Service</span></Link>
+                  <Link href="/gdpr"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">GDPR</span></Link>
+                  <Link href="/cookie-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Cookie Policy</span></Link>
+                  <Link href="/editorial-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Editorial Policy</span></Link>
+                </div>
                 <a
                   href="https://www.instagram.com/vipat_e_bllokut_al"
                   target="_blank"
@@ -235,7 +282,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      {/* Category Navigation */}
+      {/* ═══════════════ CATEGORY NAVIGATION BAR ═══════════════ */}
       {categories && categories.length > 0 && (
         <div className="border-b border-border/30 bg-card/30">
           <div className="container">
@@ -247,12 +294,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   All News
                 </span>
               </Link>
-              {categories.map((category) => (
-                <Link key={category.id} href={`/category/${category.slug}`}>
+              {categories.map((cat) => (
+                <Link key={cat.id} href={`/category/${cat.slug}`}>
                   <span className={`px-4 py-1.5 text-xs font-semibold font-sans uppercase tracking-wider rounded-full transition-all whitespace-nowrap ${
-                    location === `/category/${category.slug}` ? "bg-gold/15 text-gold" : "text-muted-foreground hover:text-gold hover:bg-gold/5"
+                    location === `/category/${cat.slug}` ? "bg-gold/15 text-gold" : "text-muted-foreground hover:text-gold hover:bg-gold/5"
                   }`}>
-                    {category.name}
+                    {cat.name}
                   </span>
                 </Link>
               ))}
@@ -269,20 +316,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* Newsletter Section */}
-      <section className="border-t border-border/50 bg-gradient-to-b from-card/50 to-background">
-        <div className="container py-16">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="w-8 h-[2px] bg-gold/60" />
-              <span className="text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Stay Informed</span>
-              <div className="w-8 h-[2px] bg-gold/60" />
+      {/* ═══════════════ NEWSLETTER SECTION ═══════════════ */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.25_0.04_55)] to-[oklch(0.20_0.03_55)]" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djJoLTJ2LTJoMnptMC00aDJ2MmgtMnYtMnptLTQgMHYyaC0ydi0yaDJ6bTIgMGgydjJoLTJ2LTJ6bS0yLTRoMnYyaC0ydi0yem0yIDBoMnYyaC0ydi0yeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+        <div className="container py-14 relative z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm mb-5">
+              <Mail className="w-3.5 h-3.5 text-gold" />
+              <span className="text-[11px] text-white/80 uppercase tracking-[0.2em] font-sans font-semibold">Stay Informed</span>
             </div>
-            <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+            <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
               Subscribe to Our Newsletter
             </h3>
-            <p className="text-sm text-muted-foreground font-sans mb-6">
-              Get the latest Albanian news delivered directly to your inbox. No spam, unsubscribe at any time.
+            <p className="text-sm text-white/60 font-sans mb-6 max-w-md mx-auto">
+              Get the latest Albanian news delivered directly to your inbox every morning. No spam, unsubscribe at any time.
             </p>
             <form onSubmit={handleNewsletter} className="flex flex-col sm:flex-row items-center gap-3 max-w-lg mx-auto">
               <input
@@ -290,10 +338,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your email address"
-                className="w-full sm:flex-1 px-4 py-3 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm input-premium"
+                className="w-full sm:flex-1 px-5 py-3.5 bg-white/10 backdrop-blur-sm text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm placeholder:text-white/40"
                 required
               />
-              <Button type="submit" className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-gold-dark font-sans px-6 text-sm uppercase tracking-wider font-semibold">
+              <Button type="submit" className="w-full sm:w-auto bg-gold hover:bg-gold-dark text-[oklch(0.15_0.01_250)] font-sans px-8 py-3.5 text-sm uppercase tracking-wider font-bold rounded-lg">
                 Subscribe
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -302,71 +350,91 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-navy-dark border-t border-border/30">
-        {/* Main Footer */}
-        <div className="container py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-            {/* Brand */}
-            <div className="lg:col-span-2">
-              <h3 className="text-2xl font-bold text-gradient-gold mb-4">
+      {/* ═══════════════ PREMIUM FOOTER ═══════════════ */}
+      <footer className="bg-[oklch(0.12_0.01_250)]">
+        {/* Footer Top Accent */}
+        <div className="h-1 bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
+
+        {/* Main Footer Content */}
+        <div className="container pt-16 pb-12">
+          {/* Top Row: Brand + Newsletter CTA */}
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 pb-12 border-b border-white/8">
+            <div className="max-w-md">
+              <h3 className="text-3xl font-bold text-gradient-gold mb-2">
                 Vipat E Bllokut
               </h3>
-              <div className="w-12 h-[2px] bg-gold/60 mb-4" />
-              <p className="text-sm text-muted-foreground leading-relaxed font-sans mb-6">
-                Premium news and media coverage for Albania and the Albanian diaspora worldwide. Delivering truth, insight, and perspective. Registered in England & Wales.
+              <p className="text-sm text-white/40 font-sans leading-relaxed">
+                Albania's premier digital news and media platform. Delivering truth, insight, and perspective to the Albanian diaspora worldwide since 2026.
               </p>
-              <div className="flex items-center gap-3">
-                <a
-                  href="https://www.instagram.com/vipat_e_bllokut_al"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-gold hover:bg-gold/10 transition-all"
-                  aria-label="Instagram"
-                >
-                  <Instagram className="w-5 h-5" />
-                </a>
-                <a
-                  href="mailto:info@vipatebllokut.com"
-                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-gold hover:bg-gold/10 transition-all"
-                  aria-label="Email"
-                >
-                  <Mail className="w-5 h-5" />
-                </a>
-                <a
-                  href="tel:+447476921815"
-                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-gold hover:bg-gold/10 transition-all"
-                  aria-label="Phone"
-                >
-                  <Phone className="w-5 h-5" />
-                </a>
+            </div>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://www.instagram.com/vipat_e_bllokut_al"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+              <a href="#" className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all" aria-label="Facebook">
+                <Facebook className="w-5 h-5" />
+              </a>
+              <a href="#" className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all" aria-label="Twitter">
+                <Twitter className="w-5 h-5" />
+              </a>
+              <a href="#" className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all" aria-label="YouTube">
+                <Youtube className="w-5 h-5" />
+              </a>
+              <a href="#" className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all" aria-label="RSS">
+                <Rss className="w-5 h-5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Links Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 pt-12">
+            {/* News Categories */}
+            <div>
+              <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
+                <Newspaper className="w-3.5 h-3.5" />
+                Categories
+              </h4>
+              <div className="space-y-3 font-sans">
+                {categories?.map((cat) => (
+                  <Link key={cat.id} href={`/category/${cat.slug}`}>
+                    <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
+                      {cat.name}
+                    </span>
+                  </Link>
+                ))}
               </div>
             </div>
 
-            {/* Quick Links */}
+            {/* Company */}
             <div>
-              <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 font-sans">
+              <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
+                <Users className="w-3.5 h-3.5" />
                 Company
               </h4>
-              <div className="w-8 h-[2px] bg-gold/40 mb-4" />
-              <div className="space-y-2.5 font-sans">
+              <div className="space-y-3 font-sans">
                 <Link href="/about">
-                  <span className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
                     About Us
                   </span>
                 </Link>
                 <Link href="/contact">
-                  <span className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
                     Contact
                   </span>
                 </Link>
                 <Link href="/advertise">
-                  <span className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all">
-                    Advertise With Us
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
+                    Advertise
                   </span>
                 </Link>
                 <Link href="/editorial-policy">
-                  <span className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
                     Editorial Policy
                   </span>
                 </Link>
@@ -374,79 +442,115 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href="https://www.instagram.com/vipat_e_bllokut_al"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all"
+                  className="flex items-center gap-1 text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all"
                 >
                   Instagram
+                  <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
             </div>
 
-            {/* Legal */}
+            {/* Legal & Compliance */}
             <div>
-              <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 font-sans">
+              <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
+                <Shield className="w-3.5 h-3.5" />
                 Legal
               </h4>
-              <div className="w-8 h-[2px] bg-gold/40 mb-4" />
-              <div className="space-y-2.5 font-sans">
+              <div className="space-y-3 font-sans">
                 <Link href="/privacy-policy">
-                  <span className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
                     Privacy Policy
                   </span>
                 </Link>
                 <Link href="/terms">
-                  <span className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
                     Terms of Service
                   </span>
                 </Link>
                 <Link href="/gdpr">
-                  <span className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
                     GDPR Compliance
                   </span>
                 </Link>
                 <Link href="/cookie-policy">
-                  <span className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
                     Cookie Policy
-                  </span>
-                </Link>
-                <Link href="/editorial-policy">
-                  <span className="block text-sm text-muted-foreground hover:text-gold hover:pl-2 transition-all">
-                    Editorial Policy
                   </span>
                 </Link>
               </div>
             </div>
 
-            {/* Contact */}
+            {/* Resources */}
             <div>
-              <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 font-sans">
+              <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
+                <BookOpen className="w-3.5 h-3.5" />
+                Resources
+              </h4>
+              <div className="space-y-3 font-sans">
+                <Link href="/search">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
+                    Search Articles
+                  </span>
+                </Link>
+                <Link href="/editorial-policy">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
+                    Editorial Standards
+                  </span>
+                </Link>
+                <Link href="/advertise">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
+                    Media Kit
+                  </span>
+                </Link>
+                <Link href="/contact">
+                  <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
+                    Submit a Tip
+                  </span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Contact Info - spans 2 cols on mobile */}
+            <div className="col-span-2">
+              <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
+                <Megaphone className="w-3.5 h-3.5" />
                 Contact Us
               </h4>
-              <div className="w-8 h-[2px] bg-gold/40 mb-4" />
-              <div className="space-y-3 font-sans">
+              <div className="space-y-4 font-sans">
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 text-gold/70 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-muted-foreground">
-                    125 Kingsway, Holborn<br />
-                    London WC2B 6NH<br />
-                    United Kingdom
-                  </p>
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <MapPin className="w-4 h-4 text-gold/70" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] text-white/50 leading-relaxed">
+                      125 Kingsway, Holborn<br />
+                      London WC2B 6NH<br />
+                      United Kingdom
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-gold/70 flex-shrink-0" />
-                  <a href="tel:+447476921815" className="text-sm text-muted-foreground hover:text-gold transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-4 h-4 text-gold/70" />
+                  </div>
+                  <a href="tel:+447476921815" className="text-[13px] text-white/50 hover:text-gold transition-colors">
                     +44 7476 921815
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Mail className="w-4 h-4 text-gold/70 flex-shrink-0" />
-                  <a href="mailto:info@vipatebllokut.com" className="text-sm text-muted-foreground hover:text-gold transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-4 h-4 text-gold/70" />
+                  </div>
+                  <a href="mailto:info@vipatebllokut.com" className="text-[13px] text-white/50 hover:text-gold transition-colors">
                     info@vipatebllokut.com
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Globe className="w-4 h-4 text-gold/70 flex-shrink-0" />
-                  <span className="text-sm text-muted-foreground">
-                    Reg. in England & Wales
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+                    <Globe className="w-4 h-4 text-gold/70" />
+                  </div>
+                  <span className="text-[13px] text-white/50">
+                    Registered in England & Wales
                   </span>
                 </div>
               </div>
@@ -454,28 +558,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-border/30">
+        {/* Footer Bottom Bar */}
+        <div className="border-t border-white/5">
           <div className="container py-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-muted-foreground/70 font-sans">
-                &copy; {new Date().getFullYear()} Vipat E Bllokut Ltd. Registered in England & Wales. All rights reserved.
-              </p>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground/60 font-sans">
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                <p className="text-[11px] text-white/30 font-sans">
+                  &copy; {new Date().getFullYear()} Vipat E Bllokut Ltd. All rights reserved.
+                </p>
+                <span className="hidden sm:block text-white/10">|</span>
+                <p className="text-[11px] text-white/20 font-sans">
+                  Company registered in England & Wales
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-white/30 font-sans">
                 <Link href="/privacy-policy">
                   <span className="hover:text-gold transition-colors">Privacy</span>
                 </Link>
-                <span className="text-border">|</span>
                 <Link href="/terms">
                   <span className="hover:text-gold transition-colors">Terms</span>
                 </Link>
-                <span className="text-border">|</span>
                 <Link href="/cookie-policy">
                   <span className="hover:text-gold transition-colors">Cookies</span>
                 </Link>
-                <span className="text-border">|</span>
                 <Link href="/gdpr">
                   <span className="hover:text-gold transition-colors">GDPR</span>
+                </Link>
+                <Link href="/editorial-policy">
+                  <span className="hover:text-gold transition-colors">Editorial</span>
                 </Link>
               </div>
             </div>

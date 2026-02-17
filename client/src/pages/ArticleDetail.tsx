@@ -4,6 +4,7 @@ import { Calendar, Clock, ArrowLeft, Share2, Star, ChevronRight } from "lucide-r
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 import ArticleImage from "@/components/ArticleImage";
+import SEOHead from "@/components/SEOHead";
 
 export default function ArticleDetail() {
   const params = useParams<{ slug: string }>();
@@ -79,6 +80,16 @@ export default function ArticleDetail() {
 
   return (
     <Layout>
+      <SEOHead
+        title={article.title}
+        description={article.excerpt || article.content.substring(0, 160).replace(/<[^>]*>/g, '')}
+        image={article.featuredImage || undefined}
+        url={`/article/${article.slug}`}
+        type="article"
+        publishedTime={article.publishedAt ? new Date(article.publishedAt).toISOString() : undefined}
+        section={article.categories?.[0]?.name}
+        tags={article.categories?.map((c: any) => c.name)}
+      />
       <article>
         {/* Article Header */}
         <div className="border-b border-border/50">

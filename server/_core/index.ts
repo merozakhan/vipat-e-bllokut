@@ -7,6 +7,15 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startCronScheduler } from "../cronScheduler";
 
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -125,6 +134,117 @@ async function startServer() {
   // Simple health check endpoint for Railway
   app.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok", timestamp: Date.now() });
+  });
+
+  // robots.txt
+  app.get("/robots.txt", (_req, res) => {
+    res.type("text/plain").send(`User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /search
+
+Sitemap: https://vipatebllokut.com/sitemap.xml
+
+# Vipat E Bllokut - Albania News & Media
+# https://vipatebllokut.com
+`);
+  });
+
+  // Dynamic sitemap.xml
+  app.get("/sitemap.xml", async (_req, res) => {
+    try {
+      const { getPublishedArticles, getAllCategories } = await import("../db");
+      const allArticles = await getPublishedArticles(500);
+      const allCategories = await getAllCategories();
+      const now = new Date().toISOString();
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
+      xml += `        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"\n`;
+      xml += `        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
+
+      // Homepage
+      xml += `  <url>\n    <loc>https://vipatebllokut.com/</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>hourly</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+
+      // Static pages
+      const staticPages = [
+        { path: "/about", priority: "0.7", freq: "monthly" },
+        { path: "/contact", priority: "0.6", freq: "monthly" },
+        { path: "/advertise", priority: "0.6", freq: "monthly" },
+        { path: "/editorial-policy", priority: "0.4", freq: "yearly" },
+        { path: "/privacy-policy", priority: "0.3", freq: "yearly" },
+        { path: "/terms", priority: "0.3", freq: "yearly" },
+        { path: "/gdpr", priority: "0.3", freq: "yearly" },
+        { path: "/cookie-policy", priority: "0.3", freq: "yearly" },
+      ];
+      for (const page of staticPages) {
+        xml += `  <url>\n    <loc>https://vipatebllokut.com${page.path}</loc>\n    <changefreq>${page.freq}</changefreq>\n    <priority>${page.priority}</priority>\n  </url>\n`;
+      }
+
+      // Category pages
+      for (const cat of allCategories) {
+        xml += `  <url>\n    <loc>https://vipatebllokut.com/category/${cat.slug}</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+      }
+
+      // Article pages with news sitemap extension
+      for (const article of allArticles) {
+        const pubDate = article.publishedAt ? new Date(article.publishedAt).toISOString() : now;
+        xml += `  <url>\n    <loc>https://vipatebllokut.com/article/${article.slug}</loc>\n    <lastmod>${pubDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n`;
+        xml += `    <news:news>\n      <news:publication>\n        <news:name>Vipat E Bllokut</news:name>\n        <news:language>sq</news:language>\n      </news:publication>\n      <news:publication_date>${pubDate}</news:publication_date>\n      <news:title>${escapeXml(article.title)}</news:title>\n    </news:news>\n`;
+        if (article.featuredImage) {
+          xml += `    <image:image>\n      <image:loc>${escapeXml(article.featuredImage)}</image:loc>\n      <image:title>${escapeXml(article.title)}</image:title>\n    </image:image>\n`;
+        }
+        xml += `  </url>\n`;
+      }
+
+      xml += `</urlset>`;
+      res.type("application/xml").send(xml);
+    } catch (error) {
+      console.error("[Sitemap] Error generating sitemap:", error);
+      res.status(500).send("Error generating sitemap");
+    }
+  });
+
+  // RSS Feed for news aggregators
+  app.get("/feed.xml", async (_req, res) => {
+    try {
+      const { getPublishedArticles } = await import("../db");
+      const recentArticles = await getPublishedArticles(30);
+      const now = new Date().toUTCString();
+
+      let rss = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      rss += `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">\n`;
+      rss += `<channel>\n`;
+      rss += `  <title>Vipat E Bllokut - Albania News &amp; Media</title>\n`;
+      rss += `  <link>https://vipatebllokut.com</link>\n`;
+      rss += `  <description>Portali kryesor i lajmeve shqiptare. Lajme t\u00eb fundit nga Shqip\u00ebria, Kosova dhe bota.</description>\n`;
+      rss += `  <language>sq</language>\n`;
+      rss += `  <lastBuildDate>${now}</lastBuildDate>\n`;
+      rss += `  <atom:link href="https://vipatebllokut.com/feed.xml" rel="self" type="application/rss+xml" />\n`;
+      rss += `  <image>\n    <url>https://files.manuscdn.com/user_upload_by_module/session_file/310419663030573139/dSMzXKooKwxKipAr.png</url>\n    <title>Vipat E Bllokut</title>\n    <link>https://vipatebllokut.com</link>\n  </image>\n`;
+
+      for (const article of recentArticles) {
+        const pubDate = article.publishedAt ? new Date(article.publishedAt).toUTCString() : now;
+        const excerpt = article.excerpt || article.content.replace(/<[^>]*>/g, "").substring(0, 300);
+        rss += `  <item>\n`;
+        rss += `    <title>${escapeXml(article.title)}</title>\n`;
+        rss += `    <link>https://vipatebllokut.com/article/${article.slug}</link>\n`;
+        rss += `    <guid isPermaLink="true">https://vipatebllokut.com/article/${article.slug}</guid>\n`;
+        rss += `    <description>${escapeXml(excerpt)}</description>\n`;
+        rss += `    <pubDate>${pubDate}</pubDate>\n`;
+        if (article.featuredImage) {
+          rss += `    <media:content url="${escapeXml(article.featuredImage)}" medium="image" />\n`;
+          rss += `    <enclosure url="${escapeXml(article.featuredImage)}" type="image/jpeg" length="0" />\n`;
+        }
+        rss += `  </item>\n`;
+      }
+
+      rss += `</channel>\n</rss>`;
+      res.type("application/rss+xml").send(rss);
+    } catch (error) {
+      console.error("[RSS Feed] Error generating feed:", error);
+      res.status(500).send("Error generating feed");
+    }
   });
 
   // tRPC API

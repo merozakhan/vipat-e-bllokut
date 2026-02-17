@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Calendar, Clock, ArrowRight, TrendingUp, Flame, Zap, Globe, Shield, ChevronRight } from "lucide-react";
 import Layout from "@/components/Layout";
 import ArticleImage from "@/components/ArticleImage";
+import SEOHead from "@/components/SEOHead";
 
 export default function Home() {
   const { data: trendingArticles, isLoading: trendingLoading } = trpc.articles.getTrending.useQuery({ limit: 8 });
@@ -53,6 +54,11 @@ export default function Home() {
 
   return (
     <Layout>
+      <SEOHead
+        title="Lajme Shqiptare - Albania News & Media"
+        description="Portali kryesor i lajmeve shqiptare. Lajme të fundit nga Shqipëria, Kosova dhe bota. Politikë, ekonomi, sport, kulturë, teknologji dhe më shumë."
+        url="/"
+      />
       {/* ═══ HERO: Most Controversial Article ═══ */}
       {heroArticle && (
         <section className="border-b border-red-900/30">

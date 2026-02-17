@@ -1,9 +1,15 @@
 import Layout from "@/components/Layout";
 import { Award, Globe, Users, Target, Shield, Zap } from "lucide-react";
+import SEOHead from "@/components/SEOHead";
 
 export default function About() {
   return (
     <Layout>
+      <SEOHead
+        title="Rreth Nesh - About Us"
+        description="Vipat E Bllokut Ltd është një kompani mediatike e regjistruar në Mbretërinë e Bashkuar. Misioni ynë është të ofrojmë lajme të besueshme dhe të paanshme për shqiptarët kudo në botë."
+        url="/about"
+      />
       {/* Hero */}
       <section className="border-b border-border/50">
         <div className="container py-16 md:py-24">

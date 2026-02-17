@@ -266,6 +266,25 @@
 - [x] Add railway.json build configuration
 - [x] Update vite.config.ts for Railway
 - [x] Push updated code to GitHub (merozakhan/vipat-e-bllokut)
-- [ ] Create Railway project with MySQL database
-- [ ] Configure environment variables on Railway
-- [ ] Verify deployment works
+- [x] Create Railway project with MySQL database
+- [x] Configure environment variables on Railway (DATABASE_URL, Cloudinary, NODE_ENV, PORT)
+- [x] Verify deployment works - LIVE at vipat-e-bllokut-production.up.railway.app
+
+## Custom Domain Setup
+- [x] Add vipatebllokut.com custom domain in Railway settings
+- [x] Log into Namecheap and configure DNS records (ALIAS + TXT verification)
+- [x] Verify domain propagation and SSL certificate - LIVE at vipatebllokut.com
+
+## Favicon, Social Media Preview & SEO Boost
+- [x] Generate professional favicon (multiple sizes: 16x16, 32x32, 180x180, 192x192, 512x512)
+- [x] Generate social media preview image (OG image 1200x630)
+- [x] Add Open Graph meta tags for homepage and article pages
+- [x] Add Twitter Card meta tags for homepage and article pages
+- [x] Add JSON-LD structured data (NewsArticle, Organization, WebSite)
+- [x] Generate dynamic sitemap.xml from database articles
+- [x] Add robots.txt with sitemap reference
+- [x] Add canonical URLs to all pages
+- [x] Add meta descriptions for all pages
+- [x] Add hreflang tags for Albanian language
+- [x] Optimize HTML head with proper title templates
+- [x] Push changes and verify on social media debuggers

@@ -4,6 +4,7 @@ import { Calendar, Clock, Star, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 import ArticleImage from "@/components/ArticleImage";
+import SEOHead from "@/components/SEOHead";
 
 export default function CategoryPage() {
   const params = useParams<{ slug: string }>();
@@ -42,6 +43,11 @@ export default function CategoryPage() {
 
   return (
     <Layout>
+      <SEOHead
+        title={category ? `${category.name} - Lajme` : "Kategoria"}
+        description={category ? `Lajmet e fundit nga kategoria ${category.name}. Lexoni artikujt më të fundit në Vipat E Bllokut.` : "Lajme sipas kategorisë"}
+        url={`/category/${params.slug}`}
+      />
       {/* Category Header */}
       <section className="border-b border-border/50">
         <div className="container py-8 md:py-16">

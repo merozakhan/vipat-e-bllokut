@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin, Instagram, Send, CheckCircle, ChevronDown, Clock, MessageSquare, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
+import SEOHead from "@/components/SEOHead";
 
 const contactReasons = [
   { value: "general", label: "General Enquiry", desc: "General questions about our services", responseTime: "24 hours" },
@@ -67,6 +68,7 @@ export default function Contact() {
 
   return (
     <Layout>
+      <SEOHead title="Na Kontaktoni - Contact Us" description="Kontaktoni Vipat E Bllokut për bashkëpunim, reklama, ose pyetje të përgjithshme. Email: info@vipatebllokut.com, Tel: +44 7476 921815" url="/contact" />
       {/* Hero */}
       <section className="border-b border-border/50 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-gold/3 via-transparent to-transparent" />

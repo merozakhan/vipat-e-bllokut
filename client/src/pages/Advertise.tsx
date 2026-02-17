@@ -2,6 +2,7 @@ import Layout from "@/components/Layout";
 import { Link } from "wouter";
 import { BarChart3, Eye, Globe, Users, Zap, Target, ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SEOHead from "@/components/SEOHead";
 
 export default function Advertise() {
   const stats = [
@@ -36,6 +37,7 @@ export default function Advertise() {
 
   return (
     <Layout>
+      <SEOHead title="Reklamoni me Ne - Advertise With Us" description="Reklamoni biznesin tuaj në Vipat E Bllokut, portalin kryesor të lajmeve shqiptare. Arrini audiencën shqiptare në të gjithë botën." url="/advertise" />
       {/* Hero */}
       <section className="border-b border-border/50 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-transparent" />

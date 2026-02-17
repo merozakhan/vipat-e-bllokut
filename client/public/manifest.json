@@ -1,0 +1,30 @@
+{
+  "name": "Vipat E Bllokut - Albania News & Media",
+  "short_name": "Vipat E Bllokut",
+  "description": "Portali kryesor i lajmeve shqiptare. Lajme të fundit nga Shqipëria, Kosova dhe bota.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait-primary",
+  "lang": "sq",
+  "icons": [
+    {
+      "src": "https://files.manuscdn.com/user_upload_by_module/session_file/310419663030573139/RPElwxPOCNfSdwnX.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://files.manuscdn.com/user_upload_by_module/session_file/310419663030573139/FdUjpIhDGBJWAQBf.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "https://files.manuscdn.com/user_upload_by_module/session_file/310419663030573139/FdUjpIhDGBJWAQBf.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["news", "media"]
+}

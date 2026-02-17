@@ -5,6 +5,7 @@ import { Calendar, Clock, Search, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 import ArticleImage from "@/components/ArticleImage";
+import SEOHead from "@/components/SEOHead";
 
 export default function SearchPage() {
   const urlParams = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -44,6 +45,12 @@ export default function SearchPage() {
 
   return (
     <Layout>
+      <SEOHead
+        title="Kërko Lajme - Search Articles"
+        description="Kërkoni artikuj në Vipat E Bllokut. Gjeni lajmet e fundit nga Shqipëria, Kosova dhe bota."
+        url="/search"
+        noindex={true}
+      />
       {/* Search Header */}
       <section className="border-b border-border/50">
         <div className="container py-8 md:py-16">

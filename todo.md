@@ -192,3 +192,10 @@
 - [x] Fix hero/featured section to properly display article images on mobile
 - [x] Run fresh RSS import from reliable feeds only
 - [x] Verify ALL articles including hero/featured have visible images on mobile
+
+## Fix CSS/JS Junk in Article Content
+- [x] Fix Telegrafi.com scraper - CSS/JS code leaking into article content
+- [x] Add aggressive CSS/JS content filtering in scrapeArticleContent and cleanArticleHtml
+- [x] Add content validation: reject any content containing CSS selectors or JS code
+- [x] Delete all articles and re-import with fixed scraper
+- [x] Verify no articles contain CSS/JS junk in content

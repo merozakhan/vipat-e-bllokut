@@ -1,0 +1,60 @@
+{
+  "query": "\nSELECT id, title, LEFT(content, 200) as content_preview \nFROM articles \nWHERE content LIKE '%numbered-teaser%' \n   OR content LIKE '%widget__%' \n   OR content LIKE '%border-radius%'\n   OR content LIKE '%font-size:%'\n   OR content LIKE '%display:flex%'\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute \nSELECT id, title, LEFT(content, 200) as content_preview \nFROM articles \nWHERE content LIKE '%numbered-teaser%' \n   OR content LIKE '%widget__%' \n   OR content LIKE '%border-radius%'\n   OR content LIKE '%font-size:%'\n   OR content LIKE '%display:flex%'\nLIMIT 10;\n",
+  "rows": [
+    {
+      "id": "30177",
+      "title": "Ia vlen ta provoni: Ekspertët thonë se dushi në errësirë mund ta lehtësojë gjumin",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    },
+    {
+      "id": "30178",
+      "title": "Jo vetëm ushqimi: Këto sende në shtëpi tërheqin minjtë",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    },
+    {
+      "id": "30179",
+      "title": "Po pendoheni për balluket? Këto frizura i shpëtojnë ditët “e këqija”",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    },
+    {
+      "id": "30180",
+      "title": "\"Goli nuk duhej të ishte pranuar\" - Barcelona e tërbuar me gjyqtarin pas gabimit të madh",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    },
+    {
+      "id": "30181",
+      "title": "Inteligjenca Artificiale në BE - cilat janë vendet dhe grupmoshat që e përdorin më shumë?",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    },
+    {
+      "id": "30182",
+      "title": "Zvicra po shqyrton një sistem raketor evropian pas vonesave të SHBA-së për Patriot?",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    },
+    {
+      "id": "30184",
+      "title": "\"Ne e kemi Yildizin\" - McKennie mesazh tifozëve turq para ndeshjes me Galatasarayn",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    },
+    {
+      "id": "30185",
+      "title": "KESH nis shkarkimet nga HEC-et e Drinit: Banorët të kenë kujdes",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    },
+    {
+      "id": "30186",
+      "title": "Efekti i Luciferit: Si njerëzit e zakonshëm mund të bëhen të këqij",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    },
+    {
+      "id": "30187",
+      "title": "Elijona Binakaj shpallet finalistja e dytë e Big Brother VIP Kosova 4",
+      "content_preview": "')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tcontent_preview\n30177\tIa vlen ta provoni: Ekspertët thonë se dushi në errësirë mund ta lehtësojë gjumin\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n30178\tJo vetëm ushqimi: Këto sende në shtëpi tërheqin minjtë\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n30179\tPo pendoheni për balluket? Këto frizura i shpëtojnë ditët “e këqija”\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n30180\t\"Goli nuk duhej të ishte pranuar\" - Barcelona e tërbuar me gjyqtarin pas gabimit të madh\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n30181\tInteligjenca Artificiale në BE - cilat janë vendet dhe grupmoshat që e përdorin më shumë?\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n30182\tZvicra po shqyrton një sistem raketor evropian pas vonesave të SHBA-së për Patriot?\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n30184\t\"Ne e kemi Yildizin\" - McKennie mesazh tifozëve turq para ndeshjes me Galatasarayn\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n30185\tKESH nis shkarkimet nga HEC-et e Drinit: Banorët të kenë kujdes\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n30186\tEfekti i Luciferit: Si njerëzit e zakonshëm mund të bëhen të këqij\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n30187\tElijona Binakaj shpallet finalistja e dytë e Big Brother VIP Kosova 4\t')}.numbered-teaser .posts-wrapper{counter-reset:cnt}.numbered-teaser .widget__head{position:relative}.numbered-teaser .widget{counter-increment:cnt}.numbered-teaser .widget__head::before{content:coun\n",
+  "stderr": "",
+  "execution_time_ms": 69
+}

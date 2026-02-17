@@ -321,35 +321,92 @@ async function scrapeArticleContent(url: string): Promise<string | null> {
 
     const html = await response.text();
 
-    // Try common article content selectors via regex
-    const contentPatterns = [
-      /<article[^>]*>([\s\S]*?)<\/article>/i,
-      /<div[^>]*class="[^"]*(?:entry-content|article-content|post-content|article-body|story-body|single-content)[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    // Priority 1: Specific article body selectors (most reliable, least CSS junk)
+    const specificPatterns = [
+      /<div[^>]*class="[^"]*body-description[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*article-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*story-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*single-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
     ];
 
-    for (const pattern of contentPatterns) {
+    for (const pattern of specificPatterns) {
       const match = html.match(pattern);
       if (match && match[1]) {
         const cleaned = cleanArticleHtml(match[1]);
-        if (cleaned.length > 100) return cleaned;
+        if (cleaned.length > 100 && !containsCssJunk(cleaned)) return cleaned;
       }
     }
 
-    // Fallback: extract all paragraphs
+    // Priority 2: article tag (but extract only paragraphs from it)
+    const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+    if (articleMatch && articleMatch[1]) {
+      const cleaned = cleanArticleHtml(articleMatch[1]);
+      if (cleaned.length > 100 && !containsCssJunk(cleaned)) return cleaned;
+    }
+
+    // Priority 3: Extract all paragraphs from the page (filtered)
     const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
     if (paragraphs.length > 2) {
       const text = paragraphs
         .map(p => stripHtml(p))
-        .filter(p => p.length > 30)
+        .filter(p => p.length > 30 && !isJunkText(p))
         .join("\n\n");
-      if (text.length > 100) return text;
+      if (text.length > 100 && !containsCssJunk(text)) return text;
     }
 
     return null;
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * Checks if text contains CSS/JS junk that shouldn't be in article content.
+ * This is the FINAL GATE - if this returns true, the content is rejected.
+ */
+function containsCssJunk(text: string): boolean {
+  const cssPatterns = [
+    /\.numbered-teaser/i,
+    /\.widget__/i,
+    /\.posts-wrapper/i,
+    /counter-reset:\s*cnt/i,
+    /counter-increment:/i,
+    /border-radius:\s*var/i,
+    /font-family:\s*var\(/i,
+    /background-color:\s*var\(/i,
+    /position:\s*absolute/i,
+    /display:\s*flex.*justify-content/i,
+    /@media\s*\(/i,
+    /\.share-facebook/i,
+    /\.search-widget/i,
+    /\.newsletter-element/i,
+    /adIds\s*=/i,
+    /getAdHtml/i,
+    /injectAds/i,
+  ];
+  return cssPatterns.some(p => p.test(text));
+}
+
+/**
+ * Checks if a single paragraph/line is CSS/JS junk.
+ */
+function isJunkText(text: string): boolean {
+  // Lines that start with CSS selectors
+  if (/^[.#@{}]/.test(text)) return true;
+  // Lines containing CSS property patterns
+  if (/\{[^}]*(?:display|color|font|margin|padding|background|border|position|width|height)\s*:/i.test(text)) return true;
+  // Lines with CSS var() functions
+  if (/var\(--[a-z-]+\)/i.test(text)) return true;
+  // Lines with JS patterns
+  if (/window\.|document\.|function\s*\(|addEventListener|querySelector|insertAdjacentHTML/i.test(text)) return true;
+  // Lines that look like CSS class definitions
+  if (/\.[a-z_-]+\s*\{/i.test(text)) return true;
+  // Lines with multiple CSS properties
+  if ((text.match(/[a-z-]+\s*:\s*[^;]+;/gi) || []).length > 2) return true;
+  return false;
 }
 
 function cleanArticleHtml(html: string): string {
@@ -364,29 +421,17 @@ function cleanArticleHtml(html: string): string {
     .replace(/<form[\s\S]*?<\/form>/gi, "")
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
     .replace(/<svg[\s\S]*?<\/svg>/gi, "")
-    .replace(/<!--[\s\S]*?-->/g, "")
-    // Remove inline CSS/JS that leaked through
-    .replace(/\{[^}]*(?:display|color|font|margin|padding|background|border|position|width|height)[^}]*\}/gi, "")
-    .replace(/window\.[\s\S]*?;/g, "")
-    .replace(/document\.[\s\S]*?;/g, "")
-    .replace(/function\s*\([^)]*\)\s*\{[\s\S]*?\}/g, "");
+    .replace(/<!--[\s\S]*?-->/g, "");
 
   // Extract paragraphs
   const paragraphs = cleaned.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
   const text = paragraphs
     .map(p => stripHtml(p))
-    .filter(p => {
-      // Filter out CSS/JS fragments and very short lines
-      if (p.length < 20) return false;
-      // Skip lines that look like CSS or JS
-      if (/^[.#@]|\{.*\}|var\(--|font-|margin|padding|display:|background|border-radius/i.test(p)) return false;
-      if (/window\.|document\.|function\(|addEventListener|querySelector/i.test(p)) return false;
-      return true;
-    })
+    .filter(p => p.length >= 20 && !isJunkText(p))
     .join("\n\n");
 
   // Cap content at 50000 chars to prevent DB overflow
-  const result = text || stripHtml(cleaned);
+  const result = text || "";
   return result.substring(0, 50000);
 }
 
@@ -574,9 +619,15 @@ export async function runRssImport(): Promise<ImportResult> {
           let fullContent = parsed.description;
           if (parsed.link) {
             const scraped = await scrapeArticleContent(parsed.link);
-            if (scraped && scraped.length > fullContent.length) {
+            if (scraped && scraped.length > fullContent.length && !containsCssJunk(scraped)) {
               fullContent = scraped;
             }
+          }
+
+          // FINAL SAFETY CHECK: If content still has CSS junk, fall back to RSS description only
+          if (containsCssJunk(fullContent)) {
+            console.log(`[RSS Import] Content had CSS junk, using RSS description for: ${parsed.title.substring(0, 60)}`);
+            fullContent = parsed.description;
           }
 
           // Truncate content to prevent DB overflow (MEDIUMTEXT max ~16MB, but cap at 50KB)

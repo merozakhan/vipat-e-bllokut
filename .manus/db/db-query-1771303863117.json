@@ -1,0 +1,15 @@
+{
+  "query": "\nSELECT \n  (SELECT COUNT(*) FROM articles) as total,\n  (SELECT COUNT(*) FROM articles WHERE content LIKE '%numbered-teaser%' OR content LIKE '%widget__%' OR content LIKE '%border-radius%' OR content LIKE '%font-size:%' OR content LIKE '%display:flex%' OR content LIKE '%background-color%' OR content LIKE '%counter-increment%') as css_junk,\n  (SELECT COUNT(*) FROM articles WHERE content NOT LIKE '%numbered-teaser%' AND content NOT LIKE '%widget__%' AND content NOT LIKE '%border-radius%' AND content NOT LIKE '%font-size:%' AND content NOT LIKE '%display:flex%' AND content NOT LIKE '%background-color%' AND content NOT LIKE '%counter-increment%') as clean;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute \nSELECT \n  (SELECT COUNT(*) FROM articles) as total,\n  (SELECT COUNT(*) FROM articles WHERE content LIKE '%numbered-teaser%' OR content LIKE '%widget__%' OR content LIKE '%border-radius%' OR content LIKE '%font-size:%' OR content LIKE '%display:flex%' OR content LIKE '%background-color%' OR content LIKE '%counter-increment%') as css_junk,\n  (SELECT COUNT(*) FROM articles WHERE content NOT LIKE '%numbered-teaser%' AND content NOT LIKE '%widget__%' AND content NOT LIKE '%border-radius%' AND content NOT LIKE '%font-size:%' AND content NOT LIKE '%display:flex%' AND content NOT LIKE '%background-color%' AND content NOT LIKE '%counter-increment%') as clean;\n",
+  "rows": [
+    {
+      "total": "60",
+      "css_junk": "25",
+      "clean": "35"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tcss_junk\tclean\n60\t25\t35\n",
+  "stderr": "",
+  "execution_time_ms": 108
+}

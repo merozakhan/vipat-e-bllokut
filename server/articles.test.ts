@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
+import { calculateEngagementScore } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 function createPublicContext(): TrpcContext {
@@ -169,6 +170,85 @@ describe("categories router", () => {
       expect(typeof cat.name).toBe("string");
       expect(typeof cat.slug).toBe("string");
     }
+  });
+});
+
+describe("trending and engagement", () => {
+  it("getTrending returns an array", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.articles.getTrending({ limit: 5 });
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeLessThanOrEqual(5);
+  });
+
+  it("getTrending articles have engagementScore", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.articles.getTrending({ limit: 3 });
+    for (const article of result) {
+      expect(article).toHaveProperty("engagementScore");
+      expect(typeof article.engagementScore).toBe("number");
+    }
+  });
+
+  it("getTrending returns articles sorted by engagement score descending", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.articles.getTrending({ limit: 10 });
+    for (let i = 1; i < result.length; i++) {
+      expect(result[i - 1].engagementScore).toBeGreaterThanOrEqual(result[i].engagementScore);
+    }
+  });
+
+  it("getFeatured returns the most controversial article", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const featured = await caller.articles.getFeatured();
+    if (featured) {
+      expect(featured).toHaveProperty("title");
+      expect(featured).toHaveProperty("engagementScore");
+    }
+  });
+
+  it("getByCategorySlug returns articles for valid slug", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.articles.getByCategorySlug({ slug: "politike", limit: 5 });
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("getByCategorySlug returns empty array for non-existent slug", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.articles.getByCategorySlug({ slug: "nonexistent-cat-xyz", limit: 5 });
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(0);
+  });
+});
+
+describe("engagement scoring unit tests", () => {
+  it("scores controversial keywords higher", () => {
+    const highScore = calculateEngagementScore("Skandal! Arrest i politikanit të korruptuar", "Hetimi zbulon mashtrim");
+    const lowScore = calculateEngagementScore("Moti i mirë nesër në Tiranë", "Temperatura rritet");
+    expect(highScore).toBeGreaterThan(lowScore);
+  });
+
+  it("boosts question marks for curiosity gap", () => {
+    const withQuestion = calculateEngagementScore("A do të arrestohet?", null);
+    const without = calculateEngagementScore("Do të arrestohet", null);
+    expect(withQuestion).toBeGreaterThan(without);
+  });
+
+  it("boosts exclamation marks for urgency", () => {
+    const withExcl = calculateEngagementScore("Skandaloze!", null);
+    const without = calculateEngagementScore("Skandaloze", null);
+    expect(withExcl).toBeGreaterThan(without);
+  });
+
+  it("returns 0 for neutral content", () => {
+    const score = calculateEngagementScore("Moti nesër", "Temperatura normale");
+    expect(score).toBe(0);
   });
 });
 

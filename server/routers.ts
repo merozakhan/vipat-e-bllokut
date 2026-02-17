@@ -13,6 +13,8 @@ import {
   deleteArticle,
   searchArticles,
   getArticlesByCategory,
+  getArticlesByCategorySlug,
+  getTrendingArticles,
   createCategory,
   getAllCategories,
   getCategoryById,
@@ -57,11 +59,25 @@ export const appRouter = router({
         return await getPublishedArticles(input.limit, input.offset);
       }),
 
-    // Get featured article (most recent published)
+    // Get featured article (most controversial recent article)
     getFeatured: publicProcedure.query(async () => {
-      const articles = await getPublishedArticles(1, 0);
-      return articles.length > 0 ? articles[0] : null;
+      const trending = await getTrendingArticles(1);
+      return trending.length > 0 ? trending[0] : null;
     }),
+
+    // Get trending/controversial articles
+    getTrending: publicProcedure
+      .input(z.object({ limit: z.number().optional() }))
+      .query(async ({ input }) => {
+        return await getTrendingArticles(input.limit || 10);
+      }),
+
+    // Get articles by category slug
+    getByCategorySlug: publicProcedure
+      .input(z.object({ slug: z.string(), limit: z.number().optional(), offset: z.number().optional() }))
+      .query(async ({ input }) => {
+        return await getArticlesByCategorySlug(input.slug, input.limit, input.offset);
+      }),
 
     // Get all articles (for admin/AI agent)
     getAll: publicProcedure

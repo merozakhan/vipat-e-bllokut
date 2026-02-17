@@ -230,3 +230,13 @@
 - [x] Add political keywords to detectCategory function (30+ keywords)
 - [x] Re-categorize all articles with new category (27 articles now in Politikë)
 - [x] Tests verified (70 passing)
+
+## Homepage Redesign - Engagement-Focused
+- [x] Add controversial/engagement scoring to backend (keywords: skandal, arrest, akuz, vrasje, etc.)
+- [x] Create new "trending" endpoint that returns articles sorted by engagement score
+- [x] Redesign hero section with larger, more dramatic featured article
+- [x] Add "Trending Now" section with controversial/hot stories
+- [x] Add Politikë spotlight and Botë (World News) sections
+- [x] Improve article card design with bolder headlines and urgency indicators
+- [x] Add "Më Të Lexuarat" sidebar with numbered list
+- [x] Make mobile layout more engaging with full-width images

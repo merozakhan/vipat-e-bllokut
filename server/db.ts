@@ -201,6 +201,68 @@ export async function getArticlesByCategory(categoryId: number, limit: number = 
     .offset(offset);
 }
 
+// Trending/Engagement scoring
+const ENGAGEMENT_KEYWORDS = [
+  "skandal", "arrest", "akuz", "vrasj", "vdekj", "korrupsion",
+  "tradhti", "krim", "drogë", "mashtrim", "grabitj", "përdhun",
+  "dënoj", "burg", "hetim", "spak", "prokurori", "gjyq",
+  "luftë", "sulm", "bomb", "terrorist", "tërmeti", "përmbytj",
+  "urgjent", "alarm", "krizë", "shpërthim", "zjarr",
+  "trump", "putin", "zelensky", "rama", "berisha", "kurti",
+  "protestë", "greve", "demonstrat", "rebelim", "kaos",
+  "milion", "miliard", "pasuri", "oligark", "sekret",
+  "ndaloj", "largoj", "dorëheq", "shkarkoj", "pusht",
+];
+
+export function calculateEngagementScore(title: string, excerpt: string | null): number {
+  const text = (title + ' ' + (excerpt || '')).toLowerCase();
+  let score = 0;
+  for (const keyword of ENGAGEMENT_KEYWORDS) {
+    if (text.includes(keyword)) score += 2;
+  }
+  // Boost for question marks (curiosity gap)
+  if (title.includes('?')) score += 3;
+  // Boost for quotes (someone said something controversial)
+  if (title.includes('"') || title.includes('"') || title.includes('"')) score += 2;
+  // Boost for exclamation marks (urgency)
+  if (title.includes('!')) score += 2;
+  // Boost for colons (attribution: "Person: statement")
+  if (title.includes(':')) score += 1;
+  return score;
+}
+
+export async function getTrendingArticles(limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get recent published articles (last 48 hours worth, or all if fewer)
+  const allRecent = await db
+    .select()
+    .from(articles)
+    .where(eq(articles.status, "published"))
+    .orderBy(desc(articles.publishedAt))
+    .limit(100);
+
+  // Score and sort by engagement
+  const scored = allRecent.map(article => ({
+    ...article,
+    engagementScore: calculateEngagementScore(article.title, article.excerpt),
+  }));
+
+  scored.sort((a, b) => b.engagementScore - a.engagementScore);
+  return scored.slice(0, limit);
+}
+
+export async function getArticlesByCategorySlug(slug: string, limit: number = 10, offset: number = 0) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const cat = await getCategoryBySlug(slug);
+  if (!cat) return [];
+
+  return await getArticlesByCategory(cat.id, limit, offset);
+}
+
 // Category queries
 export async function createCategory(category: InsertCategory) {
   const db = await getDb();

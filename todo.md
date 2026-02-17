@@ -246,3 +246,9 @@
 - [x] Write controversial Albanian article about healthcare struggles
 - [x] Publish article via API with proper category (Politikë)
 - [x] Verify article appears on homepage as #1 trending (score: 14)
+
+## Publish Controversial Article - Belinda Balluku
+- [x] Upload Belinda Balluku photo to CDN
+- [x] Write controversial Albanian article about infrastructure corruption
+- [x] Publish article via API with Politikë category (ID: 30542)
+- [x] Verify article appears on homepage as #1 trending (score: 14)

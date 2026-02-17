@@ -550,6 +550,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Globe className="w-4 h-4 text-gold/70" />
                   </div>
                   <span className="text-[13px] text-white/50">
+                    Company No: 16606613<br />
                     Registered in England & Wales
                   </span>
                 </div>
@@ -568,7 +569,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </p>
                 <span className="hidden sm:block text-white/10">|</span>
                 <p className="text-[11px] text-white/20 font-sans">
-                  Company registered in England & Wales
+                  UK Company Registration No: 16606613 | Registered in England & Wales
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-white/30 font-sans">

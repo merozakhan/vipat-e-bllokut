@@ -146,3 +146,10 @@
 - [x] Add proper error handling and logging
 - [x] Write vitest tests for RSS import module (24 tests)
 - [x] Verify auto-import works end-to-end (6 new, 58 duplicates, 0 errors)
+
+## Bug Fixes - Broken Images & Mobile Layout
+- [x] Fix broken article images (hotlink protection from external sites)
+- [x] Add fallback placeholder images for articles without valid images
+- [x] Improve category page article display on mobile
+- [x] Ensure all pages are fully responsive for mobile users
+- [x] Test on mobile viewport sizes

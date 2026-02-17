@@ -1,0 +1,9 @@
+{
+  "query": "INSERT IGNORE INTO categories (name, slug, description) VALUES ('Ekonomi', 'ekonomi', 'Lajme ekonomike, biznesi dhe financa'), ('Teknologji', 'teknologji', 'Teknologji, inovacion dhe shkencë'), ('Shëndetësi', 'shendetesi', 'Shëndetësi, mjekësi dhe mirëqenie');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute INSERT IGNORE INTO categories (name, slug, description) VALUES ('Ekonomi', 'ekonomi', 'Lajme ekonomike, biznesi dhe financa'), ('Teknologji', 'teknologji', 'Teknologji, inovacion dhe shkencë'), ('Shëndetësi', 'shendetesi', 'Shëndetësi, mjekësi dhe mirëqenie');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 86
+}

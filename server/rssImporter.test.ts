@@ -76,22 +76,45 @@ describe("RSS Importer", () => {
   });
 
   describe("detectCategory", () => {
-    it("detects sport category", () => {
+    it("detects sport category (slug-based)", () => {
       expect(detectCategory("Futbolli shqiptar", "", "aktualitet")).toBe("sport");
       expect(detectCategory("Kampionati i basketbollit", "", "aktualitet")).toBe("sport");
+      expect(detectCategory("UEFA Champions League ndeshje", "", "aktualitet")).toBe("sport");
     });
 
-    it("detects culture category", () => {
-      expect(detectCategory("Festival i muzikës", "", "aktualitet")).toBe("kulturë");
-      expect(detectCategory("Ekspozita e artit", "", "aktualitet")).toBe("kulturë");
+    it("detects culture category as 'kulture' slug", () => {
+      expect(detectCategory("Festival i muzikës", "", "aktualitet")).toBe("kulture");
+      expect(detectCategory("Koncert i madh në Tiranë", "", "aktualitet")).toBe("kulture");
     });
 
-    it("detects international category", () => {
-      expect(detectCategory("Trump vendos sanksione", "", "aktualitet")).toBe("botë");
-      expect(detectCategory("NATO mblidhet", "", "aktualitet")).toBe("botë");
+    it("detects international category as 'bote' slug", () => {
+      expect(detectCategory("Trump vendos sanksione", "", "aktualitet")).toBe("bote");
+      expect(detectCategory("NATO mblidhet", "", "aktualitet")).toBe("bote");
+      expect(detectCategory("Zelensky akuzon Rusinë", "", "aktualitet")).toBe("bote");
     });
 
-    it("falls back to default category", () => {
+    it("detects ekonomi category", () => {
+      expect(detectCategory("Buxheti i ri i shtetit", "", "aktualitet")).toBe("ekonomi");
+      expect(detectCategory("Inflacioni rritet", "", "aktualitet")).toBe("ekonomi");
+    });
+
+    it("detects teknologji category", () => {
+      expect(detectCategory("Teknologjia e re digjitale", "", "aktualitet")).toBe("teknologji");
+      expect(detectCategory("NASA lëshon satelit", "", "aktualitet")).toBe("teknologji");
+    });
+
+    it("detects shendetesi category", () => {
+      expect(detectCategory("Shëndeti mendor", "", "aktualitet")).toBe("shendetesi");
+      expect(detectCategory("Spitali i madh hap dyert", "", "aktualitet")).toBe("shendetesi");
+      expect(detectCategory("Vaksina e re kundër kancerit", "", "aktualitet")).toBe("shendetesi");
+    });
+
+    it("uses score-based matching (highest score wins)", () => {
+      // Title with multiple sport keywords should beat a single bote keyword
+      expect(detectCategory("Futbolli: Skuadra fiton kampionatin", "ndeshje e madhe", "aktualitet")).toBe("sport");
+    });
+
+    it("falls back to default category when no keywords match", () => {
       expect(detectCategory("Lajme lokale", "", "aktualitet")).toBe("aktualitet");
     });
 

@@ -1,0 +1,30 @@
+{
+  "query": "SELECT c.name, c.slug, COUNT(ac.articleId) as article_count FROM categories c LEFT JOIN article_categories ac ON c.id = ac.categoryId GROUP BY c.id, c.name, c.slug ORDER BY article_count DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute SELECT c.name, c.slug, COUNT(ac.articleId) as article_count FROM categories c LEFT JOIN article_categories ac ON c.id = ac.categoryId GROUP BY c.id, c.name, c.slug ORDER BY article_count DESC;",
+  "rows": [
+    {
+      "name": "Aktualitet",
+      "slug": "aktualitet",
+      "article_count": "130"
+    },
+    {
+      "name": "Kulturë",
+      "slug": "kulture",
+      "article_count": "0"
+    },
+    {
+      "name": "Sport",
+      "slug": "sport",
+      "article_count": "0"
+    },
+    {
+      "name": "Botë",
+      "slug": "bote",
+      "article_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "name\tslug\tarticle_count\nAktualitet\taktualitet\t130\nKulturë\tkulture\t0\nSport\tsport\t0\nBotë\tbote\t0\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

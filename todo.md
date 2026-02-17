@@ -205,3 +205,11 @@
 - [x] Verify each feed provides images reliably (80%+ rate)
 - [x] Add verified feeds to the importer
 - [x] Re-import and verify all articles are clean
+
+## Fix Category System
+- [x] Diagnose current category distribution and issues
+- [x] Improve category keyword detection for Albanian/Kosovo news
+- [x] Add more granular categories (Ekonomi, Teknologji, Shëndetësi added)
+- [x] Re-categorize all existing articles with improved logic
+- [x] Verify category tabs on frontend display correct articles
+- [x] Ensure balanced distribution across categories

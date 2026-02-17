@@ -1,0 +1,45 @@
+{
+  "query": "UPDATE categories SET slug = 'bote' WHERE slug = 'botë' OR name = 'Botë'; UPDATE categories SET slug = 'kulture' WHERE slug = 'kulturë' OR name = 'Kulturë'; SELECT id, name, slug FROM categories ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute UPDATE categories SET slug = 'bote' WHERE slug = 'botë' OR name = 'Botë'; UPDATE categories SET slug = 'kulture' WHERE slug = 'kulturë' OR name = 'Kulturë'; SELECT id, name, slug FROM categories ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Aktualitet",
+      "slug": "aktualitet"
+    },
+    {
+      "id": "2",
+      "name": "Sport",
+      "slug": "sport"
+    },
+    {
+      "id": "3",
+      "name": "Botë",
+      "slug": "bote"
+    },
+    {
+      "id": "4",
+      "name": "Kulturë",
+      "slug": "kulture"
+    },
+    {
+      "id": "30001",
+      "name": "Ekonomi",
+      "slug": "ekonomi"
+    },
+    {
+      "id": "30002",
+      "name": "Teknologji",
+      "slug": "teknologji"
+    },
+    {
+      "id": "30003",
+      "name": "Shëndetësi",
+      "slug": "shendetesi"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tslug\n1\tAktualitet\taktualitet\n2\tSport\tsport\n3\tBotë\tbote\n4\tKulturë\tkulture\n30001\tEkonomi\tekonomi\n30002\tTeknologji\tteknologji\n30003\tShëndetësi\tshendetesi\n",
+  "stderr": "",
+  "execution_time_ms": 65
+}

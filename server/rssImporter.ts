@@ -45,7 +45,7 @@ const RSS_FEEDS: FeedSource[] = [
   // Vizion Plus - Albanian TV/lifestyle (30 items, 100% images)
   { name: "Vizion Plus", url: "https://vizionplus.tv/feed/", defaultCategory: "aktualitet" },
   // BalkanInsight - Balkan investigative journalism (90 items, 100% images)
-  { name: "BalkanInsight", url: "https://balkaninsight.com/feed/", defaultCategory: "botë" },
+  { name: "BalkanInsight", url: "https://balkaninsight.com/feed/", defaultCategory: "bote" },
   // Epoka e Re - Kosovo news (10 items, 100% images)
   { name: "Epoka e Re", url: "https://www.epokaere.com/feed/", defaultCategory: "aktualitet" },
   // Zeri.info - Kosovo news (10 items, 100% images)
@@ -53,10 +53,60 @@ const RSS_FEEDS: FeedSource[] = [
 ];
 
 // Category keyword mapping
+// IMPORTANT: Keys MUST match category slugs in DB (no diacritics)
+// Keywords use word-boundary-aware matching via detectCategory()
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  sport: ["sport", "futboll", "basketboll", "tenis", "olimpik", "kampionat", "ndeshj", "skuadr", "lojtarë", "gol", "liga", "ekip"],
-  kulturë: ["kultur", "art", "muzik", "film", "teatr", "libr", "festival", "ekspozit", "performanc", "letërsi", "arkitektur"],
-  botë: ["botë", "ndërkombëtar", "global", "trump", "biden", "putin", "nato", "eu", "onu", "okb", "ukraine", "rusi", "kina", "usa", "shba", "amerik", "europ"],
+  sport: [
+    "sport", "futboll", "basketboll", "tenis", "olimpik", "kampionat",
+    "ndeshj", "skuadr", "lojtarë", "gol ", " gola", "liga ", "ekip",
+    "champions league", "premier league", "serie a", "la liga",
+    "superliga", "kombëtar", "trajner", "transferim", "portier",
+    "sulmues", "mbrojtës", "mesfushor", "stadium", "ndeshje",
+    "fitore", "humbje", "barazim", "dopietë", "manaj", "hysaj",
+    "bajrami", "broja", "rrahmani", "muriqi", "berisha",
+    "fifa", "uefa", "fshf", "ffk",
+  ],
+  kulture: [
+    "kultur", "muzik", "film", "teatr", "libr", "festival",
+    "ekspozit", "performanc", "letërsi", "arkitektur", "kinema",
+    "aktor", "aktore", "regjisor", "koncert", "album", "këng",
+    "piktor", "skulptur", "galeri", "muze", "opera", "balet",
+    "showbiz", "celebrity", "vip", "big brother", "përputhen",
+    "serial", "dokumentar", "artis",
+  ],
+  bote: [
+    "botë", "botër", "ndërkombëtar", "global",
+    "trump", "biden", "putin", "macron", "scholz", "zelensky",
+    "nato", "onu", "okb", "ukraine", "ukrain",
+    "rusi", "kina", "amerik", "europ", "brazil",
+    "pentagon", "kreml", "shtëpi e bardhë", "white house",
+    "iran", "izrael", "palestin", "gaza", "hamas", "hezbollah",
+    "sudan", "afrik", "azi", "lindj", "perëndim",
+    "sanksion", "diplomat", "ambasad", "marrëveshj",
+    "wagner", "poloni", "gjerman", "franc", "britani",
+    "kanada", "australi", "japoni", "indi",
+  ],
+  ekonomi: [
+    "ekonomi", "biznes", "financ", "buxhet", "investim",
+    "tregti", "eksport", "import", "banka", "kredi",
+    "inflacion", "gdp", "pbb", "tatim", "taksë",
+    "punësim", "papunësi", "pagë", "çmim", "treg",
+    "kompani", "startup", "sipërmarrj", "borxh",
+  ],
+  teknologji: [
+    "teknologji", "teknologj", "digjital", "internet",
+    "softuer", "harduer", "aplikacion", "inteligjenc artificiale",
+    "robot", "hapësir", "nasa", "spacex", "satelit",
+    "inovacion", "cyber", "haker", "blockchain",
+    "smartphone", "apple", "google", "microsoft", "tesla",
+  ],
+  shendetesi: [
+    "shëndet", "shendet", "mjek", "spital", "vaksin",
+    "sëmund", "semundj", "kancer", "diabet", "zemr",
+    "ilaç", "terapi", "kirurgji", "pandemi", "covid",
+    "ushqyer", "ushqim", "dietë", "fruta", "vitamina",
+    "stërvit", "gjum", "dush", "energji",
+  ],
 };
 
 // ─── RSS Parsing ─────────────────────────────────────────────────────
@@ -139,8 +189,13 @@ function parseRssFeed(xml: string, source: FeedSource): ParsedArticle[] {
     const pubDate = extractText(item, "pubDate") || extractText(item, "published") || extractText(item, "updated") || "";
     const imageUrl = extractImageFromItem(item);
 
-    // Determine category based on keywords in title/description
-    const category = detectCategory(title, description, source.defaultCategory);
+    // Extract RSS category tags for better classification
+    const rssCats = (item.match(/<category[^>]*>([\s\S]*?)<\/category>/gi) || [])
+      .map(c => c.replace(/<[^>]+>/g, "").replace(/<!\[CDATA\[|\]\]>/g, "").trim())
+      .join(" ");
+
+    // Determine category based on keywords in title/description + RSS categories
+    const category = detectCategory(title, description + " " + rssCats, source.defaultCategory);
 
     results.push({
       title: title.substring(0, 255),
@@ -164,14 +219,31 @@ function stripHtml(html: string): string {
 }
 
 function detectCategory(title: string, description: string, defaultCat: string): string {
-  const text = (title + " " + description).toLowerCase();
+  const text = " " + (title + " " + description).toLowerCase() + " ";
+  
+  // Score-based matching: count keyword hits per category
+  // Title matches count double
+  const titleText = " " + title.toLowerCase() + " ";
+  const scores: Record<string, number> = {};
   
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    let score = 0;
     for (const keyword of keywords) {
-      if (text.includes(keyword)) {
-        return category;
+      if (titleText.includes(keyword)) {
+        score += 2; // Title match = double weight
+      } else if (text.includes(keyword)) {
+        score += 1;
       }
     }
+    if (score > 0) {
+      scores[category] = score;
+    }
+  }
+  
+  // Return the category with the highest score
+  if (Object.keys(scores).length > 0) {
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    return sorted[0][0];
   }
   
   return defaultCat;

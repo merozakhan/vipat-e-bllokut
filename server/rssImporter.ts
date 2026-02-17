@@ -107,6 +107,18 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "ushqyer", "ushqim", "dietë", "fruta", "vitamina",
     "stërvit", "gjum", "dush", "energji",
   ],
+  politike: [
+    "politik", "qever", "kuvend", "parlament", "deputet",
+    "ministri", "ministër", "kryeministr", "president",
+    "opozit", "mazhoranc", "koalicion", "zgjedhj", "votim",
+    "parti", "partia", "kushtetut", "ligjor", "ligj",
+    "reformë", "dekret", "vendim", "seancë", "komision",
+    "rama", "berisha", "basha", "meta", "veliaj",
+    "kurti", "osmani", "thaçi", "haradinaj", "veseli",
+    "pd ", " ps ", "lsi", "vetevendosj", "ldk", "aak",
+    "prokurori", "gjykat", "spak", "gjyq", "akuz",
+    "korrupsion", "hetim", "arrest", "dënoj",
+  ],
 };
 
 // ─── RSS Parsing ─────────────────────────────────────────────────────

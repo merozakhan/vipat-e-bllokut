@@ -224,3 +224,9 @@
 - [x] Lower similarity threshold from 70% to 30% for stricter duplicate detection
 - [x] Clean up newly caught duplicates from database (16 more deleted, 182 remaining)
 - [x] Tests verified (70 passing)
+
+## Add Politikë Category
+- [x] Add Politikë category to database
+- [x] Add political keywords to detectCategory function (30+ keywords)
+- [x] Re-categorize all articles with new category (27 articles now in Politikë)
+- [x] Tests verified (70 passing)

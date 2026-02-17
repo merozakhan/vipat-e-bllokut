@@ -1,0 +1,9 @@
+{
+  "query": "\nDELETE FROM article_categories;\nDELETE FROM articles;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gudLYJGHFgHSL8P.e6c1a8ce02e0 --database 3FN2mXfNpKxptvfrsuACXq --execute \nDELETE FROM article_categories;\nDELETE FROM articles;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 165
+}

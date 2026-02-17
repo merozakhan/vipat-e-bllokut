@@ -186,3 +186,9 @@
 - [x] Add Albeu.com feed (100% images)
 - [x] Delete all existing articles with NULL images from database
 - [x] Update tests to verify strict validation rule
+
+## Fresh Article Import & Hero Image Fix
+- [x] Delete ALL existing articles from database (clean slate)
+- [x] Fix hero/featured section to properly display article images on mobile
+- [x] Run fresh RSS import from reliable feeds only
+- [x] Verify ALL articles including hero/featured have visible images on mobile

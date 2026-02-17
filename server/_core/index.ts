@@ -1,41 +1,19 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
-import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startCronScheduler } from "../cronScheduler";
 
-function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise(resolve => {
-    const server = net.createServer();
-    server.listen(port, () => {
-      server.close(() => resolve(true));
-    });
-    server.on("error", () => resolve(false));
-  });
-}
-
-async function findAvailablePort(startPort: number = 3000): Promise<number> {
-  for (let port = startPort; port < startPort + 20; port++) {
-    if (await isPortAvailable(port)) {
-      return port;
-    }
-  }
-  throw new Error(`No available port found starting from ${startPort}`);
-}
-
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
+
+  // Configure body parser with larger size limit
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
 
   // Image proxy to bypass hotlink protection from external news sites
   app.get("/api/image-proxy", async (req, res) => {
@@ -45,7 +23,6 @@ async function startServer() {
     }
 
     try {
-      // Validate URL
       let parsedUrl: URL;
       try {
         parsedUrl = new URL(imageUrl);
@@ -70,7 +47,6 @@ async function startServer() {
       }
 
       const contentType = response.headers.get("content-type") || "image/jpeg";
-      const contentLength = response.headers.get("content-length");
       const buffer = Buffer.from(await response.arrayBuffer());
 
       // Cache for 7 days
@@ -87,6 +63,65 @@ async function startServer() {
       res.status(500).json({ error: "Failed to proxy image" });
     }
   });
+
+  // Simple API endpoint for posting articles with secret key auth
+  app.post("/api/articles", async (req, res) => {
+    const apiKey = req.headers["x-api-key"] || req.query.apiKey;
+    const expectedKey = process.env.ARTICLE_API_KEY;
+
+    if (!expectedKey || apiKey !== expectedKey) {
+      return res.status(401).json({ error: "Invalid or missing API key" });
+    }
+
+    try {
+      const { title, content, excerpt, imageUrl, categoryIds, status } = req.body;
+
+      if (!title || !content) {
+        return res.status(400).json({ error: "Title and content are required" });
+      }
+
+      // Import db functions dynamically to avoid circular deps
+      const { createArticle, getArticleBySlug, setArticleCategories } = await import("../db");
+
+      // Generate slug
+      const baseSlug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .trim();
+      let slug = baseSlug;
+      let counter = 1;
+      while (await getArticleBySlug(slug)) {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+
+      await createArticle({
+        title,
+        slug,
+        content,
+        excerpt: excerpt || content.substring(0, 200) + "...",
+        featuredImage: imageUrl || null,
+        status: status || "published",
+        authorId: 1,
+        publishedAt: status === "published" || !status ? new Date() : null,
+      });
+
+      const article = await getArticleBySlug(slug);
+      const articleId = article!.id;
+
+      if (categoryIds && categoryIds.length > 0) {
+        await setArticleCategories(articleId, categoryIds);
+      }
+
+      res.json({ success: true, articleId, slug });
+    } catch (error: any) {
+      console.error("[API] Error creating article:", error);
+      res.status(500).json({ error: error.message || "Failed to create article" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
@@ -95,6 +130,7 @@ async function startServer() {
       createContext,
     })
   );
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
@@ -102,12 +138,7 @@ async function startServer() {
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
+  const port = parseInt(process.env.PORT || "3000");
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);

@@ -2,22 +2,21 @@
  * Automated RSS Importer for Albanian News Media
  * 
  * Fetches articles from multiple Albanian media RSS feeds every 3 hours,
- * scrapes full content, downloads images to S3, detects duplicates,
- * and imports new articles with permanent S3 image URLs.
+ * scrapes full content, downloads images to Cloudinary, detects duplicates,
+ * and imports new articles with permanent Cloudinary image URLs.
  * 
  * STRICT RULE: Articles are ONLY published if they have ALL three:
  *   1. Title (non-empty)
  *   2. Content/Description (minimum 50 characters)
- *   3. Image (successfully downloaded and uploaded to S3)
+ *   3. Image (successfully downloaded and uploaded to Cloudinary)
  * 
  * Any article missing ANY of these three fields is SKIPPED entirely.
  */
 
 import { getDb } from "./db";
 import { articles, categories, articleCategories } from "../drizzle/schema";
-import { eq, or, like, desc, isNull, and, not } from "drizzle-orm";
-import { storagePut } from "./storage";
-import { nanoid } from "nanoid";
+import { eq, or, like, desc, and, not } from "drizzle-orm";
+import { uploadImageFromUrl } from "./cloudinaryStorage";
 
 // ─── RSS Feed Configuration ─────────────────────────────────────────
 interface FeedSource {
@@ -28,33 +27,19 @@ interface FeedSource {
 
 // Only feeds that reliably provide images (80%+ image rate)
 const RSS_FEEDS: FeedSource[] = [
-  // ─── Original feeds ───
-  // Koha.net - main feed (95% with images)
   { name: "Koha.net", url: "https://www.koha.net/rss", defaultCategory: "aktualitet" },
-  // Gazeta Express (100% with images)
   { name: "Gazeta Express", url: "https://www.gazetaexpress.com/feed/", defaultCategory: "aktualitet" },
-  // Reporter.al (100% with images)
   { name: "Reporter.al", url: "https://reporter.al/feed/", defaultCategory: "aktualitet" },
-  // Telegrafi.com (100% with images)
   { name: "Telegrafi.com", url: "https://telegrafi.com/feed/", defaultCategory: "aktualitet" },
-  // Albeu.com (100% with images)
   { name: "Albeu.com", url: "https://albeu.com/rss", defaultCategory: "aktualitet" },
-  // ─── New feeds (verified 100% images) ───
-  // News24.al - Albanian TV news (10 items, 100% images)
   { name: "News24.al", url: "https://www.news24.al/feed/", defaultCategory: "aktualitet" },
-  // Vizion Plus - Albanian TV/lifestyle (30 items, 100% images)
   { name: "Vizion Plus", url: "https://vizionplus.tv/feed/", defaultCategory: "aktualitet" },
-  // BalkanInsight - Balkan investigative journalism (90 items, 100% images)
   { name: "BalkanInsight", url: "https://balkaninsight.com/feed/", defaultCategory: "bote" },
-  // Epoka e Re - Kosovo news (10 items, 100% images)
   { name: "Epoka e Re", url: "https://www.epokaere.com/feed/", defaultCategory: "aktualitet" },
-  // Zeri.info - Kosovo news (10 items, 100% images)
   { name: "Zeri.info", url: "https://zeri.info/rss", defaultCategory: "aktualitet" },
 ];
 
 // Category keyword mapping
-// IMPORTANT: Keys MUST match category slugs in DB (no diacritics)
-// Keywords use word-boundary-aware matching via detectCategory()
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   sport: [
     "sport", "futboll", "basketboll", "tenis", "olimpik", "kampionat",
@@ -161,15 +146,12 @@ function extractText(xml: string, tag: string): string {
 }
 
 function extractImageFromItem(itemXml: string): string | null {
-  // Try media:content
   const mediaMatch = itemXml.match(/url=["']([^"']+\.(jpg|jpeg|png|webp|gif)[^"']*)/i);
   if (mediaMatch) return mediaMatch[1];
 
-  // Try enclosure
   const enclosureMatch = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/i);
   if (enclosureMatch) return enclosureMatch[1];
 
-  // Try image in description/content
   const imgMatch = itemXml.match(/<img[^>]+src=["']([^"']+)["']/i);
   if (imgMatch) return decodeHtmlEntities(imgMatch[1]);
 
@@ -179,7 +161,6 @@ function extractImageFromItem(itemXml: string): string | null {
 function parseRssFeed(xml: string, source: FeedSource): ParsedArticle[] {
   const results: ParsedArticle[] = [];
 
-  // Handle Atom feeds (entry tags)
   const isAtom = xml.includes("<entry>");
   const itemTag = isAtom ? "entry" : "item";
   const itemRegex = new RegExp(`<${itemTag}[\\s>][\\s\\S]*?</${itemTag}>`, "gi");
@@ -201,12 +182,10 @@ function parseRssFeed(xml: string, source: FeedSource): ParsedArticle[] {
     const pubDate = extractText(item, "pubDate") || extractText(item, "published") || extractText(item, "updated") || "";
     const imageUrl = extractImageFromItem(item);
 
-    // Extract RSS category tags for better classification
     const rssCats = (item.match(/<category[^>]*>([\s\S]*?)<\/category>/gi) || [])
       .map(c => c.replace(/<[^>]+>/g, "").replace(/<!\[CDATA\[|\]\]>/g, "").trim())
       .join(" ");
 
-    // Determine category based on keywords in title/description + RSS categories
     const category = detectCategory(title, description + " " + rssCats, source.defaultCategory);
 
     results.push({
@@ -232,9 +211,6 @@ function stripHtml(html: string): string {
 
 function detectCategory(title: string, description: string, defaultCat: string): string {
   const text = " " + (title + " " + description).toLowerCase() + " ";
-  
-  // Score-based matching: count keyword hits per category
-  // Title matches count double
   const titleText = " " + title.toLowerCase() + " ";
   const scores: Record<string, number> = {};
   
@@ -242,7 +218,7 @@ function detectCategory(title: string, description: string, defaultCat: string):
     let score = 0;
     for (const keyword of keywords) {
       if (titleText.includes(keyword)) {
-        score += 2; // Title match = double weight
+        score += 2;
       } else if (text.includes(keyword)) {
         score += 1;
       }
@@ -252,7 +228,6 @@ function detectCategory(title: string, description: string, defaultCat: string):
     }
   }
   
-  // Return the category with the highest score
   if (Object.keys(scores).length > 0) {
     const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
     return sorted[0][0];
@@ -263,10 +238,6 @@ function detectCategory(title: string, description: string, defaultCat: string):
 
 // ─── Article Validation ─────────────────────────────────────────────
 
-/**
- * STRICT VALIDATION: An article is only valid for publishing if it has
- * ALL three required fields. No exceptions.
- */
 interface ValidationResult {
   valid: boolean;
   reason?: string;
@@ -283,118 +254,6 @@ function validateArticle(title: string, content: string, imageUrl: string | null
     return { valid: false, reason: "Missing image" };
   }
   return { valid: true };
-}
-
-// ─── Image Download & S3 Upload ─────────────────────────────────────
-
-/**
- * Downloads an image from an external URL and uploads it to S3.
- * Returns the permanent S3 URL, or null if the download/upload fails.
- */
-async function downloadAndUploadImage(imageUrl: string): Promise<string | null> {
-  try {
-    // Validate URL
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(imageUrl);
-    } catch {
-      return null;
-    }
-
-    // Download the image with browser-like headers
-    const response = await fetch(imageUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        "Referer": parsedUrl.origin + "/",
-        "Origin": parsedUrl.origin,
-      },
-      signal: AbortSignal.timeout(30000),
-      redirect: "follow",
-    });
-
-    if (!response.ok) {
-      console.warn(`[S3 Upload] Failed to download image (${response.status}): ${imageUrl.substring(0, 80)}`);
-      return null;
-    }
-
-    const contentType = response.headers.get("content-type") || "image/jpeg";
-    const buffer = Buffer.from(await response.arrayBuffer());
-
-    // Skip if image is too small (likely a tracking pixel or placeholder)
-    if (buffer.byteLength < 1000) {
-      return null;
-    }
-
-    // Determine file extension from content type
-    const extMap: Record<string, string> = {
-      "image/jpeg": "jpg",
-      "image/png": "png",
-      "image/webp": "webp",
-      "image/gif": "gif",
-      "image/avif": "avif",
-      "image/svg+xml": "svg",
-    };
-    const ext = extMap[contentType] || "jpg";
-
-    // Generate unique S3 key
-    const uniqueId = nanoid(12);
-    const s3Key = `articles/images/${uniqueId}.${ext}`;
-
-    // Upload to S3
-    const { url: s3Url } = await storagePut(s3Key, buffer, contentType);
-    
-    console.log(`[S3 Upload] Uploaded: ${s3Key} (${Math.round(buffer.byteLength / 1024)}KB)`);
-    return s3Url;
-  } catch (error: any) {
-    console.warn(`[S3 Upload] Error: ${error?.message || error}`);
-    return null;
-  }
-}
-
-/**
- * Migrates existing articles with external image URLs to S3.
- * Called once during import to gradually move all images to our storage.
- */
-export async function migrateExistingImages(batchSize: number = 10): Promise<number> {
-  const db = await getDb();
-  if (!db) return 0;
-
-  // Find articles with external (non-S3) image URLs
-  const articlesToMigrate = await db
-    .select({ id: articles.id, featuredImage: articles.featuredImage })
-    .from(articles)
-    .where(
-      and(
-        not(like(articles.featuredImage, "%manus-storage%")),
-        not(like(articles.featuredImage, "%s3.amazonaws%")),
-        not(like(articles.featuredImage, "%cloudfront.net%")),
-        // Skip articles with no image
-        not(eq(articles.featuredImage, "")),
-      )
-    )
-    .limit(batchSize);
-
-  let migrated = 0;
-
-  for (const article of articlesToMigrate) {
-    if (!article.featuredImage) continue;
-
-    const s3Url = await downloadAndUploadImage(article.featuredImage);
-    if (s3Url) {
-      await db
-        .update(articles)
-        .set({ featuredImage: s3Url })
-        .where(eq(articles.id, article.id));
-      migrated++;
-    }
-  }
-
-  if (migrated > 0) {
-    console.log(`[S3 Migration] Migrated ${migrated} article images to S3`);
-  }
-
-  return migrated;
 }
 
 // ─── Content Scraping ────────────────────────────────────────────────
@@ -417,7 +276,6 @@ async function scrapeArticleContent(url: string): Promise<string | null> {
 
     const html = await response.text();
 
-    // Priority 1: Specific article body selectors (most reliable, least CSS junk)
     const specificPatterns = [
       /<div[^>]*class="[^"]*body-description[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
       /<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
@@ -436,14 +294,12 @@ async function scrapeArticleContent(url: string): Promise<string | null> {
       }
     }
 
-    // Priority 2: article tag (but extract only paragraphs from it)
     const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
     if (articleMatch && articleMatch[1]) {
       const cleaned = cleanArticleHtml(articleMatch[1]);
       if (cleaned.length > 100 && !containsCssJunk(cleaned)) return cleaned;
     }
 
-    // Priority 3: Extract all paragraphs from the page (filtered)
     const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
     if (paragraphs.length > 2) {
       const text = paragraphs
@@ -459,10 +315,6 @@ async function scrapeArticleContent(url: string): Promise<string | null> {
   }
 }
 
-/**
- * Checks if text contains CSS/JS junk that shouldn't be in article content.
- * This is the FINAL GATE - if this returns true, the content is rejected.
- */
 function containsCssJunk(text: string): boolean {
   const cssPatterns = [
     /\.numbered-teaser/i,
@@ -486,27 +338,17 @@ function containsCssJunk(text: string): boolean {
   return cssPatterns.some(p => p.test(text));
 }
 
-/**
- * Checks if a single paragraph/line is CSS/JS junk.
- */
 function isJunkText(text: string): boolean {
-  // Lines that start with CSS selectors
   if (/^[.#@{}]/.test(text)) return true;
-  // Lines containing CSS property patterns
   if (/\{[^}]*(?:display|color|font|margin|padding|background|border|position|width|height)\s*:/i.test(text)) return true;
-  // Lines with CSS var() functions
   if (/var\(--[a-z-]+\)/i.test(text)) return true;
-  // Lines with JS patterns
   if (/window\.|document\.|function\s*\(|addEventListener|querySelector|insertAdjacentHTML/i.test(text)) return true;
-  // Lines that look like CSS class definitions
   if (/\.[a-z_-]+\s*\{/i.test(text)) return true;
-  // Lines with multiple CSS properties
   if ((text.match(/[a-z-]+\s*:\s*[^;]+;/gi) || []).length > 2) return true;
   return false;
 }
 
 function cleanArticleHtml(html: string): string {
-  // Remove scripts, styles, and other unwanted tags
   let cleaned = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -519,14 +361,12 @@ function cleanArticleHtml(html: string): string {
     .replace(/<svg[\s\S]*?<\/svg>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "");
 
-  // Extract paragraphs
   const paragraphs = cleaned.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
   const text = paragraphs
     .map(p => stripHtml(p))
     .filter(p => p.length >= 20 && !isJunkText(p))
     .join("\n\n");
 
-  // Cap content at 50000 chars to prevent DB overflow
   const result = text || "";
   return result.substring(0, 50000);
 }
@@ -565,10 +405,6 @@ async function getCategoryMap(): Promise<Record<string, number>> {
   return map;
 }
 
-/**
- * Normalize a title for similarity comparison:
- * lowercase, remove punctuation, collapse whitespace
- */
 function normalizeTitle(title: string): string {
   return title
     .toLowerCase()
@@ -577,10 +413,6 @@ function normalizeTitle(title: string): string {
     .trim();
 }
 
-/**
- * Calculate word-overlap similarity between two titles.
- * Returns a value between 0 and 1.
- */
 function titleSimilarity(a: string, b: string): number {
   const wordsA = normalizeTitle(a).split(" ").filter(w => w.length > 3);
   const wordsB = normalizeTitle(b).split(" ").filter(w => w.length > 3);
@@ -594,13 +426,11 @@ function titleSimilarity(a: string, b: string): number {
   return overlap / Math.min(uniqueA.length, wordsB.length);
 }
 
-// In-memory cache of recent article titles for fast similarity checking
 let recentTitlesCache: string[] = [];
 let cacheLoadedAt = 0;
 
 async function loadRecentTitles(): Promise<string[]> {
   const now = Date.now();
-  // Refresh cache every 5 minutes
   if (recentTitlesCache.length > 0 && now - cacheLoadedAt < 5 * 60 * 1000) {
     return recentTitlesCache;
   }
@@ -608,7 +438,6 @@ async function loadRecentTitles(): Promise<string[]> {
   const db = await getDb();
   if (!db) return [];
   
-  // Load titles from the last 7 days for comparison
   const recent = await db
     .select({ title: articles.title })
     .from(articles)
@@ -620,15 +449,10 @@ async function loadRecentTitles(): Promise<string[]> {
   return recentTitlesCache;
 }
 
-/**
- * Check if an article already exists or is too similar to an existing one.
- * Uses both exact title match AND similarity-based dedup (>=70% word overlap).
- */
 async function articleExists(title: string): Promise<boolean> {
   const db = await getDb();
-  if (!db) return true; // Assume exists if DB unavailable to prevent duplicates
+  if (!db) return true;
 
-  // Step 1: Exact title match
   const existing = await db
     .select({ id: articles.id })
     .from(articles)
@@ -637,11 +461,10 @@ async function articleExists(title: string): Promise<boolean> {
 
   if (existing.length > 0) return true;
 
-  // Step 2: Similarity check against recent articles
   const recentTitles = await loadRecentTitles();
   for (const existingTitle of recentTitles) {
     if (titleSimilarity(title, existingTitle) >= 0.30) {
-      return true; // Too similar to an existing article (strict 30% threshold)
+      return true;
     }
   }
 
@@ -672,7 +495,6 @@ async function insertArticle(
       publishedAt,
     });
 
-    // Get the inserted article ID
     const inserted = await db
       .select({ id: articles.id })
       .from(articles)
@@ -681,7 +503,6 @@ async function insertArticle(
 
     const articleId = inserted[0]?.id;
 
-    // Link to category
     if (articleId && categoryId) {
       await db.insert(articleCategories).values({
         articleId,
@@ -705,7 +526,6 @@ export interface ImportResult {
   skippedNoImage: number;
   skippedNoContent: number;
   errors: number;
-  imagesMigrated: number;
   sources: string[];
   timestamp: Date;
 }
@@ -721,19 +541,16 @@ export async function runRssImport(): Promise<ImportResult> {
     skippedNoImage: 0,
     skippedNoContent: 0,
     errors: 0,
-    imagesMigrated: 0,
     sources: [],
     timestamp: new Date(),
   };
 
-  // Get category mapping
   const categoryMap = await getCategoryMap();
   if (Object.keys(categoryMap).length === 0) {
     console.error("[RSS Import] No categories found in database. Aborting.");
     return result;
   }
 
-  // Process each feed
   for (const feed of RSS_FEEDS) {
     try {
       console.log(`[RSS Import] Fetching ${feed.name}: ${feed.url}`);
@@ -764,10 +581,8 @@ export async function runRssImport(): Promise<ImportResult> {
 
       console.log(`[RSS Import] Parsed ${parsedArticles.length} articles from ${feed.name}`);
 
-      // Process each article
       for (const parsed of parsedArticles) {
         try {
-          // Check for duplicates
           const exists = await articleExists(parsed.title);
           if (exists) {
             result.duplicatesSkipped++;
@@ -790,13 +605,11 @@ export async function runRssImport(): Promise<ImportResult> {
             }
           }
 
-          // FINAL SAFETY CHECK: If content still has CSS junk, fall back to RSS description only
           if (containsCssJunk(fullContent)) {
             console.log(`[RSS Import] Content had CSS junk, using RSS description for: ${parsed.title.substring(0, 60)}`);
             fullContent = parsed.description;
           }
 
-          // Truncate content to prevent DB overflow (MEDIUMTEXT max ~16MB, but cap at 50KB)
           if (fullContent.length > 50000) {
             fullContent = fullContent.substring(0, 50000);
           }
@@ -808,29 +621,25 @@ export async function runRssImport(): Promise<ImportResult> {
             continue;
           }
 
-          // ── STRICT VALIDATION: Step 3 - Must successfully upload image to S3 ──
-          const s3ImageUrl = await downloadAndUploadImage(parsed.imageUrl);
-          if (!s3ImageUrl) {
-            console.log(`[RSS Import] SKIPPED (image download/upload failed): ${parsed.title.substring(0, 60)}`);
+          // ── STRICT VALIDATION: Step 3 - Must successfully upload image to Cloudinary ──
+          const cloudinaryUrl = await uploadImageFromUrl(parsed.imageUrl);
+          if (!cloudinaryUrl) {
+            console.log(`[RSS Import] SKIPPED (image upload to Cloudinary failed): ${parsed.title.substring(0, 60)}`);
             result.skippedNoImage++;
             continue;
           }
 
-          // All three validations passed - proceed with publishing
-          const validation = validateArticle(parsed.title, fullContent, s3ImageUrl);
+          // All three validations passed
+          const validation = validateArticle(parsed.title, fullContent, cloudinaryUrl);
           if (!validation.valid) {
             console.log(`[RSS Import] SKIPPED (${validation.reason}): ${parsed.title.substring(0, 60)}`);
             result.errors++;
             continue;
           }
 
-          // Generate slug
           const slug = generateUniqueSlug(parsed.title);
-
-          // Determine category ID
           const categoryId = categoryMap[parsed.category] || categoryMap["aktualitet"] || null;
 
-          // Parse publish date
           let publishedAt = new Date();
           if (parsed.pubDate) {
             const parsed_date = new Date(parsed.pubDate);
@@ -839,13 +648,13 @@ export async function runRssImport(): Promise<ImportResult> {
             }
           }
 
-          // Insert article with S3 image URL (guaranteed non-null at this point)
+          // Insert article with Cloudinary image URL
           const articleId = await insertArticle(
             parsed.title,
             slug,
             fullContent,
             parsed.description.substring(0, 300) + (parsed.description.length > 300 ? "..." : ""),
-            s3ImageUrl,
+            cloudinaryUrl,
             categoryId,
             publishedAt
           );
@@ -867,20 +676,12 @@ export async function runRssImport(): Promise<ImportResult> {
     }
   }
 
-  // After importing new articles, migrate a batch of existing external images to S3
-  try {
-    const migrated = await migrateExistingImages(15); // Migrate 15 images per cycle
-    result.imagesMigrated = migrated;
-  } catch (error) {
-    console.warn("[RSS Import] Image migration batch failed:", error);
-  }
-
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`[RSS Import] Complete in ${duration}s: ${result.newArticles} new, ${result.duplicatesSkipped} duplicates, ${result.skippedNoImage} skipped (no image), ${result.skippedNoContent} skipped (no content), ${result.errors} errors, ${result.imagesMigrated} images migrated to S3`);
+  console.log(`[RSS Import] Complete in ${duration}s: ${result.newArticles} new, ${result.duplicatesSkipped} duplicates, ${result.skippedNoImage} skipped (no image), ${result.skippedNoContent} skipped (no content), ${result.errors} errors`);
 
   return result;
 }
 
-// ─── Export feed list for testing ────────────────────────────────────
-export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, downloadAndUploadImage, validateArticle, containsCssJunk, isJunkText, normalizeTitle, titleSimilarity };
+// ─── Export for testing ────────────────────────────────────────────
+export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, validateArticle, containsCssJunk, isJunkText, normalizeTitle, titleSimilarity };
 export type { FeedSource, ParsedArticle };

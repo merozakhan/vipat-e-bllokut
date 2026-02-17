@@ -1,102 +1,51 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
+/**
+ * Storage module - wraps Cloudinary for Railway deployment.
+ * Replaces the original Manus S3 proxy storage.
+ * 
+ * Exports storagePut/storageGet for backward compatibility
+ * with any code that still references them.
+ */
 
-import { ENV } from './_core/env';
+import { uploadImageFromUrl, uploadImageBase64 } from "./cloudinaryStorage";
 
-type StorageConfig = { baseUrl: string; apiKey: string };
-
-function getStorageConfig(): StorageConfig {
-  const baseUrl = ENV.forgeApiUrl;
-  const apiKey = ENV.forgeApiKey;
-
-  if (!baseUrl || !apiKey) {
-    throw new Error(
-      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
-    );
-  }
-
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
-}
-
-function buildUploadUrl(baseUrl: string, relKey: string): URL {
-  const url = new URL("v1/storage/upload", ensureTrailingSlash(baseUrl));
-  url.searchParams.set("path", normalizeKey(relKey));
-  return url;
-}
-
-async function buildDownloadUrl(
-  baseUrl: string,
-  relKey: string,
-  apiKey: string
-): Promise<string> {
-  const downloadApiUrl = new URL(
-    "v1/storage/downloadUrl",
-    ensureTrailingSlash(baseUrl)
-  );
-  downloadApiUrl.searchParams.set("path", normalizeKey(relKey));
-  const response = await fetch(downloadApiUrl, {
-    method: "GET",
-    headers: buildAuthHeaders(apiKey),
-  });
-  return (await response.json()).url;
-}
-
-function ensureTrailingSlash(value: string): string {
-  return value.endsWith("/") ? value : `${value}/`;
-}
-
-function normalizeKey(relKey: string): string {
-  return relKey.replace(/^\/+/, "");
-}
-
-function toFormData(
-  data: Buffer | Uint8Array | string,
-  contentType: string,
-  fileName: string
-): FormData {
-  const blob =
-    typeof data === "string"
-      ? new Blob([data], { type: contentType })
-      : new Blob([data as any], { type: contentType });
-  const form = new FormData();
-  form.append("file", blob, fileName || "file");
-  return form;
-}
-
-function buildAuthHeaders(apiKey: string): HeadersInit {
-  return { Authorization: `Bearer ${apiKey}` };
-}
-
+/**
+ * Upload data to Cloudinary (backward-compatible with old S3 API).
+ * For images, uploads as base64. For other data, stores as-is.
+ */
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { baseUrl, apiKey } = getStorageConfig();
-  const key = normalizeKey(relKey);
-  const uploadUrl = buildUploadUrl(baseUrl, key);
-  const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
-  const response = await fetch(uploadUrl, {
-    method: "POST",
-    headers: buildAuthHeaders(apiKey),
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    throw new Error(
-      `Storage upload failed (${response.status} ${response.statusText}): ${message}`
-    );
+  const key = relKey.replace(/^\/+/, "");
+  
+  // Convert to base64 and upload to Cloudinary
+  let base64: string;
+  if (typeof data === "string") {
+    base64 = Buffer.from(data).toString("base64");
+  } else {
+    base64 = Buffer.from(data).toString("base64");
   }
-  const url = (await response.json()).url;
+  
+  const filename = key.split("/").pop()?.replace(/\.[^.]+$/, "") || "file";
+  const url = await uploadImageBase64(base64, filename);
+  
+  if (!url) {
+    throw new Error(`Storage upload failed for key: ${key}`);
+  }
+  
   return { key, url };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
-  const { baseUrl, apiKey } = getStorageConfig();
-  const key = normalizeKey(relKey);
+/**
+ * Get a URL for a stored file.
+ * With Cloudinary, the URL is already public, so we just return it.
+ */
+export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+  // Cloudinary URLs are already public - no presigning needed
+  const key = relKey.replace(/^\/+/, "");
   return {
     key,
-    url: await buildDownloadUrl(baseUrl, key, apiKey),
+    url: `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/vipat-articles/${key}`,
   };
 }

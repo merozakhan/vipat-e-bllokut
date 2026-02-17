@@ -255,3 +255,17 @@
 
 ## Bug Fix - HTML Tags Showing as Raw Text
 - [x] Fix article detail page to render HTML content instead of showing raw tags (dangerouslySetInnerHTML + article-content CSS)
+
+## Railway Deployment
+- [x] Set up Cloudinary for image storage (replace Manus S3)
+- [x] Modify RSS importer to download images and upload to Cloudinary
+- [x] Create Railway-compatible server entry point (strip Manus OAuth)
+- [x] Simplify context.ts (remove Manus SDK auth)
+- [x] Simplify routers.ts (remove S3 upload, add REST API with secret key)
+- [x] Fix TypeScript errors from auth removal
+- [x] Add railway.json build configuration
+- [x] Update vite.config.ts for Railway
+- [ ] Push updated code to GitHub
+- [ ] Create Railway project with MySQL database
+- [ ] Configure environment variables on Railway
+- [ ] Verify deployment works

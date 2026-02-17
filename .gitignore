@@ -108,3 +108,9 @@ temp/
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+
+# Manus debug logs
+.manus-logs/
+
+# Attached assets (local only)
+attached_assets/

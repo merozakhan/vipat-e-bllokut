@@ -28,6 +28,7 @@ interface FeedSource {
 
 // Only feeds that reliably provide images (80%+ image rate)
 const RSS_FEEDS: FeedSource[] = [
+  // ─── Original feeds ───
   // Koha.net - main feed (95% with images)
   { name: "Koha.net", url: "https://www.koha.net/rss", defaultCategory: "aktualitet" },
   // Gazeta Express (100% with images)
@@ -38,6 +39,17 @@ const RSS_FEEDS: FeedSource[] = [
   { name: "Telegrafi.com", url: "https://telegrafi.com/feed/", defaultCategory: "aktualitet" },
   // Albeu.com (100% with images)
   { name: "Albeu.com", url: "https://albeu.com/rss", defaultCategory: "aktualitet" },
+  // ─── New feeds (verified 100% images) ───
+  // News24.al - Albanian TV news (10 items, 100% images)
+  { name: "News24.al", url: "https://www.news24.al/feed/", defaultCategory: "aktualitet" },
+  // Vizion Plus - Albanian TV/lifestyle (30 items, 100% images)
+  { name: "Vizion Plus", url: "https://vizionplus.tv/feed/", defaultCategory: "aktualitet" },
+  // BalkanInsight - Balkan investigative journalism (90 items, 100% images)
+  { name: "BalkanInsight", url: "https://balkaninsight.com/feed/", defaultCategory: "botë" },
+  // Epoka e Re - Kosovo news (10 items, 100% images)
+  { name: "Epoka e Re", url: "https://www.epokaere.com/feed/", defaultCategory: "aktualitet" },
+  // Zeri.info - Kosovo news (10 items, 100% images)
+  { name: "Zeri.info", url: "https://zeri.info/rss", defaultCategory: "aktualitet" },
 ];
 
 // Category keyword mapping
@@ -716,5 +728,5 @@ export async function runRssImport(): Promise<ImportResult> {
 }
 
 // ─── Export feed list for testing ────────────────────────────────────
-export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, downloadAndUploadImage, validateArticle };
+export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, downloadAndUploadImage, validateArticle, containsCssJunk, isJunkText };
 export type { FeedSource, ParsedArticle };

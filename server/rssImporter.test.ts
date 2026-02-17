@@ -6,6 +6,8 @@ import {
   stripHtml,
   decodeHtmlEntities,
   validateArticle,
+  containsCssJunk,
+  isJunkText,
   RSS_FEEDS,
   type FeedSource,
 } from "./rssImporter";
@@ -278,8 +280,8 @@ describe("RSS Importer", () => {
   });
 
   describe("RSS_FEEDS configuration", () => {
-    it("has at least 5 feed sources configured", () => {
-      expect(RSS_FEEDS.length).toBeGreaterThanOrEqual(5);
+    it("has at least 10 feed sources configured", () => {
+      expect(RSS_FEEDS.length).toBeGreaterThanOrEqual(10);
     });
 
     it("all feeds have required properties", () => {
@@ -292,11 +294,18 @@ describe("RSS Importer", () => {
 
     it("includes reliable Albanian media sources with images", () => {
       const names = RSS_FEEDS.map(f => f.name.toLowerCase());
+      // Original feeds
       expect(names.some(n => n.includes("koha"))).toBe(true);
       expect(names.some(n => n.includes("gazeta"))).toBe(true);
       expect(names.some(n => n.includes("reporter"))).toBe(true);
       expect(names.some(n => n.includes("telegrafi"))).toBe(true);
       expect(names.some(n => n.includes("albeu"))).toBe(true);
+      // New feeds
+      expect(names.some(n => n.includes("news24"))).toBe(true);
+      expect(names.some(n => n.includes("vizion"))).toBe(true);
+      expect(names.some(n => n.includes("balkaninsight"))).toBe(true);
+      expect(names.some(n => n.includes("epoka"))).toBe(true);
+      expect(names.some(n => n.includes("zeri"))).toBe(true);
     });
 
     it("does NOT include feeds without reliable images", () => {
@@ -305,6 +314,54 @@ describe("RSS Importer", () => {
       expect(names.some(n => n.includes("balkanweb"))).toBe(false);
       expect(names.some(n => n.includes("lapsi"))).toBe(false);
       expect(names.some(n => n.includes("panorama"))).toBe(false);
+    });
+  });
+
+  describe("containsCssJunk", () => {
+    it("detects CSS class selectors", () => {
+      expect(containsCssJunk(".numbered-teaser .posts-wrapper{counter-reset:cnt}")).toBe(true);
+      expect(containsCssJunk(".widget__head{position:relative}")).toBe(true);
+      expect(containsCssJunk(".share-facebook something")).toBe(true);
+    });
+
+    it("detects CSS property patterns", () => {
+      expect(containsCssJunk("background-color: var(--primary-text-color)")).toBe(true);
+      expect(containsCssJunk("border-radius: var(--1x)")).toBe(true);
+      expect(containsCssJunk("counter-increment: cnt")).toBe(true);
+    });
+
+    it("detects JS patterns", () => {
+      expect(containsCssJunk("adIds = [123, 456]")).toBe(true);
+      expect(containsCssJunk("getAdHtml(slot)")).toBe(true);
+      expect(containsCssJunk("injectAds(container)")).toBe(true);
+    });
+
+    it("does NOT flag clean article text", () => {
+      expect(containsCssJunk("Presidenti ukrainas Volodymyr Zelensky tha se inteligjenca tregonte se Rusia po përgatit sulme.")).toBe(false);
+      expect(containsCssJunk("Kancelari gjerman Friedrich Merz nuk do të udhëtojë në Uashington.")).toBe(false);
+      expect(containsCssJunk("Frutat janë thelbësore për një ushqyerje të shëndetshme.")).toBe(false);
+    });
+  });
+
+  describe("isJunkText", () => {
+    it("detects lines starting with CSS selectors", () => {
+      expect(isJunkText(".numbered-teaser .posts-wrapper")).toBe(true);
+      expect(isJunkText("#main-content { display: block }")).toBe(true);
+      expect(isJunkText("@media (max-width: 768px)")).toBe(true);
+    });
+
+    it("detects CSS property patterns", () => {
+      expect(isJunkText("something {display: flex; margin: 0; padding: 10px;}")).toBe(true);
+    });
+
+    it("detects JS patterns", () => {
+      expect(isJunkText("window.addEventListener('load', fn)")).toBe(true);
+      expect(isJunkText("document.querySelector('.article')")).toBe(true);
+    });
+
+    it("does NOT flag clean text", () => {
+      expect(isJunkText("Presidenti ukrainas Volodymyr Zelensky tha se inteligjenca tregonte.")).toBe(false);
+      expect(isJunkText("Frutat janë thelbësore për një ushqyerje të shëndetshme.")).toBe(false);
     });
   });
 });

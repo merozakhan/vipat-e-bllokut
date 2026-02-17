@@ -199,3 +199,9 @@
 - [x] Add content validation: reject any content containing CSS selectors or JS code
 - [x] Delete all articles and re-import with fixed scraper
 - [x] Verify no articles contain CSS/JS junk in content
+
+## Find More Albanian Media RSS Feeds
+- [x] Research and test additional Albanian media RSS feeds
+- [x] Verify each feed provides images reliably (80%+ rate)
+- [x] Add verified feeds to the importer
+- [x] Re-import and verify all articles are clean

@@ -265,7 +265,7 @@
 - [x] Fix TypeScript errors from auth removal
 - [x] Add railway.json build configuration
 - [x] Update vite.config.ts for Railway
-- [ ] Push updated code to GitHub
+- [x] Push updated code to GitHub (merozakhan/vipat-e-bllokut)
 - [ ] Create Railway project with MySQL database
 - [ ] Configure environment variables on Railway
 - [ ] Verify deployment works

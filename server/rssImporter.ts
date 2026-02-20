@@ -17,6 +17,7 @@ import { getDb } from "./db";
 import { articles, categories, articleCategories } from "../drizzle/schema";
 import { eq, or, like, desc, and, not } from "drizzle-orm";
 import { uploadImageFromUrl } from "./cloudinaryStorage";
+import { rewriteArticle } from "./rewriter";
 
 // ─── RSS Feed Configuration ─────────────────────────────────────────
 interface FeedSource {
@@ -629,15 +630,20 @@ export async function runRssImport(): Promise<ImportResult> {
             continue;
           }
 
+          // ── LLM REWRITING: Rewrite title and content before publishing ──
+          const rewritten = await rewriteArticle(parsed.title, fullContent);
+          const finalTitle = rewritten.title || parsed.title;
+          const finalContent = rewritten.content || fullContent;
+
           // All three validations passed
-          const validation = validateArticle(parsed.title, fullContent, cloudinaryUrl);
+          const validation = validateArticle(finalTitle, finalContent, cloudinaryUrl);
           if (!validation.valid) {
             console.log(`[RSS Import] SKIPPED (${validation.reason}): ${parsed.title.substring(0, 60)}`);
             result.errors++;
             continue;
           }
 
-          const slug = generateUniqueSlug(parsed.title);
+          const slug = generateUniqueSlug(finalTitle);
           const categoryId = categoryMap[parsed.category] || categoryMap["aktualitet"] || null;
 
           let publishedAt = new Date();
@@ -650,9 +656,9 @@ export async function runRssImport(): Promise<ImportResult> {
 
           // Insert article with Cloudinary image URL
           const articleId = await insertArticle(
-            parsed.title,
+            finalTitle,
             slug,
-            fullContent,
+            finalContent,
             parsed.description.substring(0, 300) + (parsed.description.length > 300 ? "..." : ""),
             cloudinaryUrl,
             categoryId,

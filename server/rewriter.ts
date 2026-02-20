@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 
+// Use the pre-configured OpenAI client from the environment
+// The system provides a global OpenAI client that doesn't require manual API key configuration
 const client = new OpenAI();
 
 /**

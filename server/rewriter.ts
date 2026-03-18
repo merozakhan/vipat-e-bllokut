@@ -120,7 +120,11 @@ function isBoilerplateParagraph(text: string): boolean {
 function cleanContent(content: string): string {
   // Extract paragraphs from the original HTML structure
   const paragraphRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-  const matches = [...content.matchAll(paragraphRegex)];
+  const matches: RegExpExecArray[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = paragraphRegex.exec(content)) !== null) {
+    matches.push(m);
+  }
 
   let paragraphs: string[];
 

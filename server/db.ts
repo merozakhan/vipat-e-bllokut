@@ -201,33 +201,85 @@ export async function getArticlesByCategory(categoryId: number, limit: number = 
     .offset(offset);
 }
 
-// Trending/Engagement scoring
-const ENGAGEMENT_KEYWORDS = [
+// ─── View Tracking ──────────────────────────────────────────────────
+
+export async function incrementViews(articleId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(articles).set({ views: sql`views + 1` }).where(eq(articles.id, articleId));
+}
+
+// ─── Trending/Engagement Scoring ────────────────────────────────────
+
+// Scandal & controversy keywords (+3 each - heaviest weight)
+const SCANDAL_KEYWORDS = [
   "skandal", "arrest", "akuz", "vrasj", "vdekj", "korrupsion",
-  "tradhti", "krim", "drogë", "mashtrim", "grabitj", "përdhun",
-  "dënoj", "burg", "hetim", "spak", "prokurori", "gjyq",
-  "luftë", "sulm", "bomb", "terrorist", "tërmeti", "përmbytj",
-  "urgjent", "alarm", "krizë", "shpërthim", "zjarr",
-  "trump", "putin", "zelensky", "rama", "berisha", "kurti",
-  "protestë", "greve", "demonstrat", "rebelim", "kaos",
-  "milion", "miliard", "pasuri", "oligark", "sekret",
-  "ndaloj", "largoj", "dorëheq", "shkarkoj", "pusht",
+  "tradhti", "krim", "drog\u00EB", "mashtrim", "grabitj", "p\u00EBrdhun",
+  "d\u00EBnoj", "burg", "hetim", "spak", "prokurori", "gjyq",
+  "vjedhj", "mashtr", "afer", "abuzim", "shkel", "fsheh",
+  "p\u00EBrgjim", "prangos", "ekzekut", "rr\u00EBmbe", "pengmarrj",
+  "trafikim", "prostitucion", "pedofil", "dhun\u00EB", "thik", "arm\u00EB",
+  "plagos", "vrau", "vrar", "ekstradi", "arratis", "ikje",
+  "p\u00EBrplas", "gjakder", "masakr", "torturo", "k\u00EBrcej",
 ];
 
-export function calculateEngagementScore(title: string, excerpt: string | null): number {
+// Conflict & crisis keywords (+3 each)
+const CRISIS_KEYWORDS = [
+  "luft\u00EB", "sulm", "bomb", "terrorist", "t\u00EBrmeti", "p\u00EBrmbytj",
+  "urgjent", "alarm", "kriz\u00EB", "shp\u00EBrthim", "zjarr",
+  "protest\u00EB", "grev\u00EB", "demonstrat", "rebelim", "kaos",
+  "tensione", "incident", "aksident", "tragjedi", "fatkeq\u00EBsi",
+  "emergjenc\u00EB", "evakuim", "rr\u00EBzim", "shembje", "p\u00EBrplasj",
+];
+
+// Political figures (+2 each)
+const POLITICAL_FIGURES = [
+  "trump", "putin", "zelensky", "macron", "biden",
+  "rama", "berisha", "basha", "meta", "veliaj",
+  "kurti", "osmani", "tha\u00E7i", "vu\u00E7i\u00E7", "erdogan",
+  "von der leyen", "netanyahu", "kim jong",
+];
+
+// Power & money keywords (+2 each)
+const POWER_KEYWORDS = [
+  "milion", "miliard", "pasuri", "oligark", "sekret",
+  "ndaloj", "largoj", "dor\u00EBheq", "shkarkoj", "pusht",
+  "monopol", "tender\u00EB", "ryshfet", "para", "lek\u00EB",
+  "ekskluzive", "zbuloj", "zbulohet", "prapasken",
+  "konfidencial", "dokument", "d\u00EBshmi", "prova",
+];
+
+export function calculateEngagementScore(title: string, excerpt: string | null, views: number = 0, publishedAt: Date | string | null = null): number {
   const text = (title + ' ' + (excerpt || '')).toLowerCase();
   let score = 0;
-  for (const keyword of ENGAGEMENT_KEYWORDS) {
-    if (text.includes(keyword)) score += 2;
+
+  for (const kw of SCANDAL_KEYWORDS) { if (text.includes(kw)) score += 3; }
+  for (const kw of CRISIS_KEYWORDS) { if (text.includes(kw)) score += 3; }
+  for (const kw of POLITICAL_FIGURES) { if (text.includes(kw)) score += 2; }
+  for (const kw of POWER_KEYWORDS) { if (text.includes(kw)) score += 2; }
+
+  // Punctuation boosts
+  if (title.includes('?')) score += 4;   // Curiosity gap
+  if (title.includes('!')) score += 3;   // Urgency
+  if (/[""\u201C\u201D]/.test(title)) score += 3;  // Quotes = controversy
+  if (title.includes(':')) score += 1;   // Attribution
+  if (/^[A-Z\u00CB\u00C7\u00DC]{3,}/.test(title)) score += 2;  // ALL CAPS start
+
+  // Views: every 10 views = +1 (real engagement signal)
+  score += Math.floor(views / 10);
+
+  // Time decay: newer articles get massive boost, older ones fade
+  if (publishedAt) {
+    const pubDate = typeof publishedAt === 'string' ? new Date(publishedAt) : publishedAt;
+    const hoursAgo = (Date.now() - pubDate.getTime()) / (1000 * 60 * 60);
+    if (hoursAgo < 3) score += 20;
+    else if (hoursAgo < 6) score += 15;
+    else if (hoursAgo < 12) score += 10;
+    else if (hoursAgo < 24) score += 6;
+    else if (hoursAgo < 48) score += 3;
+    else if (hoursAgo < 72) score += 1;
   }
-  // Boost for question marks (curiosity gap)
-  if (title.includes('?')) score += 3;
-  // Boost for quotes (someone said something controversial)
-  if (title.includes('"') || title.includes('"') || title.includes('"')) score += 2;
-  // Boost for exclamation marks (urgency)
-  if (title.includes('!')) score += 2;
-  // Boost for colons (attribution: "Person: statement")
-  if (title.includes(':')) score += 1;
+
   return score;
 }
 
@@ -235,22 +287,49 @@ export async function getTrendingArticles(limit: number = 10) {
   const db = await getDb();
   if (!db) return [];
 
-  // Get recent published articles (last 48 hours worth, or all if fewer)
   const allRecent = await db
     .select()
     .from(articles)
     .where(eq(articles.status, "published"))
     .orderBy(desc(articles.publishedAt))
-    .limit(100);
+    .limit(150);
 
-  // Score and sort by engagement
+  // Score with time decay + views + keywords
   const scored = allRecent.map(article => ({
     ...article,
-    engagementScore: calculateEngagementScore(article.title, article.excerpt),
+    engagementScore: calculateEngagementScore(article.title, article.excerpt, article.views ?? 0, article.publishedAt),
   }));
 
   scored.sort((a, b) => b.engagementScore - a.engagementScore);
-  return scored.slice(0, limit);
+
+  // Category mixing: max half of trending from same category
+  const topCandidates = scored.slice(0, 50);
+  const result: typeof topCandidates = [];
+  const categoryCounts: Record<number, number> = {};
+  const MAX_PER_CAT = Math.ceil(limit / 2);
+
+  const catMap = new Map<number, number>();
+  for (const a of topCandidates) {
+    const cats = await getArticleCategories(a.id);
+    catMap.set(a.id, cats[0]?.id ?? -1);
+  }
+
+  for (const article of topCandidates) {
+    if (result.length >= limit) break;
+    const catId = catMap.get(article.id) ?? -1;
+    const count = categoryCounts[catId] || 0;
+    if (count >= MAX_PER_CAT) continue;
+    result.push(article);
+    categoryCounts[catId] = count + 1;
+  }
+
+  // Fill remaining if needed
+  for (const article of topCandidates) {
+    if (result.length >= limit) break;
+    if (!result.find(r => r.id === article.id)) result.push(article);
+  }
+
+  return result;
 }
 
 export async function getArticlesByCategorySlug(slug: string, limit: number = 10, offset: number = 0) {

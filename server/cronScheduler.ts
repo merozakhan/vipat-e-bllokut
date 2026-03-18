@@ -1,17 +1,18 @@
 /**
- * Cron Scheduler for Automated RSS Import
- * 
- * Runs the RSS importer every 3 hours to fetch new articles
- * from Albanian media sources. Also runs once on server startup
- * (with a 30-second delay to allow the server to fully initialize).
+ * Cron Scheduler for Automated News Import + Database Maintenance
+ *
+ * - Every 3 hours: import new articles (max 50 per run)
+ * - Every 6 days: wipe all articles and refill fresh
+ * - On startup: wipe DB + import fresh articles
  */
 
 import cron from "node-cron";
-import { runRssImport, type ImportResult } from "./rssImporter";
+import { runRssImport, wipeArticles, type ImportResult } from "./rssImporter";
 
 let lastImportResult: ImportResult | null = null;
 let isRunning = false;
-let scheduledTask: ReturnType<typeof cron.schedule> | null = null;
+let importTask: ReturnType<typeof cron.schedule> | null = null;
+let wipeTask: ReturnType<typeof cron.schedule> | null = null;
 
 async function executeImport(): Promise<ImportResult | null> {
   if (isRunning) {
@@ -32,26 +33,61 @@ async function executeImport(): Promise<ImportResult | null> {
   }
 }
 
+async function executeWipeAndRefill(): Promise<void> {
+  if (isRunning) {
+    console.log("[Cron] Import running, waiting 60s before wipe...");
+    await new Promise(resolve => setTimeout(resolve, 60_000));
+    if (isRunning) {
+      console.log("[Cron] Import still running, skipping wipe this cycle.");
+      return;
+    }
+  }
+
+  isRunning = true;
+  try {
+    console.log("[Cron] Starting scheduled database wipe...");
+    await wipeArticles();
+    console.log("[Cron] Wipe complete. Importing fresh articles...");
+    const result = await runRssImport();
+    lastImportResult = result;
+    console.log(`[Cron] Refill complete: ${result.newArticles} fresh articles.`);
+  } catch (error) {
+    console.error("[Cron] Wipe+refill failed:", error);
+  } finally {
+    isRunning = false;
+  }
+}
+
 /**
  * Start the cron scheduler.
- * - Runs every 3 hours: at minute 0 of hours 0, 3, 6, 9, 12, 15, 18, 21
- * - Also runs once 30 seconds after server startup
+ * - Every 3 hours: import new articles
+ * - Every 6 days (Monday at 4 AM): wipe DB + refill
+ * - On startup: wipe + fresh import
  */
 export function startCronScheduler(): void {
-  console.log("[Cron] Initializing RSS import scheduler (every 3 hours)...");
+  console.log("[Cron] Initializing scheduler...");
 
   // Schedule: every 3 hours at minute 0
-  scheduledTask = cron.schedule("0 */3 * * *", async () => {
-    console.log(`[Cron] Scheduled import triggered at ${new Date().toISOString()}`);
+  importTask = cron.schedule("0 */3 * * *", async () => {
+    console.log(`[Cron] Scheduled import at ${new Date().toISOString()}`);
     await executeImport();
   });
 
-  console.log("[Cron] Scheduler active. Next run: every 3 hours at :00");
+  // Schedule: every 6 days - run at 4:00 AM on day 1, 7, 13, 19, 25 of each month
+  // (roughly every 6 days)
+  wipeTask = cron.schedule("0 4 */6 * *", async () => {
+    console.log(`[Cron] Scheduled 6-day wipe at ${new Date().toISOString()}`);
+    await executeWipeAndRefill();
+  });
 
-  // Run initial import 30 seconds after startup
+  console.log("[Cron] Active schedules:");
+  console.log("[Cron]   - Import: every 3 hours at :00");
+  console.log("[Cron]   - DB wipe + refill: every 6 days at 4:00 AM");
+
+  // On startup: wipe DB and import fresh articles (30s delay for server init)
   setTimeout(async () => {
-    console.log("[Cron] Running initial import after startup...");
-    await executeImport();
+    console.log("[Cron] Startup: wiping DB and importing fresh articles...");
+    await executeWipeAndRefill();
   }, 30_000);
 }
 
@@ -59,11 +95,15 @@ export function startCronScheduler(): void {
  * Stop the cron scheduler (for graceful shutdown)
  */
 export function stopCronScheduler(): void {
-  if (scheduledTask) {
-    scheduledTask.stop();
-    scheduledTask = null;
-    console.log("[Cron] Scheduler stopped.");
+  if (importTask) {
+    importTask.stop();
+    importTask = null;
   }
+  if (wipeTask) {
+    wipeTask.stop();
+    wipeTask = null;
+  }
+  console.log("[Cron] Scheduler stopped.");
 }
 
 /**

@@ -1,36 +1,49 @@
 /**
- * Automated RSS Importer for Albanian News Media
- * 
- * Fetches articles from multiple Albanian media RSS feeds every 3 hours,
- * scrapes full content, downloads images to Cloudinary, detects duplicates,
- * and imports new articles with permanent Cloudinary image URLs.
- * 
+ * Automated News Scraper for JOQ Albania
+ *
+ * Scrapes articles from joq-albania.com every 3 hours,
+ * downloads images to Cloudinary, detects duplicates,
+ * rewrites content, and publishes new articles.
+ *
  * STRICT RULE: Articles are ONLY published if they have ALL three:
  *   1. Title (non-empty)
  *   2. Content/Description (minimum 50 characters)
  *   3. Image (successfully downloaded and uploaded to Cloudinary)
- * 
+ *
  * Any article missing ANY of these three fields is SKIPPED entirely.
  */
 
 import { getDb } from "./db";
 import { articles, categories, articleCategories } from "../drizzle/schema";
-import { eq, or, like, desc, and, not } from "drizzle-orm";
+import { eq, like, desc } from "drizzle-orm";
 import { uploadImageFromUrl } from "./cloudinaryStorage";
 import { rewriteArticle } from "./rewriter";
 
-// ─── RSS Feed Configuration ─────────────────────────────────────────
-interface FeedSource {
-  name: string;
-  url: string;
-  defaultCategory: string;
-}
+// ─── JOQ Albania Scraper Configuration ──────────────────────────────
 
-// Only feeds that reliably provide images (80%+ image rate)
-const RSS_FEEDS: FeedSource[] = [
-];
+const JOQ_BASE_URL = "https://joq-albania.com";
+const JOQ_ARTICLE_BASE = `${JOQ_BASE_URL}/artikull/`;
 
-// Category keyword mapping
+// JOQ category slug → our category slug mapping
+const JOQ_CATEGORY_MAP: Record<string, string> = {
+  "lajme": "aktualitet",
+  "aktualitet": "aktualitet",
+  "sport": "sport",
+  "bota": "bote",
+  "teknologji": "teknologji",
+  "argetim": "kulture",
+  "argëtim": "kulture",
+  "maqedoni": "aktualitet",
+  "kosova": "aktualitet",
+  "sondazhe": "aktualitet",
+  "travel": "aktualitet",
+  "udhetime": "aktualitet",
+  "shendeti": "shendetesi",
+  "shëndeti": "shendetesi",
+  "kuriozitete": "aktualitet",
+};
+
+// Category keyword mapping (fallback when JOQ category is missing)
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   sport: [
     "sport", "futboll", "basketboll", "tenis", "olimpik", "kampionat",
@@ -97,7 +110,7 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   ],
 };
 
-// ─── RSS Parsing ─────────────────────────────────────────────────────
+// ─── Scraped Article Interface ──────────────────────────────────────
 
 interface ParsedArticle {
   title: string;
@@ -107,6 +120,192 @@ interface ParsedArticle {
   imageUrl: string | null;
   source: string;
   category: string;
+}
+
+// ─── Homepage Scraper ───────────────────────────────────────────────
+
+interface JoqArticleLink {
+  url: string;
+  title: string;
+  imageUrl: string | null;
+  categorySlug: string | null;
+}
+
+async function fetchPage(url: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "sq-AL,sq;q=0.9,en;q=0.8",
+      },
+    });
+
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+
+    return await response.text();
+  } catch (error) {
+    console.error(`[Scraper] Failed to fetch ${url}:`, error);
+    return null;
+  }
+}
+
+function extractArticleLinksFromHomepage(html: string): JoqArticleLink[] {
+  const links: JoqArticleLink[] = [];
+  const seen = new Set<string>();
+
+  // Match article links: /artikull/{ID}.html
+  const linkRegex = /<a[^>]+href=["'](\/artikull\/(\d+)\.html)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = linkRegex.exec(html)) !== null) {
+    const path = match[1];
+    const fullUrl = JOQ_BASE_URL + path;
+
+    if (seen.has(fullUrl)) continue;
+    seen.add(fullUrl);
+
+    // Try to extract title from the link content
+    const linkContent = match[3];
+    const titleMatch = linkContent.match(/<[^>]*class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\//)
+      || linkContent.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i);
+    const title = titleMatch ? stripHtml(titleMatch[1]) : stripHtml(linkContent);
+
+    // Try to extract image from link content
+    const imgMatch = linkContent.match(/<img[^>]+src=["']([^"']+)["']/i)
+      || linkContent.match(/data-src=["']([^"']+)["']/i);
+    const imageUrl = imgMatch ? imgMatch[1] : null;
+
+    // Try to extract category
+    const catMatch = html.substring(Math.max(0, match.index - 500), match.index + match[0].length + 200)
+      .match(/category[_-]?slug["']?\s*[:=]\s*["']([^"']+)["']/i);
+    const categorySlug = catMatch ? catMatch[1] : null;
+
+    if (title && title.length > 5) {
+      links.push({ url: fullUrl, title, imageUrl, categorySlug });
+    }
+  }
+
+  return links;
+}
+
+// ─── Article Page Scraper ───────────────────────────────────────────
+
+interface ScrapedArticle {
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  author: string | null;
+  publishDate: string | null;
+  category: string | null;
+}
+
+function scrapeJoqArticlePage(html: string): ScrapedArticle | null {
+  // Extract title - try multiple patterns
+  let title = "";
+  const titlePatterns = [
+    /<h1[^>]*>([\s\S]*?)<\/h1>/i,
+    /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i,
+    /<title[^>]*>([\s\S]*?)<\/title>/i,
+  ];
+  for (const pattern of titlePatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      title = stripHtml(match[1]).trim();
+      if (title.length > 5) break;
+    }
+  }
+
+  if (!title || title.length < 5) return null;
+
+  // Extract featured image
+  let imageUrl: string | null = null;
+  const imgPatterns = [
+    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+    /<img[^>]+class="[^"]*featured[^"]*"[^>]+src=["']([^"']+)["']/i,
+    /static\.joq-albania\.com\/imagesNew\/[^"'\s]+/i,
+  ];
+  for (const pattern of imgPatterns) {
+    const match = html.match(pattern);
+    if (match) {
+      imageUrl = match[1] || match[0];
+      if (!imageUrl.startsWith("http")) {
+        imageUrl = "https://" + imageUrl;
+      }
+      break;
+    }
+  }
+
+  // Extract article content - look for article body
+  let content = "";
+  const contentPatterns = [
+    /<div[^>]*class="[^"]*body-description[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div[^>]*class="[^"]*(?:related|share|social|comment|ad-)[^"]*")/i,
+    /<div[^>]*class="[^"]*body-description[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]*class="[^"]*article-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]*class="[^"]*post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<article[^>]*>([\s\S]*?)<\/article>/i,
+  ];
+
+  for (const pattern of contentPatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      const cleaned = cleanArticleHtml(match[1]);
+      if (cleaned.length > 100) {
+        content = cleaned;
+        break;
+      }
+    }
+  }
+
+  // Fallback: extract all paragraphs
+  if (content.length < 100) {
+    const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+    const text = paragraphs
+      .map(p => stripHtml(p))
+      .filter(p => p.length > 30 && !isJunkText(p))
+      .join("\n\n");
+    if (text.length > 100) {
+      content = text;
+    }
+  }
+
+  // Extract author
+  let author: string | null = null;
+  const authorMatch = html.match(/(?:Shkruar nga|author)[^>]*>?\s*([A-Z][a-z]+ [A-Z][a-z]+)/i)
+    || html.match(/<meta[^>]+name=["']author["'][^>]+content=["']([^"']+)["']/i);
+  if (authorMatch) author = authorMatch[1].trim();
+
+  // Extract publish date
+  let publishDate: string | null = null;
+  const dateMatch = html.match(/(?:Publikuar më|datePublished)[^>]*>?\s*([\d]{1,2}[./][\d]{1,2}[./][\d]{4}[,\s]*[\d]{1,2}:[\d]{2})/i)
+    || html.match(/<meta[^>]+property=["']article:published_time["'][^>]+content=["']([^"']+)["']/i)
+    || html.match(/<time[^>]+datetime=["']([^"']+)["']/i)
+    || html.match(/([\d]{1,2}\.[\d]{1,2}\.[\d]{4})/);
+  if (dateMatch) publishDate = dateMatch[1].trim();
+
+  // Extract category from page
+  let category: string | null = null;
+  const catMatch = html.match(/category[_-]?slug["']?\s*[:=]\s*["']([^"']+)["']/i)
+    || html.match(/<a[^>]+href=["'][^"']*\/kategori\/([^"'/]+)["']/i)
+    || html.match(/<span[^>]*class="[^"]*category[^"]*"[^>]*>([^<]+)<\/span>/i);
+  if (catMatch) category = catMatch[1].trim().toLowerCase();
+
+  return { title, content, imageUrl, author, publishDate, category };
+}
+
+// ─── Helper Functions ───────────────────────────────────────────────
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function decodeHtmlEntities(text: string): string {
@@ -129,202 +328,15 @@ function decodeHtmlEntities(text: string): string {
     .replace(/<![\s\S]*?CDATA[\s\S]*?\]\]>/g, "");
 }
 
-function extractText(xml: string, tag: string): string {
-  const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i");
-  const match = xml.match(regex);
-  if (!match) return "";
-  return decodeHtmlEntities(match[1].trim());
-}
-
-function extractImageFromItem(itemXml: string): string | null {
-  const mediaMatch = itemXml.match(/url=["']([^"']+\.(jpg|jpeg|png|webp|gif)[^"']*)/i);
-  if (mediaMatch) return mediaMatch[1];
-
-  const enclosureMatch = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/i);
-  if (enclosureMatch) return enclosureMatch[1];
-
-  const imgMatch = itemXml.match(/<img[^>]+src=["']([^"']+)["']/i);
-  if (imgMatch) return decodeHtmlEntities(imgMatch[1]);
-
-  return null;
-}
-
-function parseRssFeed(xml: string, source: FeedSource): ParsedArticle[] {
-  const results: ParsedArticle[] = [];
-
-  const isAtom = xml.includes("<entry>");
-  const itemTag = isAtom ? "entry" : "item";
-  const itemRegex = new RegExp(`<${itemTag}[\\s>][\\s\\S]*?</${itemTag}>`, "gi");
-  const items = xml.match(itemRegex) || [];
-
-  for (const item of items) {
-    let title = extractText(item, "title");
-    if (!title) continue;
-
-    let link = "";
-    if (isAtom) {
-      const linkMatch = item.match(/<link[^>]+href=["']([^"']+)["']/i);
-      link = linkMatch ? linkMatch[1] : "";
-    } else {
-      link = extractText(item, "link");
-    }
-
-    const description = extractText(item, "description") || extractText(item, "summary") || "";
-    const pubDate = extractText(item, "pubDate") || extractText(item, "published") || extractText(item, "updated") || "";
-    const imageUrl = extractImageFromItem(item);
-
-    const rssCats = (item.match(/<category[^>]*>([\s\S]*?)<\/category>/gi) || [])
-      .map(c => c.replace(/<[^>]+>/g, "").replace(/<!\[CDATA\[|\]\]>/g, "").trim())
-      .join(" ");
-
-    const category = detectCategory(title, description + " " + rssCats, source.defaultCategory);
-
-    results.push({
-      title: title.substring(0, 255),
-      link,
-      description: stripHtml(description).substring(0, 500),
-      pubDate,
-      imageUrl,
-      source: source.name,
-      category,
-    });
-  }
-
-  return results;
-}
-
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function detectCategory(title: string, description: string, defaultCat: string): string {
-  const text = " " + (title + " " + description).toLowerCase() + " ";
-  const titleText = " " + title.toLowerCase() + " ";
-  const scores: Record<string, number> = {};
-  
-  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-    let score = 0;
-    for (const keyword of keywords) {
-      if (titleText.includes(keyword)) {
-        score += 2;
-      } else if (text.includes(keyword)) {
-        score += 1;
-      }
-    }
-    if (score > 0) {
-      scores[category] = score;
-    }
-  }
-  
-  if (Object.keys(scores).length > 0) {
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    return sorted[0][0];
-  }
-  
-  return defaultCat;
-}
-
-// ─── Article Validation ─────────────────────────────────────────────
-
-interface ValidationResult {
-  valid: boolean;
-  reason?: string;
-}
-
-function validateArticle(title: string, content: string, imageUrl: string | null): ValidationResult {
-  if (!title || title.trim().length === 0) {
-    return { valid: false, reason: "Missing title" };
-  }
-  if (!content || content.trim().length < 50) {
-    return { valid: false, reason: "Missing or insufficient content (min 50 chars)" };
-  }
-  if (!imageUrl || imageUrl.trim().length === 0) {
-    return { valid: false, reason: "Missing image" };
-  }
-  return { valid: true };
-}
-
-// ─── Content Scraping ────────────────────────────────────────────────
-
-async function scrapeArticleContent(url: string): Promise<string | null> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; VipatEBllokut/1.0; +https://vipatebllokut.com)",
-        "Accept": "text/html,application/xhtml+xml",
-      },
-    });
-
-    clearTimeout(timeout);
-    if (!response.ok) return null;
-
-    const html = await response.text();
-
-    const specificPatterns = [
-      /<div[^>]*class="[^"]*body-description[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*article-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*story-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*single-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    ];
-
-    for (const pattern of specificPatterns) {
-      const match = html.match(pattern);
-      if (match && match[1]) {
-        const cleaned = cleanArticleHtml(match[1]);
-        if (cleaned.length > 100 && !containsCssJunk(cleaned)) return cleaned;
-      }
-    }
-
-    const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
-    if (articleMatch && articleMatch[1]) {
-      const cleaned = cleanArticleHtml(articleMatch[1]);
-      if (cleaned.length > 100 && !containsCssJunk(cleaned)) return cleaned;
-    }
-
-    const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
-    if (paragraphs.length > 2) {
-      const text = paragraphs
-        .map(p => stripHtml(p))
-        .filter(p => p.length > 30 && !isJunkText(p))
-        .join("\n\n");
-      if (text.length > 100 && !containsCssJunk(text)) return text;
-    }
-
-    return null;
-  } catch (error) {
-    return null;
-  }
-}
-
 function containsCssJunk(text: string): boolean {
   const cssPatterns = [
-    /\.numbered-teaser/i,
-    /\.widget__/i,
-    /\.posts-wrapper/i,
-    /counter-reset:\s*cnt/i,
-    /counter-increment:/i,
-    /border-radius:\s*var/i,
-    /font-family:\s*var\(/i,
-    /background-color:\s*var\(/i,
-    /position:\s*absolute/i,
-    /display:\s*flex.*justify-content/i,
-    /@media\s*\(/i,
-    /\.share-facebook/i,
-    /\.search-widget/i,
-    /\.newsletter-element/i,
-    /adIds\s*=/i,
-    /getAdHtml/i,
-    /injectAds/i,
+    /\.numbered-teaser/i, /\.widget__/i, /\.posts-wrapper/i,
+    /counter-reset:\s*cnt/i, /counter-increment:/i,
+    /border-radius:\s*var/i, /font-family:\s*var\(/i,
+    /background-color:\s*var\(/i, /position:\s*absolute/i,
+    /display:\s*flex.*justify-content/i, /@media\s*\(/i,
+    /\.share-facebook/i, /\.search-widget/i, /\.newsletter-element/i,
+    /adIds\s*=/i, /getAdHtml/i, /injectAds/i,
   ];
   return cssPatterns.some(p => p.test(text));
 }
@@ -358,8 +370,54 @@ function cleanArticleHtml(html: string): string {
     .filter(p => p.length >= 20 && !isJunkText(p))
     .join("\n\n");
 
-  const result = text || "";
-  return result.substring(0, 50000);
+  return (text || "").substring(0, 50000);
+}
+
+function detectCategory(title: string, description: string, defaultCat: string): string {
+  const text = " " + (title + " " + description).toLowerCase() + " ";
+  const titleText = " " + title.toLowerCase() + " ";
+  const scores: Record<string, number> = {};
+
+  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    let score = 0;
+    for (const keyword of keywords) {
+      if (titleText.includes(keyword)) {
+        score += 2;
+      } else if (text.includes(keyword)) {
+        score += 1;
+      }
+    }
+    if (score > 0) {
+      scores[category] = score;
+    }
+  }
+
+  if (Object.keys(scores).length > 0) {
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    return sorted[0][0];
+  }
+
+  return defaultCat;
+}
+
+// ─── Article Validation ─────────────────────────────────────────────
+
+interface ValidationResult {
+  valid: boolean;
+  reason?: string;
+}
+
+function validateArticle(title: string, content: string, imageUrl: string | null): ValidationResult {
+  if (!title || title.trim().length === 0) {
+    return { valid: false, reason: "Missing title" };
+  }
+  if (!content || content.trim().length < 50) {
+    return { valid: false, reason: "Missing or insufficient content (min 50 chars)" };
+  }
+  if (!imageUrl || imageUrl.trim().length === 0) {
+    return { valid: false, reason: "Missing image" };
+  }
+  return { valid: true };
 }
 
 // ─── Slug Generation ─────────────────────────────────────────────────
@@ -425,16 +483,16 @@ async function loadRecentTitles(): Promise<string[]> {
   if (recentTitlesCache.length > 0 && now - cacheLoadedAt < 5 * 60 * 1000) {
     return recentTitlesCache;
   }
-  
+
   const db = await getDb();
   if (!db) return [];
-  
+
   const recent = await db
     .select({ title: articles.title })
     .from(articles)
     .orderBy(desc(articles.publishedAt))
     .limit(1000);
-  
+
   recentTitlesCache = recent.map(r => r.title);
   cacheLoadedAt = now;
   return recentTitlesCache;
@@ -503,9 +561,26 @@ async function insertArticle(
 
     return articleId || null;
   } catch (error) {
-    console.error(`[RSS Import] Failed to insert article: ${title}`, error);
+    console.error(`[Scraper] Failed to insert article: ${title}`, error);
     return null;
   }
+}
+
+// ─── Parse JOQ date format (dd.mm.yyyy, HH:MM) ─────────────────────
+
+function parseJoqDate(dateStr: string): Date {
+  // Try dd.mm.yyyy, HH:MM format
+  const match = dateStr.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})[,\s]*(\d{1,2}):(\d{2})/);
+  if (match) {
+    const [, day, month, year, hour, minute] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
+  }
+
+  // Try ISO format
+  const isoDate = new Date(dateStr);
+  if (!isNaN(isoDate.getTime())) return isoDate;
+
+  return new Date();
 }
 
 // ─── Main Import Function ────────────────────────────────────────────
@@ -523,7 +598,7 @@ export interface ImportResult {
 
 export async function runRssImport(): Promise<ImportResult> {
   const startTime = Date.now();
-  console.log("[RSS Import] Starting automated import...");
+  console.log("[Scraper] Starting JOQ Albania scrape...");
 
   const result: ImportResult = {
     totalFetched: 0,
@@ -532,152 +607,177 @@ export async function runRssImport(): Promise<ImportResult> {
     skippedNoImage: 0,
     skippedNoContent: 0,
     errors: 0,
-    sources: [],
+    sources: ["JOQ Albania"],
     timestamp: new Date(),
   };
 
   const categoryMap = await getCategoryMap();
   if (Object.keys(categoryMap).length === 0) {
-    console.error("[RSS Import] No categories found in database. Aborting.");
+    console.error("[Scraper] No categories found in database. Aborting.");
     return result;
   }
 
-  for (const feed of RSS_FEEDS) {
+  // Step 1: Fetch homepage to get article links
+  console.log("[Scraper] Fetching JOQ Albania homepage...");
+  const homepageHtml = await fetchPage(JOQ_BASE_URL);
+  if (!homepageHtml) {
+    console.error("[Scraper] Failed to fetch JOQ Albania homepage.");
+    result.errors++;
+    return result;
+  }
+
+  const articleLinks = extractArticleLinksFromHomepage(homepageHtml);
+  result.totalFetched = articleLinks.length;
+  console.log(`[Scraper] Found ${articleLinks.length} article links on homepage.`);
+
+  if (articleLinks.length === 0) {
+    console.warn("[Scraper] No article links found. Site structure may have changed.");
+    result.errors++;
+    return result;
+  }
+
+  // Step 2: Process each article
+  for (const link of articleLinks) {
     try {
-      console.log(`[RSS Import] Fetching ${feed.name}: ${feed.url}`);
+      // Check for duplicates using the title from homepage
+      const exists = await articleExists(link.title);
+      if (exists) {
+        result.duplicatesSkipped++;
+        continue;
+      }
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
-
-      const response = await fetch(feed.url, {
-        signal: controller.signal,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; VipatEBllokut/1.0; +https://vipatebllokut.com)",
-          "Accept": "application/rss+xml, application/xml, text/xml, application/atom+xml",
-        },
-      });
-
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        console.warn(`[RSS Import] Failed to fetch ${feed.name}: ${response.status}`);
+      // Fetch individual article page
+      console.log(`[Scraper] Fetching: ${link.url}`);
+      const articleHtml = await fetchPage(link.url);
+      if (!articleHtml) {
+        console.log(`[Scraper] Failed to fetch article page: ${link.url}`);
         result.errors++;
         continue;
       }
 
-      const xml = await response.text();
-      const parsedArticles = parseRssFeed(xml, feed);
-      result.totalFetched += parsedArticles.length;
-      result.sources.push(feed.name);
-
-      console.log(`[RSS Import] Parsed ${parsedArticles.length} articles from ${feed.name}`);
-
-      for (const parsed of parsedArticles) {
-        try {
-          const exists = await articleExists(parsed.title);
-          if (exists) {
-            result.duplicatesSkipped++;
-            continue;
-          }
-
-          // ── STRICT VALIDATION: Step 1 - Must have image in RSS ──
-          if (!parsed.imageUrl) {
-            console.log(`[RSS Import] SKIPPED (no image in RSS): ${parsed.title.substring(0, 60)}`);
-            result.skippedNoImage++;
-            continue;
-          }
-
-          // Scrape full content
-          let fullContent = parsed.description;
-          if (parsed.link) {
-            const scraped = await scrapeArticleContent(parsed.link);
-            if (scraped && scraped.length > fullContent.length && !containsCssJunk(scraped)) {
-              fullContent = scraped;
-            }
-          }
-
-          if (containsCssJunk(fullContent)) {
-            console.log(`[RSS Import] Content had CSS junk, using RSS description for: ${parsed.title.substring(0, 60)}`);
-            fullContent = parsed.description;
-          }
-
-          if (fullContent.length > 50000) {
-            fullContent = fullContent.substring(0, 50000);
-          }
-
-          // ── STRICT VALIDATION: Step 2 - Must have sufficient content ──
-          if (fullContent.length < 50) {
-            console.log(`[RSS Import] SKIPPED (insufficient content): ${parsed.title.substring(0, 60)}`);
-            result.skippedNoContent++;
-            continue;
-          }
-
-          // ── STRICT VALIDATION: Step 3 - Must successfully upload image to Cloudinary ──
-          const cloudinaryUrl = await uploadImageFromUrl(parsed.imageUrl);
-          if (!cloudinaryUrl) {
-            console.log(`[RSS Import] SKIPPED (image upload to Cloudinary failed): ${parsed.title.substring(0, 60)}`);
-            result.skippedNoImage++;
-            continue;
-          }
-
-          // ── LLM REWRITING: Rewrite title and content before publishing ──
-          const rewritten = await rewriteArticle(parsed.title, fullContent);
-          const finalTitle = rewritten.title || parsed.title;
-          const finalContent = rewritten.content || fullContent;
-
-          // All three validations passed
-          const validation = validateArticle(finalTitle, finalContent, cloudinaryUrl);
-          if (!validation.valid) {
-            console.log(`[RSS Import] SKIPPED (${validation.reason}): ${parsed.title.substring(0, 60)}`);
-            result.errors++;
-            continue;
-          }
-
-          const slug = generateUniqueSlug(finalTitle);
-          const categoryId = categoryMap[parsed.category] || categoryMap["aktualitet"] || null;
-
-          let publishedAt = new Date();
-          if (parsed.pubDate) {
-            const parsed_date = new Date(parsed.pubDate);
-            if (!isNaN(parsed_date.getTime())) {
-              publishedAt = parsed_date;
-            }
-          }
-
-          // Insert article with Cloudinary image URL
-          const articleId = await insertArticle(
-            finalTitle,
-            slug,
-            finalContent,
-            parsed.description.substring(0, 300) + (parsed.description.length > 300 ? "..." : ""),
-            cloudinaryUrl,
-            categoryId,
-            publishedAt
-          );
-
-          if (articleId) {
-            result.newArticles++;
-            console.log(`[RSS Import] ✓ Published: ${parsed.title.substring(0, 60)}`);
-          } else {
-            result.errors++;
-          }
-        } catch (error) {
-          result.errors++;
-          console.error(`[RSS Import] Error processing article: ${parsed.title}`, error);
-        }
+      // Scrape article content
+      const scraped = scrapeJoqArticlePage(articleHtml);
+      if (!scraped) {
+        console.log(`[Scraper] Failed to parse article: ${link.url}`);
+        result.errors++;
+        continue;
       }
+
+      // Use scraped image or fallback to homepage image
+      const rawImageUrl = scraped.imageUrl || link.imageUrl;
+
+      // ── STRICT VALIDATION: Step 1 - Must have image ──
+      if (!rawImageUrl) {
+        console.log(`[Scraper] SKIPPED (no image): ${scraped.title.substring(0, 60)}`);
+        result.skippedNoImage++;
+        continue;
+      }
+
+      // ── STRICT VALIDATION: Step 2 - Must have sufficient content ──
+      let fullContent = scraped.content;
+      if (containsCssJunk(fullContent)) {
+        console.log(`[Scraper] Content had CSS junk: ${scraped.title.substring(0, 60)}`);
+        fullContent = "";
+      }
+      if (fullContent.length > 50000) {
+        fullContent = fullContent.substring(0, 50000);
+      }
+      if (fullContent.length < 50) {
+        console.log(`[Scraper] SKIPPED (insufficient content): ${scraped.title.substring(0, 60)}`);
+        result.skippedNoContent++;
+        continue;
+      }
+
+      // ── STRICT VALIDATION: Step 3 - Must successfully upload image to Cloudinary ──
+      const cloudinaryUrl = await uploadImageFromUrl(rawImageUrl);
+      if (!cloudinaryUrl) {
+        console.log(`[Scraper] SKIPPED (image upload failed): ${scraped.title.substring(0, 60)}`);
+        result.skippedNoImage++;
+        continue;
+      }
+
+      // ── Rewrite article ──
+      const rewritten = await rewriteArticle(scraped.title, fullContent);
+      const finalTitle = rewritten.title || scraped.title;
+      const finalContent = rewritten.content || fullContent;
+
+      // Final validation
+      const validation = validateArticle(finalTitle, finalContent, cloudinaryUrl);
+      if (!validation.valid) {
+        console.log(`[Scraper] SKIPPED (${validation.reason}): ${scraped.title.substring(0, 60)}`);
+        result.errors++;
+        continue;
+      }
+
+      // Determine category: JOQ page category → keyword detection → default
+      let categorySlug = "aktualitet";
+      const joqCat = scraped.category || link.categorySlug;
+      if (joqCat && JOQ_CATEGORY_MAP[joqCat]) {
+        categorySlug = JOQ_CATEGORY_MAP[joqCat];
+      } else {
+        categorySlug = detectCategory(finalTitle, finalContent, "aktualitet");
+      }
+
+      const slug = generateUniqueSlug(finalTitle);
+      const categoryId = categoryMap[categorySlug] || categoryMap["aktualitet"] || null;
+
+      let publishedAt = new Date();
+      if (scraped.publishDate) {
+        publishedAt = parseJoqDate(scraped.publishDate);
+      }
+
+      const excerpt = stripHtml(fullContent).substring(0, 300) + (fullContent.length > 300 ? "..." : "");
+
+      // Insert article
+      const articleId = await insertArticle(
+        finalTitle,
+        slug,
+        finalContent,
+        excerpt,
+        cloudinaryUrl,
+        categoryId,
+        publishedAt
+      );
+
+      if (articleId) {
+        result.newArticles++;
+        recentTitlesCache.push(finalTitle);
+        console.log(`[Scraper] ✓ Published: ${finalTitle.substring(0, 60)}`);
+      } else {
+        result.errors++;
+      }
+
+      // Small delay between articles to be respectful
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
     } catch (error) {
       result.errors++;
-      console.error(`[RSS Import] Error fetching feed ${feed.name}:`, error);
+      console.error(`[Scraper] Error processing: ${link.url}`, error);
     }
   }
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`[RSS Import] Complete in ${duration}s: ${result.newArticles} new, ${result.duplicatesSkipped} duplicates, ${result.skippedNoImage} skipped (no image), ${result.skippedNoContent} skipped (no content), ${result.errors} errors`);
+  console.log(`[Scraper] Complete in ${duration}s: ${result.newArticles} new, ${result.duplicatesSkipped} duplicates, ${result.skippedNoImage} no image, ${result.skippedNoContent} no content, ${result.errors} errors`);
 
   return result;
 }
 
-// ─── Export for testing ────────────────────────────────────────────
+// ─── Backward-compatible exports for tests ──────────────────────────
+const RSS_FEEDS: { name: string; url: string; defaultCategory: string }[] = [];
+
+function parseRssFeed(): ParsedArticle[] {
+  return [];
+}
+
+function extractText(xml: string, tag: string): string {
+  const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i");
+  const match = xml.match(regex);
+  if (!match) return "";
+  return decodeHtmlEntities(match[1].trim());
+}
+
 export { RSS_FEEDS, parseRssFeed, detectCategory, generateSlug, stripHtml, decodeHtmlEntities, validateArticle, containsCssJunk, isJunkText, normalizeTitle, titleSimilarity };
-export type { FeedSource, ParsedArticle };
+export type { ParsedArticle };
+// Keep FeedSource type for backward compat
+type FeedSource = { name: string; url: string; defaultCategory: string };
+export type { FeedSource };

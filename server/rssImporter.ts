@@ -28,16 +28,6 @@ interface FeedSource {
 
 // Only feeds that reliably provide images (80%+ image rate)
 const RSS_FEEDS: FeedSource[] = [
-  { name: "Koha.net", url: "https://www.koha.net/rss", defaultCategory: "aktualitet" },
-  { name: "Gazeta Express", url: "https://www.gazetaexpress.com/feed/", defaultCategory: "aktualitet" },
-  { name: "Reporter.al", url: "https://reporter.al/feed/", defaultCategory: "aktualitet" },
-  { name: "Telegrafi.com", url: "https://telegrafi.com/feed/", defaultCategory: "aktualitet" },
-  { name: "Albeu.com", url: "https://albeu.com/rss", defaultCategory: "aktualitet" },
-  { name: "News24.al", url: "https://www.news24.al/feed/", defaultCategory: "aktualitet" },
-  { name: "Vizion Plus", url: "https://vizionplus.tv/feed/", defaultCategory: "aktualitet" },
-  { name: "BalkanInsight", url: "https://balkaninsight.com/feed/", defaultCategory: "bote" },
-  { name: "Epoka e Re", url: "https://www.epokaere.com/feed/", defaultCategory: "aktualitet" },
-  { name: "Zeri.info", url: "https://zeri.info/rss", defaultCategory: "aktualitet" },
 ];
 
 // Category keyword mapping

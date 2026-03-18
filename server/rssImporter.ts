@@ -126,27 +126,23 @@ interface ParsedArticle {
   category: string;
 }
 
-// ─── JOQ API + Page Scraper ──────────────────────────────────────────
+// ─── JOQ Category Page Scraper ───────────────────────────────────────
 
-// How many pages to fetch from the load-more API (each page ~24 articles)
-const MAX_API_PAGES = 5; // ~100-120 articles per run
-
-interface JoqApiArticle {
-  title: string;
-  post_date: string;
-  image: string;
-  link: string;
-  cat?: string;
-  cat_slug?: string;
-  author_name?: string;
-  author_lastname?: string;
-}
-
-interface JoqApiResponse {
-  featured?: JoqApiArticle[];
-  top?: JoqApiArticle[];
-  last?: JoqApiArticle[];
-}
+// All JOQ category pages to scrape (~100 articles each, all pre-loaded in HTML)
+const JOQ_CATEGORY_PAGES = [
+  "lajme",
+  "sport",
+  "bota",
+  "teknologji",
+  "argetim",
+  "shendeti",
+  "kuriozitete",
+  "thashetheme",
+  "udhetime",
+  "sondazhe",
+  "vec-e-jona",
+  "si-te",
+];
 
 interface JoqArticleLink {
   url: string;
@@ -180,99 +176,88 @@ async function fetchPage(url: string): Promise<string | null> {
   }
 }
 
-async function fetchJoqApiPage(offset: number): Promise<JoqApiArticle[]> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+/**
+ * Scrape a single JOQ category page for all article links.
+ * Each page has ~100 articles pre-loaded (the "Më shumë" button is just CSS).
+ */
+async function scrapeJoqCategoryPage(categorySlug: string): Promise<JoqArticleLink[]> {
+  const url = `${JOQ_BASE_URL}/kategori/${categorySlug}.html`;
+  console.log(`[Scraper] Fetching category page: ${categorySlug}`);
 
-    const url = `https://admin.joq-albania.com/more-home?featuredOffset=${offset}&topOffset=${offset}&lastOffset=${offset}`;
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Referer": "https://joq-albania.com/",
-        "X-Requested-With": "XMLHttpRequest",
-        "Accept": "application/json, text/html, */*",
-      },
-    });
-
-    clearTimeout(timeout);
-    if (!response.ok) return [];
-
-    const text = await response.text();
-    if (!text || text.length < 10) return [];
-
-    const data: JoqApiResponse = JSON.parse(text);
-    const allArticles: JoqApiArticle[] = [
-      ...(data.featured || []),
-      ...(data.top || []),
-      ...(data.last || []),
-    ];
-
-    return allArticles;
-  } catch (error) {
-    console.error(`[Scraper] Failed to fetch JOQ API page at offset ${offset}:`, error);
+  const html = await fetchPage(url);
+  if (!html) {
+    console.log(`[Scraper] Failed to fetch category: ${categorySlug}`);
     return [];
   }
+
+  const links: JoqArticleLink[] = [];
+
+  // Extract article links - pattern: /artikull/{id}.html
+  const regex = /\/artikull\/(\d+)\.html/g;
+  const seen = new Set<string>();
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    const fullUrl = JOQ_BASE_URL + match[0];
+    if (seen.has(fullUrl)) continue;
+    seen.add(fullUrl);
+
+    links.push({
+      url: fullUrl,
+      title: "",  // Will be scraped from article page
+      imageUrl: null,
+      categorySlug: categorySlug,  // We know the category from the page
+      pubDate: null,
+    });
+  }
+
+  console.log(`[Scraper] Found ${links.length} articles in ${categorySlug}`);
+  return links;
 }
 
+/**
+ * Fetch articles from all JOQ category pages.
+ * Deduplicates across categories (same article can appear in multiple).
+ */
 async function fetchAllJoqArticles(): Promise<JoqArticleLink[]> {
   const seen = new Set<string>();
   const allLinks: JoqArticleLink[] = [];
 
-  // Page through the API (offset starts at 10, 0 returns empty)
-  for (let page = 0; page < MAX_API_PAGES; page++) {
-    const offset = 10 + (page * 10);
-    console.log(`[Scraper] Fetching API page ${page + 1}/${MAX_API_PAGES} (offset=${offset})...`);
+  for (const categorySlug of JOQ_CATEGORY_PAGES) {
+    const categoryLinks = await scrapeJoqCategoryPage(categorySlug);
 
-    const apiArticles = await fetchJoqApiPage(offset);
-    if (apiArticles.length === 0) {
-      console.log(`[Scraper] No more articles from API at offset ${offset}`);
-      break;
+    for (const link of categoryLinks) {
+      if (seen.has(link.url)) continue;
+      seen.add(link.url);
+      allLinks.push(link);
     }
 
-    for (const article of apiArticles) {
-      if (!article.link || !article.title) continue;
-
-      const fullUrl = article.link.startsWith("http")
-        ? article.link
-        : JOQ_BASE_URL + article.link;
-
-      if (seen.has(fullUrl)) continue;
-      seen.add(fullUrl);
-
-      allLinks.push({
-        url: fullUrl,
-        title: article.title,
-        imageUrl: article.image || null,
-        categorySlug: article.cat_slug || null,
-        pubDate: article.post_date || null,
-      });
-    }
-
-    // Small delay between API pages
+    // Small delay between category pages
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  // Also scrape homepage for any articles the API might miss
-  console.log("[Scraper] Also checking homepage for additional articles...");
-  const homepageHtml = await fetchPage(JOQ_BASE_URL);
-  if (homepageHtml) {
-    const regex = /\/artikull\/(\d+)\.html/g;
-    let match;
-    while ((match = regex.exec(homepageHtml)) !== null) {
-      const fullUrl = JOQ_BASE_URL + match[0];
-      if (!seen.has(fullUrl)) {
+  // Also check the Kosova and Maqedoni sections (different URL pattern)
+  for (const section of ["kosova", "maqedoni"]) {
+    const url = `${JOQ_BASE_URL}/${section}/index.html`;
+    console.log(`[Scraper] Fetching section: ${section}`);
+    const html = await fetchPage(url);
+    if (html) {
+      const regex = /\/artikull\/(\d+)\.html/g;
+      let match;
+      while ((match = regex.exec(html)) !== null) {
+        const fullUrl = JOQ_BASE_URL + match[0];
+        if (seen.has(fullUrl)) continue;
         seen.add(fullUrl);
         allLinks.push({
           url: fullUrl,
-          title: "", // Will be scraped from article page
+          title: "",
           imageUrl: null,
-          categorySlug: null,
+          categorySlug: section,
           pubDate: null,
         });
       }
+      console.log(`[Scraper] Found articles in ${section}`);
     }
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   return allLinks;
@@ -702,13 +687,13 @@ export async function runRssImport(): Promise<ImportResult> {
     return result;
   }
 
-  // Step 1: Fetch articles from JOQ API + homepage
+  // Step 1: Fetch articles from all JOQ category pages
   const articleLinks = await fetchAllJoqArticles();
   result.totalFetched = articleLinks.length;
   console.log(`[Scraper] Found ${articleLinks.length} unique articles total.`);
 
   if (articleLinks.length === 0) {
-    console.warn("[Scraper] No articles found. JOQ API may be down.");
+    console.warn("[Scraper] No articles found. JOQ website may be down.");
     result.errors++;
     return result;
   }

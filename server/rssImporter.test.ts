@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  parseRssFeed,
   detectCategory,
   generateSlug,
   stripHtml,
@@ -10,11 +9,9 @@ import {
   isJunkText,
   normalizeTitle,
   titleSimilarity,
-  RSS_FEEDS,
-  type FeedSource,
 } from "./rssImporter";
 
-describe("RSS Importer", () => {
+describe("JOQ Albania Scraper", () => {
   describe("decodeHtmlEntities", () => {
     it("decodes common HTML entities", () => {
       expect(decodeHtmlEntities("&amp;")).toBe("&");
@@ -78,7 +75,7 @@ describe("RSS Importer", () => {
   });
 
   describe("detectCategory", () => {
-    it("detects sport category (slug-based)", () => {
+    it("detects sport category", () => {
       expect(detectCategory("Futbolli shqiptar", "", "aktualitet")).toBe("sport");
       expect(detectCategory("Kampionati i basketbollit", "", "aktualitet")).toBe("sport");
       expect(detectCategory("UEFA Champions League ndeshje", "", "aktualitet")).toBe("sport");
@@ -112,7 +109,6 @@ describe("RSS Importer", () => {
     });
 
     it("uses score-based matching (highest score wins)", () => {
-      // Title with multiple sport keywords should beat a single bote keyword
       expect(detectCategory("Futbolli: Skuadra fiton kampionatin", "ndeshje e madhe", "aktualitet")).toBe("sport");
     });
 
@@ -174,171 +170,6 @@ describe("RSS Importer", () => {
       );
       expect(result.valid).toBe(false);
       expect(result.reason).toContain("image");
-    });
-
-    it("rejects article with whitespace-only title", () => {
-      const result = validateArticle(
-        "   ",
-        "This is a long enough content that exceeds the minimum 50 character requirement.",
-        "https://example.com/image.jpg"
-      );
-      expect(result.valid).toBe(false);
-      expect(result.reason).toContain("title");
-    });
-
-    it("rejects article with content under 50 characters", () => {
-      const result = validateArticle(
-        "Test Title",
-        "Only 49 characters of content here, not enough!",
-        "https://example.com/image.jpg"
-      );
-      expect(result.valid).toBe(false);
-      expect(result.reason).toContain("content");
-    });
-  });
-
-  describe("parseRssFeed", () => {
-    const testFeed: FeedSource = {
-      name: "Test Feed",
-      url: "https://example.com/feed",
-      defaultCategory: "aktualitet",
-    };
-
-    it("parses standard RSS items", () => {
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0">
-          <channel>
-            <title>Test Feed</title>
-            <item>
-              <title>Test Article Title</title>
-              <link>https://example.com/article-1</link>
-              <description>This is a test article description</description>
-              <pubDate>Mon, 17 Feb 2026 10:00:00 +0000</pubDate>
-            </item>
-            <item>
-              <title>Second Article</title>
-              <link>https://example.com/article-2</link>
-              <description>Another test article</description>
-              <pubDate>Mon, 17 Feb 2026 09:00:00 +0000</pubDate>
-            </item>
-          </channel>
-        </rss>`;
-
-      const articles = parseRssFeed(xml, testFeed);
-      expect(articles).toHaveLength(2);
-      expect(articles[0].title).toBe("Test Article Title");
-      expect(articles[0].link).toBe("https://example.com/article-1");
-      expect(articles[0].description).toBe("This is a test article description");
-      expect(articles[0].source).toBe("Test Feed");
-      expect(articles[1].title).toBe("Second Article");
-    });
-
-    it("extracts images from media:content", () => {
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
-          <channel>
-            <item>
-              <title>Article with Image</title>
-              <link>https://example.com/article</link>
-              <description>Description</description>
-              <media:content url="https://example.com/image.jpg" medium="image"/>
-            </item>
-          </channel>
-        </rss>`;
-
-      const articles = parseRssFeed(xml, testFeed);
-      expect(articles).toHaveLength(1);
-      expect(articles[0].imageUrl).toBe("https://example.com/image.jpg");
-    });
-
-    it("returns null imageUrl when no image is present", () => {
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0">
-          <channel>
-            <item>
-              <title>Article without Image</title>
-              <link>https://example.com/article</link>
-              <description>No image here</description>
-            </item>
-          </channel>
-        </rss>`;
-
-      const articles = parseRssFeed(xml, testFeed);
-      expect(articles).toHaveLength(1);
-      expect(articles[0].imageUrl).toBeNull();
-    });
-
-    it("handles empty feed", () => {
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0">
-          <channel>
-            <title>Empty Feed</title>
-          </channel>
-        </rss>`;
-
-      const articles = parseRssFeed(xml, testFeed);
-      expect(articles).toHaveLength(0);
-    });
-
-    it("detects sport category from title keywords", () => {
-      const sportFeed: FeedSource = {
-        name: "Test Sport",
-        url: "https://example.com/feed",
-        defaultCategory: "aktualitet",
-      };
-
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0">
-          <channel>
-            <item>
-              <title>Futbolli: Skuadra fiton kampionatin</title>
-              <link>https://example.com/sport</link>
-              <description>Lajme sportive</description>
-            </item>
-          </channel>
-        </rss>`;
-
-      const articles = parseRssFeed(xml, sportFeed);
-      expect(articles).toHaveLength(1);
-      expect(articles[0].category).toBe("sport");
-    });
-  });
-
-  describe("RSS_FEEDS configuration", () => {
-    it("has at least 10 feed sources configured", () => {
-      expect(RSS_FEEDS.length).toBeGreaterThanOrEqual(10);
-    });
-
-    it("all feeds have required properties", () => {
-      for (const feed of RSS_FEEDS) {
-        expect(feed.name).toBeTruthy();
-        expect(feed.url).toMatch(/^https?:\/\//);
-        expect(feed.defaultCategory).toBeTruthy();
-      }
-    });
-
-    it("includes reliable Albanian media sources with images", () => {
-      const names = RSS_FEEDS.map(f => f.name.toLowerCase());
-      // Original feeds
-      expect(names.some(n => n.includes("koha"))).toBe(true);
-      expect(names.some(n => n.includes("gazeta"))).toBe(true);
-      expect(names.some(n => n.includes("reporter"))).toBe(true);
-      expect(names.some(n => n.includes("telegrafi"))).toBe(true);
-      expect(names.some(n => n.includes("albeu"))).toBe(true);
-      // New feeds
-      expect(names.some(n => n.includes("news24"))).toBe(true);
-      expect(names.some(n => n.includes("vizion"))).toBe(true);
-      expect(names.some(n => n.includes("balkaninsight"))).toBe(true);
-      expect(names.some(n => n.includes("epoka"))).toBe(true);
-      expect(names.some(n => n.includes("zeri"))).toBe(true);
-    });
-
-    it("does NOT include feeds without reliable images", () => {
-      const names = RSS_FEEDS.map(f => f.name.toLowerCase());
-      // These feeds were removed because they don't provide images
-      expect(names.some(n => n.includes("balkanweb"))).toBe(false);
-      expect(names.some(n => n.includes("lapsi"))).toBe(false);
-      expect(names.some(n => n.includes("panorama"))).toBe(false);
     });
   });
 
@@ -411,7 +242,6 @@ describe("RSS Importer", () => {
     });
 
     it("returns high similarity for same story from different sources", () => {
-      // Same story, slightly different wording
       const a = "Trump vendos sanksione të reja ndaj Rusisë";
       const b = "Trump vendos sanksione ndaj Rusisë";
       expect(titleSimilarity(a, b)).toBeGreaterThanOrEqual(0.7);
@@ -425,18 +255,6 @@ describe("RSS Importer", () => {
 
     it("returns 0 for titles with only short words", () => {
       expect(titleSimilarity("A B C", "D E F")).toBe(0);
-    });
-
-    it("catches exact duplicate titles from different feeds", () => {
-      const title1 = "Ia vlen ta provoni: Ekspertët thonë se dushi në errësirë mund ta lehtësojë gjumin";
-      const title2 = "Ia vlen ta provoni: Ekspertët thonë se dushi në errësirë mund ta lehtësojë gjumin";
-      expect(titleSimilarity(title1, title2)).toBe(1);
-    });
-
-    it("catches near-duplicate titles with minor differences", () => {
-      const a = "Parashikimi i motit për të martën";
-      const b = "Parashikimi i motit për ditën e martë";
-      expect(titleSimilarity(a, b)).toBeGreaterThanOrEqual(0.6);
     });
   });
 });

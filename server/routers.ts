@@ -14,6 +14,7 @@ import {
   getCategoryById,
   getCategoryBySlug,
   getArticleCategories,
+  incrementViews,
 } from "./db";
 import { getLastImportResult, isImportRunning, triggerManualImport } from "./cronScheduler";
 import { sendContactEmail, sendNewsletterConfirmation } from "./emailService";
@@ -76,6 +77,14 @@ export const appRouter = router({
         
         const categories = await getArticleCategories(article.id);
         return { ...article, categories };
+      }),
+
+    // Track article view
+    trackView: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await incrementViews(input.id);
+        return { success: true };
       }),
 
     // Search articles

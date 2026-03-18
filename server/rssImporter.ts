@@ -15,7 +15,7 @@
 
 import { getDb } from "./db";
 import { articles, categories, articleCategories } from "../drizzle/schema";
-import { eq, like, desc } from "drizzle-orm";
+import { eq, like, desc, sql } from "drizzle-orm";
 import { uploadImageFromUrl } from "./cloudinaryStorage";
 import { rewriteArticle } from "./rewriter";
 
@@ -582,7 +582,7 @@ async function articleExists(title: string): Promise<boolean> {
 
   const recentTitles = await loadRecentTitles();
   for (const existingTitle of recentTitles) {
-    if (titleSimilarity(title, existingTitle) >= 0.30) {
+    if (titleSimilarity(title, existingTitle) >= 0.70) {
       return true;
     }
   }
@@ -698,14 +698,42 @@ export async function runRssImport(): Promise<ImportResult> {
     return result;
   }
 
-  // Step 2: Process each article
+  // Max new articles to publish per run (keeps site fresh, not flooded)
+  const MAX_NEW_PER_RUN = 50;
+
+  // Sort by article ID descending (newest first) so we process fresh content first
+  // Article URLs are /artikull/{id}.html - higher ID = newer
+  articleLinks.sort((a, b) => {
+    const idA = parseInt(a.url.match(/\/artikull\/(\d+)\.html/)?.[1] || "0");
+    const idB = parseInt(b.url.match(/\/artikull\/(\d+)\.html/)?.[1] || "0");
+    return idB - idA;
+  });
+
+  // Track consecutive duplicates - if we hit 15 in a row, the rest are likely all old
+  let consecutiveDuplicates = 0;
+  const MAX_CONSECUTIVE_DUPES = 15;
+
+  // Step 2: Process each article (newest first)
   for (const link of articleLinks) {
+    // Stop once we've published enough new articles this run
+    if (result.newArticles >= MAX_NEW_PER_RUN) {
+      console.log(`[Scraper] Reached limit of ${MAX_NEW_PER_RUN} new articles. Stopping.`);
+      break;
+    }
+
+    // Stop early if we keep hitting duplicates (all remaining are likely old)
+    if (consecutiveDuplicates >= MAX_CONSECUTIVE_DUPES) {
+      console.log(`[Scraper] Hit ${MAX_CONSECUTIVE_DUPES} consecutive duplicates. Rest are likely old. Stopping.`);
+      break;
+    }
+
     try {
       // Check for duplicates using title from API (if available)
       if (link.title && link.title.length > 5) {
         const exists = await articleExists(link.title);
         if (exists) {
           result.duplicatesSkipped++;
+          consecutiveDuplicates++;
           continue;
         }
       }
@@ -727,11 +755,12 @@ export async function runRssImport(): Promise<ImportResult> {
         continue;
       }
 
-      // Double-check duplicate with scraped title (for articles from homepage without API title)
+      // Double-check duplicate with scraped title (for articles without pre-known title)
       if (!link.title || link.title.length <= 5) {
         const exists = await articleExists(scraped.title);
         if (exists) {
           result.duplicatesSkipped++;
+          consecutiveDuplicates++;
           continue;
         }
       }
@@ -815,6 +844,7 @@ export async function runRssImport(): Promise<ImportResult> {
 
       if (articleId) {
         result.newArticles++;
+        consecutiveDuplicates = 0;  // Reset - we found a new article
         recentTitlesCache.push(finalTitle);
         console.log(`[Scraper] ✓ Published: ${finalTitle.substring(0, 60)}`);
       } else {
@@ -834,6 +864,33 @@ export async function runRssImport(): Promise<ImportResult> {
   console.log(`[Scraper] Complete in ${duration}s: ${result.newArticles} new, ${result.duplicatesSkipped} duplicates, ${result.skippedNoImage} no image, ${result.skippedNoContent} no content, ${result.errors} errors`);
 
   return result;
+}
+
+// ─── Database Wipe ──────────────────────────────────────────────────
+
+/**
+ * Wipes all articles and article-category links from the database.
+ * Categories and users are preserved.
+ */
+export async function wipeArticles(): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    console.error("[Wipe] Database not available.");
+    return;
+  }
+
+  try {
+    await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
+    await db.execute(sql`TRUNCATE TABLE article_categories`);
+    await db.execute(sql`TRUNCATE TABLE articles`);
+    await db.execute(sql`SET FOREIGN_KEY_CHECKS = 1`);
+    // Reset title cache so next import starts fresh
+    recentTitlesCache = [];
+    cacheLoadedAt = 0;
+    console.log("[Wipe] Successfully wiped all articles.");
+  } catch (error) {
+    console.error("[Wipe] Failed to wipe articles:", error);
+  }
 }
 
 // ─── Backward-compatible exports for tests ──────────────────────────

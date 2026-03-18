@@ -45,6 +45,7 @@ export const articles = mysqlTable("articles", {
   featuredImage: varchar("featuredImage", { length: 500 }),
   featuredImageKey: varchar("featuredImageKey", { length: 500 }),
   status: mysqlEnum("status", ["draft", "published"]).default("published").notNull(),
+  views: int("views").default(0).notNull(),
   authorId: int("authorId").notNull(),
   publishedAt: timestamp("publishedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

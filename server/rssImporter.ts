@@ -122,13 +122,34 @@ interface ParsedArticle {
   category: string;
 }
 
-// ─── Homepage Scraper ───────────────────────────────────────────────
+// ─── JOQ API + Page Scraper ──────────────────────────────────────────
+
+// How many pages to fetch from the load-more API (each page ~24 articles)
+const MAX_API_PAGES = 5; // ~100-120 articles per run
+
+interface JoqApiArticle {
+  title: string;
+  post_date: string;
+  image: string;
+  link: string;
+  cat?: string;
+  cat_slug?: string;
+  author_name?: string;
+  author_lastname?: string;
+}
+
+interface JoqApiResponse {
+  featured?: JoqApiArticle[];
+  top?: JoqApiArticle[];
+  last?: JoqApiArticle[];
+}
 
 interface JoqArticleLink {
   url: string;
   title: string;
   imageUrl: string | null;
   categorySlug: string | null;
+  pubDate: string | null;
 }
 
 async function fetchPage(url: string): Promise<string | null> {
@@ -155,43 +176,102 @@ async function fetchPage(url: string): Promise<string | null> {
   }
 }
 
-function extractArticleLinksFromHomepage(html: string): JoqArticleLink[] {
-  const links: JoqArticleLink[] = [];
+async function fetchJoqApiPage(offset: number): Promise<JoqApiArticle[]> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    const url = `https://admin.joq-albania.com/more-home?featuredOffset=${offset}&topOffset=${offset}&lastOffset=${offset}`;
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://joq-albania.com/",
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "application/json, text/html, */*",
+      },
+    });
+
+    clearTimeout(timeout);
+    if (!response.ok) return [];
+
+    const text = await response.text();
+    if (!text || text.length < 10) return [];
+
+    const data: JoqApiResponse = JSON.parse(text);
+    const allArticles: JoqApiArticle[] = [
+      ...(data.featured || []),
+      ...(data.top || []),
+      ...(data.last || []),
+    ];
+
+    return allArticles;
+  } catch (error) {
+    console.error(`[Scraper] Failed to fetch JOQ API page at offset ${offset}:`, error);
+    return [];
+  }
+}
+
+async function fetchAllJoqArticles(): Promise<JoqArticleLink[]> {
   const seen = new Set<string>();
+  const allLinks: JoqArticleLink[] = [];
 
-  // Match article links: /artikull/{ID}.html
-  const linkRegex = /<a[^>]+href=["'](\/artikull\/(\d+)\.html)["'][^>]*>([\s\S]*?)<\/a>/gi;
-  let match;
+  // Page through the API (offset starts at 10, 0 returns empty)
+  for (let page = 0; page < MAX_API_PAGES; page++) {
+    const offset = 10 + (page * 10);
+    console.log(`[Scraper] Fetching API page ${page + 1}/${MAX_API_PAGES} (offset=${offset})...`);
 
-  while ((match = linkRegex.exec(html)) !== null) {
-    const path = match[1];
-    const fullUrl = JOQ_BASE_URL + path;
+    const apiArticles = await fetchJoqApiPage(offset);
+    if (apiArticles.length === 0) {
+      console.log(`[Scraper] No more articles from API at offset ${offset}`);
+      break;
+    }
 
-    if (seen.has(fullUrl)) continue;
-    seen.add(fullUrl);
+    for (const article of apiArticles) {
+      if (!article.link || !article.title) continue;
 
-    // Try to extract title from the link content
-    const linkContent = match[3];
-    const titleMatch = linkContent.match(/<[^>]*class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\//)
-      || linkContent.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i);
-    const title = titleMatch ? stripHtml(titleMatch[1]) : stripHtml(linkContent);
+      const fullUrl = article.link.startsWith("http")
+        ? article.link
+        : JOQ_BASE_URL + article.link;
 
-    // Try to extract image from link content
-    const imgMatch = linkContent.match(/<img[^>]+src=["']([^"']+)["']/i)
-      || linkContent.match(/data-src=["']([^"']+)["']/i);
-    const imageUrl = imgMatch ? imgMatch[1] : null;
+      if (seen.has(fullUrl)) continue;
+      seen.add(fullUrl);
 
-    // Try to extract category
-    const catMatch = html.substring(Math.max(0, match.index - 500), match.index + match[0].length + 200)
-      .match(/category[_-]?slug["']?\s*[:=]\s*["']([^"']+)["']/i);
-    const categorySlug = catMatch ? catMatch[1] : null;
+      allLinks.push({
+        url: fullUrl,
+        title: article.title,
+        imageUrl: article.image || null,
+        categorySlug: article.cat_slug || null,
+        pubDate: article.post_date || null,
+      });
+    }
 
-    if (title && title.length > 5) {
-      links.push({ url: fullUrl, title, imageUrl, categorySlug });
+    // Small delay between API pages
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  // Also scrape homepage for any articles the API might miss
+  console.log("[Scraper] Also checking homepage for additional articles...");
+  const homepageHtml = await fetchPage(JOQ_BASE_URL);
+  if (homepageHtml) {
+    const regex = /\/artikull\/(\d+)\.html/g;
+    let match;
+    while ((match = regex.exec(homepageHtml)) !== null) {
+      const fullUrl = JOQ_BASE_URL + match[0];
+      if (!seen.has(fullUrl)) {
+        seen.add(fullUrl);
+        allLinks.push({
+          url: fullUrl,
+          title: "", // Will be scraped from article page
+          imageUrl: null,
+          categorySlug: null,
+          pubDate: null,
+        });
+      }
     }
   }
 
-  return links;
+  return allLinks;
 }
 
 // ─── Article Page Scraper ───────────────────────────────────────────
@@ -241,10 +321,11 @@ function scrapeJoqArticlePage(html: string): ScrapedArticle | null {
     }
   }
 
-  // Extract article content - look for article body
+  // Extract article content - JOQ uses "content-wrapper" div
   let content = "";
   const contentPatterns = [
-    /<div[^>]*class="[^"]*body-description[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div[^>]*class="[^"]*(?:related|share|social|comment|ad-)[^"]*")/i,
+    /<div[^>]*class="[^"]*content-wrapper[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div[^>]*class="[^"]*(?:related|share|social|comment|ad-|mobile-only|joq-poll)[^"]*")/i,
+    /<div[^>]*class="[^"]*content-wrapper[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
     /<div[^>]*class="[^"]*body-description[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
     /<div[^>]*class="[^"]*article-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
     /<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
@@ -617,21 +698,13 @@ export async function runRssImport(): Promise<ImportResult> {
     return result;
   }
 
-  // Step 1: Fetch homepage to get article links
-  console.log("[Scraper] Fetching JOQ Albania homepage...");
-  const homepageHtml = await fetchPage(JOQ_BASE_URL);
-  if (!homepageHtml) {
-    console.error("[Scraper] Failed to fetch JOQ Albania homepage.");
-    result.errors++;
-    return result;
-  }
-
-  const articleLinks = extractArticleLinksFromHomepage(homepageHtml);
+  // Step 1: Fetch articles from JOQ API + homepage
+  const articleLinks = await fetchAllJoqArticles();
   result.totalFetched = articleLinks.length;
-  console.log(`[Scraper] Found ${articleLinks.length} article links on homepage.`);
+  console.log(`[Scraper] Found ${articleLinks.length} unique articles total.`);
 
   if (articleLinks.length === 0) {
-    console.warn("[Scraper] No article links found. Site structure may have changed.");
+    console.warn("[Scraper] No articles found. JOQ API may be down.");
     result.errors++;
     return result;
   }
@@ -639,14 +712,16 @@ export async function runRssImport(): Promise<ImportResult> {
   // Step 2: Process each article
   for (const link of articleLinks) {
     try {
-      // Check for duplicates using the title from homepage
-      const exists = await articleExists(link.title);
-      if (exists) {
-        result.duplicatesSkipped++;
-        continue;
+      // Check for duplicates using title from API (if available)
+      if (link.title && link.title.length > 5) {
+        const exists = await articleExists(link.title);
+        if (exists) {
+          result.duplicatesSkipped++;
+          continue;
+        }
       }
 
-      // Fetch individual article page
+      // Fetch individual article page for full content
       console.log(`[Scraper] Fetching: ${link.url}`);
       const articleHtml = await fetchPage(link.url);
       if (!articleHtml) {
@@ -663,8 +738,17 @@ export async function runRssImport(): Promise<ImportResult> {
         continue;
       }
 
-      // Use scraped image or fallback to homepage image
-      const rawImageUrl = scraped.imageUrl || link.imageUrl;
+      // Double-check duplicate with scraped title (for articles from homepage without API title)
+      if (!link.title || link.title.length <= 5) {
+        const exists = await articleExists(scraped.title);
+        if (exists) {
+          result.duplicatesSkipped++;
+          continue;
+        }
+      }
+
+      // Use API image → scraped image fallback
+      const rawImageUrl = link.imageUrl || scraped.imageUrl;
 
       // ── STRICT VALIDATION: Step 1 - Must have image ──
       if (!rawImageUrl) {
@@ -709,9 +793,9 @@ export async function runRssImport(): Promise<ImportResult> {
         continue;
       }
 
-      // Determine category: JOQ page category → keyword detection → default
+      // Determine category: API cat_slug → page category → keyword detection → default
       let categorySlug = "aktualitet";
-      const joqCat = scraped.category || link.categorySlug;
+      const joqCat = link.categorySlug || scraped.category;
       if (joqCat && JOQ_CATEGORY_MAP[joqCat]) {
         categorySlug = JOQ_CATEGORY_MAP[joqCat];
       } else {
@@ -722,8 +806,9 @@ export async function runRssImport(): Promise<ImportResult> {
       const categoryId = categoryMap[categorySlug] || categoryMap["aktualitet"] || null;
 
       let publishedAt = new Date();
-      if (scraped.publishDate) {
-        publishedAt = parseJoqDate(scraped.publishDate);
+      const dateStr = link.pubDate || scraped.publishDate;
+      if (dateStr) {
+        publishedAt = parseJoqDate(dateStr);
       }
 
       const excerpt = stripHtml(fullContent).substring(0, 300) + (fullContent.length > 300 ? "..." : "");

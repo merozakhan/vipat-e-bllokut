@@ -41,6 +41,10 @@ const JOQ_CATEGORY_MAP: Record<string, string> = {
   "shendeti": "shendetesi",
   "shëndeti": "shendetesi",
   "kuriozitete": "aktualitet",
+  "thashetheme": "kulture",
+  "vec-e-jona": "aktualitet",
+  "si-te": "aktualitet",
+  "persekutimi-ndaj-joq": "aktualitet",
 };
 
 // Category keyword mapping (fallback when JOQ category is missing)

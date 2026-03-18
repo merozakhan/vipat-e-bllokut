@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link, useParams } from "wouter";
 import { Calendar, Clock, ArrowLeft, Share2, Star, ChevronRight } from "lucide-react";
@@ -10,6 +11,16 @@ export default function ArticleDetail() {
   const params = useParams<{ slug: string }>();
   const { data: article, isLoading } = trpc.articles.getBySlug.useQuery({ slug: params.slug || "" });
   const { data: latestArticles } = trpc.articles.getPublished.useQuery({ limit: 4 });
+
+  // Track page view once per article load
+  const trackView = trpc.articles.trackView.useMutation();
+  const trackedRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (article && article.id !== trackedRef.current) {
+      trackedRef.current = article.id;
+      trackView.mutate({ id: article.id });
+    }
+  }, [article?.id]);
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "";

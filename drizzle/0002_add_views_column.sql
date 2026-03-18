@@ -1,0 +1,1 @@
+ALTER TABLE `articles` ADD `views` int NOT NULL DEFAULT 0;

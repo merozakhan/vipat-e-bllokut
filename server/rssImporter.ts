@@ -23,6 +23,18 @@ import { eq, like, desc, sql } from "drizzle-orm";
 import { uploadImageFromUrl } from "./cloudinaryStorage";
 import { rewriteArticle } from "./rewriter";
 
+// ─── Blocked Words ──────────────────────────────────────────────────
+// Articles containing any of these words (case-insensitive) are skipped entirely.
+const BLOCKED_WORDS = ["rraja", "capaj"];
+
+function containsBlockedWord(text: string): string | null {
+  const lower = text.toLowerCase();
+  for (const word of BLOCKED_WORDS) {
+    if (lower.includes(word)) return word;
+  }
+  return null;
+}
+
 // ─── JOQ Albania Scraper Configuration ──────────────────────────────
 
 const JOQ_BASE_URL = "https://joq-albania.com";
@@ -1064,6 +1076,14 @@ export async function runRssImport(): Promise<ImportResult> {
           consecutiveDuplicates++;
           continue;
         }
+      }
+
+      // ── BLOCKLIST CHECK: skip articles with blocked words ──
+      const blockedIn = containsBlockedWord(scraped.title) || containsBlockedWord(scraped.content);
+      if (blockedIn) {
+        console.log(`[Scraper] BLOCKED (word "${blockedIn}"): ${scraped.title.substring(0, 60)}`);
+        result.errors++;
+        continue;
       }
 
       // Use API image → scraped image fallback

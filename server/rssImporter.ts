@@ -218,22 +218,30 @@ async function scrapeJoqCategoryPage(categorySlug: string): Promise<JoqArticleLi
  * Fetch articles from all JOQ category pages.
  * Deduplicates across categories (same article can appear in multiple).
  */
+// Generic categories that should be overridden by more specific ones
+const GENERIC_CATEGORIES = new Set(["lajme", "aktualitet", "kuriozitete", "vec-e-jona", "si-te"]);
+
 async function fetchAllJoqArticles(): Promise<JoqArticleLink[]> {
-  const seen = new Set<string>();
-  const allLinks: JoqArticleLink[] = [];
+  const linkMap = new Map<string, JoqArticleLink>();
 
   for (const categorySlug of JOQ_CATEGORY_PAGES) {
     const categoryLinks = await scrapeJoqCategoryPage(categorySlug);
 
     for (const link of categoryLinks) {
-      if (seen.has(link.url)) continue;
-      seen.add(link.url);
-      allLinks.push(link);
+      const existing = linkMap.get(link.url);
+      if (!existing) {
+        linkMap.set(link.url, link);
+      } else if (GENERIC_CATEGORIES.has(existing.categorySlug || "") && !GENERIC_CATEGORIES.has(categorySlug)) {
+        // Replace generic category with more specific one
+        existing.categorySlug = categorySlug;
+      }
     }
 
     // Small delay between category pages
     await new Promise(resolve => setTimeout(resolve, 500));
   }
+
+  const allLinks = Array.from(linkMap.values());
 
   // Also check the Kosova and Maqedoni sections (different URL pattern)
   for (const section of ["kosova", "maqedoni"]) {
@@ -245,9 +253,8 @@ async function fetchAllJoqArticles(): Promise<JoqArticleLink[]> {
       let match;
       while ((match = regex.exec(html)) !== null) {
         const fullUrl = JOQ_BASE_URL + match[0];
-        if (seen.has(fullUrl)) continue;
-        seen.add(fullUrl);
-        allLinks.push({
+        if (linkMap.has(fullUrl)) continue;
+        linkMap.set(fullUrl, {
           url: fullUrl,
           title: "",
           imageUrl: null,
@@ -353,10 +360,10 @@ function scrapeJoqArticlePage(html: string): ScrapedArticle | null {
 
   // Extract publish date
   let publishDate: string | null = null;
-  const dateMatch = html.match(/(?:Publikuar më|datePublished)[^>]*>?\s*([\d]{1,2}[./][\d]{1,2}[./][\d]{4}[,\s]*[\d]{1,2}:[\d]{2})/i)
+  const dateMatch = html.match(/Publikuar më\s*:?\s*(\d{1,2}[./]\d{1,2}[./]\d{4}[,\s]*\d{1,2}:\d{2})/i)
     || html.match(/<meta[^>]+property=["']article:published_time["'][^>]+content=["']([^"']+)["']/i)
     || html.match(/<time[^>]+datetime=["']([^"']+)["']/i)
-    || html.match(/([\d]{1,2}\.[\d]{1,2}\.[\d]{4})/);
+    || html.match(/(\d{1,2}\.\d{1,2}\.\d{4},\s*\d{1,2}:\d{2})/);
   if (dateMatch) publishDate = dateMatch[1].trim();
 
   // Extract category from page
@@ -841,12 +848,15 @@ export async function runRssImport(): Promise<ImportResult> {
         continue;
       }
 
-      // Determine category: API cat_slug → page category → keyword detection → default
+      // Determine category: specific JOQ mapping → keyword detection → default
       let categorySlug = "aktualitet";
       const joqCat = link.categorySlug || scraped.category;
-      if (joqCat && JOQ_CATEGORY_MAP[joqCat]) {
-        categorySlug = JOQ_CATEGORY_MAP[joqCat];
+      const mappedCat = joqCat ? JOQ_CATEGORY_MAP[joqCat] : null;
+      if (mappedCat && mappedCat !== "aktualitet") {
+        // Use specific JOQ category (sport, bote, teknologji, etc.)
+        categorySlug = mappedCat;
       } else {
+        // For generic/unknown categories, detect from content keywords
         categorySlug = detectCategory(finalTitle, finalContent, "aktualitet");
       }
 

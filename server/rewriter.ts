@@ -147,6 +147,11 @@ function isBoilerplateParagraph(text: string): boolean {
     /shkruar\s*nga\s*redaksia/i,
     /redaksia\s+vox/i,
     /redaksia\s+versus/i,
+    /vox\s+[eë]sht[eë]\s+nj[eë]\s+media/i,
+    /ka\s+nisur\s+publikimet/i,
+    /regjistrohuni\s+m[eë]\s+posht[eë]/i,
+    /p[eë]r\s+t['']u\s+informuar\s+mbi\s+lajme/i,
+    /q[eë]llimi\s+yn[eë]\s+[eë]sht[eë]\s+t[eë]\s+sjellim/i,
   ];
 
   return boilerplate.some((p) => p.test(lower)) || sourceIdentity.some((p) => p.test(lower));

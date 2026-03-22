@@ -635,19 +635,24 @@ function containsCssJunk(text: string): boolean {
 // Source boilerplate that should be stripped at scrape time
 const SOURCE_BOILERPLATE = [
   /versus\s+[eë]sht[eë]\s+nj[eë]\s+media/i,
-  /vox\s*news\s+[eë]sht[eë]/i,
+  /vox\s*(?:news)?\s+[eë]sht[eë]\s+nj[eë]\s+media/i,
+  /vox\s+[eë]sht[eë]\s+nj[eë]\s+media/i,
   /joq\s+[eë]sht[eë]/i,
   /d[eë]rgoni\s+informacion/i,
   /m[eë]nyr[eë]\s+anonime/i,
   /raportimi\s+i\s+paansh[eë]m/i,
   /ne\s+q[eë]ndrojm[eë]\s+p[eë]rball[eë]/i,
-  /drejtor\s+i\s+p[eë]rgjithsh[eë]m/i,
+  /drejtor\s+i\s+p[eë]rgjithsh[eë]m\s*:/i,
   /blerina\s*spaho/i,
   /\+355\s*\d/i,
   /shkruar\s*nga\s*redaksia/i,
   /redaksia\s+(?:vox|versus|joq)/i,
   /n[eë]\s+interes\s+t[eë]\s+publikut/i,
   /nxjerrja\s+n[eë]\s+drit[eë]/i,
+  /ka\s+nisur\s+publikimet/i,
+  /regjistrohuni\s+m[eë]\s+posht[eë]/i,
+  /q[eë]llimi\s+yn[eë]\s+[eë]sht[eë]/i,
+  /p[eë]r\s+t['']u\s+informuar\s+mbi\s+lajme/i,
 ];
 
 function isSourceBoilerplate(text: string): boolean {

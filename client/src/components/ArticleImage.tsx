@@ -21,7 +21,8 @@ function isOwnHostedUrl(src: string): boolean {
     src.includes("s3.amazonaws") ||
     src.includes("cloudfront.net") ||
     src.includes("manus.space") ||
-    src.includes("forge-api")
+    src.includes("forge-api") ||
+    src.includes("cloudinary.com")
   );
 }
 

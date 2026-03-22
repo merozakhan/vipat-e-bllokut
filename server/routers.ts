@@ -9,6 +9,7 @@ import {
   getArticlesByCategorySlug,
   getTrendingArticles,
   getAllCategories,
+  getCategoriesWithCounts,
   getCategoryById,
   getCategoryBySlug,
   getArticleWithCategories,
@@ -95,6 +96,10 @@ export const appRouter = router({
   categories: router({
     getAll: publicProcedure.query(async () => {
       return await getAllCategories();
+    }),
+
+    getAllWithCounts: publicProcedure.query(async () => {
+      return await getCategoriesWithCounts();
     }),
 
     getBySlug: publicProcedure

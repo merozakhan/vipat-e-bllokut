@@ -143,16 +143,23 @@ export async function getArticleWithCategories(where: { slug?: string; id?: numb
 }
 
 export async function getPublishedArticles(limit: number = 20, offset: number = 0) {
+  const cacheKey = `published:${limit}:${offset}`;
+  const cached = getCached<Awaited<ReturnType<typeof getAllArticles>>>(cacheKey);
+  if (cached) return cached;
+
   const db = await getDb();
   if (!db) return [];
 
-  return await db
+  const result = await db
     .select()
     .from(articles)
     .where(eq(articles.status, "published"))
     .orderBy(desc(articles.publishedAt))
     .limit(limit)
     .offset(offset);
+
+  setCache(cacheKey, result, 60 * 1000); // 1 min TTL
+  return result;
 }
 
 export async function getAllArticles(limit: number = 50, offset: number = 0) {
@@ -398,6 +405,31 @@ export async function createCategory(category: InsertCategory) {
 }
 
 type CategoryRow = typeof categories.$inferSelect;
+type CategoryWithCount = CategoryRow & { articleCount: number };
+
+export async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
+  const cached = getCached<CategoryWithCount[]>('categoriesWithCounts');
+  if (cached) return cached;
+
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+      slug: categories.slug,
+      description: categories.description,
+      createdAt: categories.createdAt,
+      updatedAt: categories.updatedAt,
+      articleCount: sql<number>`(SELECT COUNT(*) FROM article_categories WHERE article_categories.categoryId = ${categories.id})`,
+    })
+    .from(categories)
+    .orderBy(categories.name);
+
+  setCache('categoriesWithCounts', result, 10 * 60 * 1000);
+  return result;
+}
 
 export async function getAllCategories(): Promise<CategoryRow[]> {
   const cached = getCached<CategoryRow[]>('allCategories');

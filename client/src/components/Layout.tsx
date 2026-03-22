@@ -48,7 +48,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
-  const { data: categories } = trpc.categories.getAll.useQuery();
+  const { data: allCategories } = trpc.categories.getAllWithCounts.useQuery();
+  const categories = allCategories?.filter(c => c.articleCount > 0);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);

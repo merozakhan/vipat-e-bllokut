@@ -55,6 +55,7 @@ export const articles = mysqlTable("articles", {
   statusIdx: index("status_idx").on(table.status),
   publishedAtIdx: index("published_at_idx").on(table.publishedAt),
   slugIdx: index("slug_idx").on(table.slug),
+  viewsIdx: index("views_idx").on(table.views),
 }));
 
 export type Article = typeof articles.$inferSelect;

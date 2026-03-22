@@ -16,6 +16,7 @@ import Terms from "./pages/Terms";
 import CookiePolicy from "./pages/CookiePolicy";
 import EditorialPolicy from "./pages/EditorialPolicy";
 import Advertise from "./pages/Advertise";
+import HealthCheck from "./pages/HealthCheck";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/cookie-policy" component={CookiePolicy} />
       <Route path="/editorial-policy" component={EditorialPolicy} />
       <Route path="/advertise" component={Advertise} />
+      <Route path="/system-health" component={HealthCheck} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

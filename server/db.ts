@@ -5,6 +5,17 @@ import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
+// Simple in-memory cache
+const cache = new Map<string, { data: unknown; expiresAt: number }>();
+function getCached<T>(key: string): T | undefined {
+  const entry = cache.get(key);
+  if (!entry || Date.now() > entry.expiresAt) { cache.delete(key); return undefined; }
+  return entry.data as T;
+}
+function setCache(key: string, data: unknown, ttlMs: number) {
+  cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -111,6 +122,24 @@ export async function getArticleBySlug(slug: string) {
 
   const result = await db.select().from(articles).where(eq(articles.slug, slug)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getArticleWithCategories(where: { slug?: string; id?: number }) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const condition = where.slug ? eq(articles.slug, where.slug) : eq(articles.id, where.id!);
+  const result = await db.select().from(articles).where(condition).limit(1);
+  if (result.length === 0) return null;
+
+  const article = result[0];
+  const cats = await db
+    .select({ category: categories })
+    .from(articleCategories)
+    .leftJoin(categories, eq(articleCategories.categoryId, categories.id))
+    .where(eq(articleCategories.articleId, article.id));
+
+  return { ...article, categories: cats.map(r => r.category).filter(Boolean) };
 }
 
 export async function getPublishedArticles(limit: number = 20, offset: number = 0) {
@@ -284,6 +313,10 @@ export function calculateEngagementScore(title: string, excerpt: string | null, 
 }
 
 export async function getTrendingArticles(limit: number = 10) {
+  const cacheKey = `trending:${limit}`;
+  const cached = getCached<Awaited<ReturnType<typeof getPublishedArticles>>>(cacheKey);
+  if (cached) return cached;
+
   const db = await getDb();
   if (!db) return [];
 
@@ -292,7 +325,7 @@ export async function getTrendingArticles(limit: number = 10) {
     .from(articles)
     .where(eq(articles.status, "published"))
     .orderBy(desc(articles.publishedAt))
-    .limit(150);
+    .limit(50);
 
   // Score with time decay + views + keywords
   const scored = allRecent.map(article => ({
@@ -308,10 +341,22 @@ export async function getTrendingArticles(limit: number = 10) {
   const categoryCounts: Record<number, number> = {};
   const MAX_PER_CAT = Math.ceil(limit / 2);
 
+  // Batch fetch categories for all candidates in ONE query (instead of N+1)
+  const candidateIds = topCandidates.map(a => a.id);
   const catMap = new Map<number, number>();
+  if (candidateIds.length > 0) {
+    const allCats = await db
+      .select({ articleId: articleCategories.articleId, categoryId: articleCategories.categoryId })
+      .from(articleCategories)
+      .where(inArray(articleCategories.articleId, candidateIds));
+    for (const row of allCats) {
+      if (!catMap.has(row.articleId)) {
+        catMap.set(row.articleId, row.categoryId);
+      }
+    }
+  }
   for (const a of topCandidates) {
-    const cats = await getArticleCategories(a.id);
-    catMap.set(a.id, cats[0]?.id ?? -1);
+    if (!catMap.has(a.id)) catMap.set(a.id, -1);
   }
 
   for (const article of topCandidates) {
@@ -329,6 +374,8 @@ export async function getTrendingArticles(limit: number = 10) {
     if (!result.find(r => r.id === article.id)) result.push(article);
   }
 
+  // Cache trending results for 2 minutes
+  setCache(cacheKey, result, 2 * 60 * 1000);
   return result;
 }
 
@@ -350,11 +397,18 @@ export async function createCategory(category: InsertCategory) {
   return await db.insert(categories).values(category);
 }
 
-export async function getAllCategories() {
+type CategoryRow = typeof categories.$inferSelect;
+
+export async function getAllCategories(): Promise<CategoryRow[]> {
+  const cached = getCached<CategoryRow[]>('allCategories');
+  if (cached) return cached;
+
   const db = await getDb();
   if (!db) return [];
 
-  return await db.select().from(categories).orderBy(categories.name);
+  const result = await db.select().from(categories).orderBy(categories.name);
+  setCache('allCategories', result, 10 * 60 * 1000); // 10 min TTL
+  return result;
 }
 
 export async function getCategoryById(id: number) {

@@ -131,9 +131,64 @@ async function startServer() {
     }
   });
 
-  // Simple health check endpoint for Railway
-  app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "ok", timestamp: Date.now() });
+  // Detailed health check endpoint
+  app.get("/health", async (_req, res) => {
+    const { getPublishedArticles, getAllCategories, getDb } = await import("../db");
+    const { getLastImportResult, isImportRunning } = await import("../cronScheduler");
+
+    let dbStatus = "disconnected";
+    let articleCount = 0;
+    let categoryCount = 0;
+    try {
+      const db = await getDb();
+      if (db) {
+        dbStatus = "connected";
+        const arts = await getPublishedArticles(1, 0);
+        articleCount = arts.length > 0 ? -1 : 0; // -1 = at least 1, will get real count below
+        const cats = await getAllCategories();
+        categoryCount = cats.length;
+        // Get approximate article count
+        const { articles } = await import("../../drizzle/schema");
+        const { eq, sql } = await import("drizzle-orm");
+        const countResult = await db.select({ count: sql<number>`count(*)` }).from(articles).where(eq(articles.status, "published"));
+        articleCount = countResult[0]?.count ?? 0;
+      }
+    } catch (e: any) {
+      dbStatus = `error: ${e.message}`;
+    }
+
+    const lastImport = getLastImportResult();
+    const importRunning = isImportRunning();
+
+    const cloudinaryConfigured = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+    const dbUrlSet = !!process.env.DATABASE_URL;
+
+    res.status(200).json({
+      status: dbStatus === "connected" && articleCount > 0 ? "healthy" : "degraded",
+      timestamp: new Date().toISOString(),
+      database: {
+        status: dbStatus,
+        urlConfigured: dbUrlSet,
+        publishedArticles: articleCount,
+        categories: categoryCount,
+      },
+      importer: {
+        running: importRunning,
+        lastResult: lastImport ? {
+          timestamp: lastImport.timestamp,
+          totalFetched: lastImport.totalFetched,
+          newArticles: lastImport.newArticles,
+          duplicatesSkipped: lastImport.duplicatesSkipped,
+          skippedNoImage: lastImport.skippedNoImage,
+          skippedNoContent: lastImport.skippedNoContent,
+          errors: lastImport.errors,
+        } : null,
+      },
+      services: {
+        cloudinary: cloudinaryConfigured ? "configured" : "missing credentials",
+      },
+      uptime: Math.floor(process.uptime()),
+    });
   });
 
   // robots.txt

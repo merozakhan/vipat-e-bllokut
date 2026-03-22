@@ -512,6 +512,30 @@ function generateUniqueSlug(title: string): string {
 
 // ─── Database Operations ─────────────────────────────────────────────
 
+const DEFAULT_CATEGORIES = [
+  { name: "Aktualitet", slug: "aktualitet", description: "Lajme aktuale nga Shqipëria" },
+  { name: "Politikë", slug: "politike", description: "Lajme politike" },
+  { name: "Sport", slug: "sport", description: "Lajme sportive" },
+  { name: "Botë", slug: "bote", description: "Lajme ndërkombëtare" },
+  { name: "Ekonomi", slug: "ekonomi", description: "Lajme ekonomike" },
+  { name: "Teknologji", slug: "teknologji", description: "Lajme teknologjike" },
+  { name: "Kulturë", slug: "kulture", description: "Art, muzikë dhe kulturë" },
+  { name: "Shëndetësi", slug: "shendetesi", description: "Lajme shëndetësore" },
+];
+
+async function seedDefaultCategories(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  for (const cat of DEFAULT_CATEGORIES) {
+    try {
+      await db.insert(categories).values(cat).onDuplicateKeyUpdate({ set: { name: cat.name } });
+    } catch (e) {
+      console.warn(`[Scraper] Failed to seed category ${cat.slug}:`, e);
+    }
+  }
+}
+
 async function getCategoryMap(): Promise<Record<string, number>> {
   const db = await getDb();
   if (!db) return {};
@@ -681,10 +705,16 @@ export async function runRssImport(): Promise<ImportResult> {
     timestamp: new Date(),
   };
 
-  const categoryMap = await getCategoryMap();
+  let categoryMap = await getCategoryMap();
   if (Object.keys(categoryMap).length === 0) {
-    console.error("[Scraper] No categories found in database. Aborting.");
-    return result;
+    console.log("[Scraper] No categories found. Auto-seeding default categories...");
+    await seedDefaultCategories();
+    categoryMap = await getCategoryMap();
+    if (Object.keys(categoryMap).length === 0) {
+      console.error("[Scraper] Failed to seed categories. Aborting.");
+      return result;
+    }
+    console.log(`[Scraper] Seeded ${Object.keys(categoryMap).length} categories.`);
   }
 
   // Step 1: Fetch articles from all JOQ category pages

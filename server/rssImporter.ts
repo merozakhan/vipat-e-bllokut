@@ -1,9 +1,13 @@
 /**
- * Automated News Scraper for JOQ Albania
+ * Automated News Scraper for Albanian News Sites
  *
- * Scrapes articles from joq-albania.com every 3 hours,
- * downloads images to Cloudinary, detects duplicates,
- * rewrites content, and publishes new articles.
+ * Sources:
+ *   - JOQ Albania (joq-albania.com)
+ *   - VoxNews (voxnews.al) — Mediadesk platform
+ *   - Versus (versus.al) — Mediadesk platform
+ *
+ * Scrapes articles every 3 hours, downloads images to Cloudinary,
+ * detects duplicates, rewrites content, and publishes new articles.
  *
  * STRICT RULE: Articles are ONLY published if they have ALL three:
  *   1. Title (non-empty)
@@ -268,6 +272,204 @@ async function fetchAllJoqArticles(): Promise<JoqArticleLink[]> {
   }
 
   return allLinks;
+}
+
+// ─── Mediadesk Platform Scraper (VoxNews + Versus) ──────────────────
+
+interface MediadeskSite {
+  name: string;
+  baseUrl: string;
+  categoryPages: string[];
+  categoryMap: Record<string, string>;
+}
+
+const MEDIADESK_SITES: MediadeskSite[] = [
+  {
+    name: "VoxNews",
+    baseUrl: "https://www.voxnews.al",
+    categoryPages: ["aktualitet", "fokus", "investigim", "biznes", "kosovabota", "sport", "lifestyle"],
+    categoryMap: {
+      aktualitet: "aktualitet",
+      fokus: "aktualitet",
+      investigim: "aktualitet",
+      biznes: "ekonomi",
+      kosovabota: "bote",
+      sport: "sport",
+      lifestyle: "kulture",
+      analiza: "politike",
+      histori: "kulture",
+    },
+  },
+  {
+    name: "Versus",
+    baseUrl: "https://versus.al",
+    categoryPages: ["politike", "aktualitet", "bota", "ekonomi-mjedis", "magazine", "opinion"],
+    categoryMap: {
+      politike: "politike",
+      aktualitet: "aktualitet",
+      bota: "bote",
+      "ekonomi-mjedis": "ekonomi",
+      magazine: "kulture",
+      opinion: "politike",
+      zanat: "kulture",
+      "live-updates": "aktualitet",
+    },
+  },
+];
+
+/**
+ * Scrape a Mediadesk category page for article links.
+ * Both VoxNews and Versus use the same platform with /{category}/{slug}-i{id} URLs.
+ */
+async function scrapeMediadeskCategoryPage(site: MediadeskSite, categorySlug: string): Promise<JoqArticleLink[]> {
+  const url = `${site.baseUrl}/category/${categorySlug}`;
+  console.log(`[${site.name}] Fetching category: ${categorySlug}`);
+
+  const html = await fetchPage(url);
+  if (!html) {
+    console.log(`[${site.name}] Failed to fetch category: ${categorySlug}`);
+    return [];
+  }
+
+  const links: JoqArticleLink[] = [];
+  // Article URLs: /{category}/{slug}-i{id} — extract from href attributes
+  const regex = new RegExp(`href=["']((?:${site.baseUrl})?/[a-z-]+/[^"']*-i(\\d+))["']`, "gi");
+  const seen = new Set<string>();
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    let articleUrl = match[1];
+    if (articleUrl.startsWith("/")) articleUrl = site.baseUrl + articleUrl;
+    if (seen.has(articleUrl)) continue;
+    seen.add(articleUrl);
+
+    // Extract category from URL path
+    const pathCat = articleUrl.replace(site.baseUrl, "").split("/")[1] || categorySlug;
+
+    links.push({
+      url: articleUrl,
+      title: "",
+      imageUrl: null,
+      categorySlug: pathCat,
+      pubDate: null,
+    });
+  }
+
+  console.log(`[${site.name}] Found ${links.length} articles in ${categorySlug}`);
+  return links;
+}
+
+/**
+ * Fetch all articles from a Mediadesk site across all category pages.
+ */
+async function fetchAllMediadeskArticles(site: MediadeskSite): Promise<JoqArticleLink[]> {
+  const linkMap = new Map<string, JoqArticleLink>();
+
+  for (const categorySlug of site.categoryPages) {
+    const categoryLinks = await scrapeMediadeskCategoryPage(site, categorySlug);
+
+    for (const link of categoryLinks) {
+      const existing = linkMap.get(link.url);
+      if (!existing) {
+        linkMap.set(link.url, link);
+      } else if (
+        (existing.categorySlug === "aktualitet" || existing.categorySlug === "te-fundit") &&
+        link.categorySlug !== "aktualitet"
+      ) {
+        existing.categorySlug = link.categorySlug;
+      }
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  return Array.from(linkMap.values());
+}
+
+/**
+ * Scrape a Mediadesk article page using JSON-LD structured data + HTML fallbacks.
+ */
+function scrapeMediadeskArticlePage(html: string, siteName: string): ScrapedArticle | null {
+  // 1. Try JSON-LD first (most reliable)
+  let title = "";
+  let imageUrl: string | null = null;
+  let publishDate: string | null = null;
+  let category: string | null = null;
+
+  const jsonLdMatch = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i);
+  if (jsonLdMatch) {
+    try {
+      const ld = JSON.parse(jsonLdMatch[1]);
+      if (ld.headline) title = ld.headline;
+      if (ld.image?.url) imageUrl = ld.image.url;
+      else if (typeof ld.image === "string") imageUrl = ld.image;
+      if (ld.datePublished) publishDate = ld.datePublished;
+    } catch { /* ignore parse errors */ }
+  }
+
+  // 2. Fallback: og:title, og:image, h1
+  if (!title) {
+    const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+    if (ogTitle) title = ogTitle[1];
+  }
+  if (!title) {
+    const h1 = html.match(/<h1[^>]*class=["'][^"']*content-title[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i)
+      || html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+    if (h1) title = stripHtml(h1[1]).trim();
+  }
+  if (!imageUrl) {
+    const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+    if (ogImage) imageUrl = ogImage[1];
+  }
+  if (!publishDate) {
+    // Visible date: "22 Mars 2026, 15:25"
+    const visDate = html.match(/(\d{1,2})\s+(Janar|Shkurt|Mars|Prill|Maj|Qershor|Korrik|Gusht|Shtator|Tetor|Nentor|Dhjetor)\s+(\d{4}),?\s*(\d{1,2}):(\d{2})/i);
+    if (visDate) publishDate = visDate[0];
+  }
+
+  if (!title || title.length < 5) return null;
+
+  // 3. Extract content — Mediadesk uses content-col or layout-form_article-body
+  let content = "";
+  const contentPatterns = [
+    /<div[^>]*class="[^"]*content-col[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div[^>]*class="[^"]*(?:related|share|social|writer|suggested)[^"]*")/i,
+    /<div[^>]*class="[^"]*content-col[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]*class="[^"]*layout-form_article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]*class="[^"]*article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+  ];
+
+  for (const pattern of contentPatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      const cleaned = cleanArticleHtml(match[1]);
+      if (cleaned.length > 100) {
+        content = cleaned;
+        break;
+      }
+    }
+  }
+
+  // Fallback: all paragraphs
+  if (content.length < 100) {
+    const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+    const text = paragraphs
+      .map(p => stripHtml(p))
+      .filter(p => p.length > 30 && !isJunkText(p))
+      .join("\n\n");
+    if (text.length > 100) content = text;
+  }
+
+  // Extract category from breadcrumb or URL
+  const catMatch = html.match(/<a[^>]+href=["'][^"']*\/category\/([^"'/]+)["']/i);
+  if (catMatch) category = catMatch[1].trim().toLowerCase();
+
+  // Clean branding from title
+  title = title
+    .replace(/\s*[-–—|]\s*VOX\s*News\s*/gi, "")
+    .replace(/\s*[-–—|]\s*Versus\s*/gi, "")
+    .replace(/\s*[-–—|]\s*Vox\s*/gi, "")
+    .trim();
+
+  return { title, content, imageUrl, author: null, publishDate, category };
 }
 
 // ─── Article Page Scraper ───────────────────────────────────────────
@@ -669,20 +871,40 @@ async function insertArticle(
 
 // ─── Parse JOQ date format (dd.mm.yyyy, HH:MM) ─────────────────────
 
-function parseJoqDate(dateStr: string): Date {
-  // Try dd.mm.yyyy, HH:MM format
-  const match = dateStr.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})[,\s]*(\d{1,2}):(\d{2})/);
-  if (match) {
-    const [, day, month, year, hour, minute] = match;
+const ALBANIAN_MONTHS: Record<string, number> = {
+  janar: 0, shkurt: 1, mars: 2, prill: 3, maj: 4, qershor: 5,
+  korrik: 6, gusht: 7, shtator: 8, tetor: 9, nentor: 10, nëntor: 10, dhjetor: 11,
+};
+
+function parseArticleDate(dateStr: string): Date {
+  // Try ISO format first (JSON-LD: "2026-03-22T15:25:00+01:00")
+  const isoDate = new Date(dateStr);
+  if (!isNaN(isoDate.getTime()) && dateStr.includes("T")) return isoDate;
+
+  // Try dd.mm.yyyy, HH:MM format (JOQ: "22.03.2026, 18:00")
+  const dotMatch = dateStr.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})[,\s]*(\d{1,2}):(\d{2})/);
+  if (dotMatch) {
+    const [, day, month, year, hour, minute] = dotMatch;
     return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
   }
 
-  // Try ISO format
-  const isoDate = new Date(dateStr);
-  if (!isNaN(isoDate.getTime())) return isoDate;
+  // Try Albanian month name (Mediadesk: "22 Mars 2026, 15:25")
+  const albMatch = dateStr.match(/(\d{1,2})\s+([A-Za-zëË]+)\s+(\d{4})[,\s]*(\d{1,2}):(\d{2})/i);
+  if (albMatch) {
+    const [, day, monthName, year, hour, minute] = albMatch;
+    const monthIdx = ALBANIAN_MONTHS[monthName.toLowerCase()];
+    if (monthIdx !== undefined) {
+      return new Date(parseInt(year), monthIdx, parseInt(day), parseInt(hour), parseInt(minute));
+    }
+  }
 
+  // Fallback
+  if (!isNaN(isoDate.getTime())) return isoDate;
   return new Date();
 }
+
+// Keep backward compat alias
+const parseJoqDate = parseArticleDate;
 
 // ─── Main Import Function ────────────────────────────────────────────
 
@@ -699,7 +921,7 @@ export interface ImportResult {
 
 export async function runRssImport(): Promise<ImportResult> {
   const startTime = Date.now();
-  console.log("[Scraper] Starting JOQ Albania scrape...");
+  console.log("[Scraper] Starting multi-source scrape...");
 
   const result: ImportResult = {
     totalFetched: 0,
@@ -708,7 +930,7 @@ export async function runRssImport(): Promise<ImportResult> {
     skippedNoImage: 0,
     skippedNoContent: 0,
     errors: 0,
-    sources: ["JOQ Albania"],
+    sources: ["JOQ Albania", "VoxNews", "Versus"],
     timestamp: new Date(),
   };
 
@@ -724,27 +946,66 @@ export async function runRssImport(): Promise<ImportResult> {
     console.log(`[Scraper] Seeded ${Object.keys(categoryMap).length} categories.`);
   }
 
-  // Step 1: Fetch articles from all JOQ category pages
-  const articleLinks = await fetchAllJoqArticles();
+  // Step 1: Fetch articles from ALL sources
+  const joqLinks = await fetchAllJoqArticles();
+  console.log(`[Scraper] JOQ: ${joqLinks.length} articles`);
+
+  // Tag JOQ links with source
+  for (const link of joqLinks) (link as any)._source = "joq";
+
+  const allMediadeskLinks: JoqArticleLink[] = [];
+  for (const site of MEDIADESK_SITES) {
+    try {
+      const siteLinks = await fetchAllMediadeskArticles(site);
+      for (const link of siteLinks) (link as any)._source = site.name.toLowerCase();
+      allMediadeskLinks.push(...siteLinks);
+      console.log(`[Scraper] ${site.name}: ${siteLinks.length} articles`);
+    } catch (e) {
+      console.error(`[Scraper] ${site.name} failed:`, e);
+      result.errors++;
+    }
+  }
+
+  // Merge all sources
+  const articleLinks = [...joqLinks, ...allMediadeskLinks];
   result.totalFetched = articleLinks.length;
-  console.log(`[Scraper] Found ${articleLinks.length} unique articles total.`);
+  console.log(`[Scraper] Total: ${articleLinks.length} articles from ${result.sources.length} sources`);
 
   if (articleLinks.length === 0) {
-    console.warn("[Scraper] No articles found. JOQ website may be down.");
+    console.warn("[Scraper] No articles found from any source.");
     result.errors++;
     return result;
   }
 
-  // Max new articles to publish per run (keeps site fresh, not flooded)
+  // Max new articles to publish per run
   const MAX_NEW_PER_RUN = 50;
 
-  // Sort by article ID descending (newest first) so we process fresh content first
-  // Article URLs are /artikull/{id}.html - higher ID = newer
+  // Sort by article ID descending (newest first)
+  // JOQ: /artikull/{id}.html, Mediadesk: /{cat}/{slug}-i{id}
   articleLinks.sort((a, b) => {
-    const idA = parseInt(a.url.match(/\/artikull\/(\d+)\.html/)?.[1] || "0");
-    const idB = parseInt(b.url.match(/\/artikull\/(\d+)\.html/)?.[1] || "0");
+    const idA = parseInt(a.url.match(/(?:\/artikull\/(\d+)\.html|-i(\d+)$)/)?.[1] || a.url.match(/-i(\d+)$/)?.[1] || "0");
+    const idB = parseInt(b.url.match(/(?:\/artikull\/(\d+)\.html|-i(\d+)$)/)?.[1] || b.url.match(/-i(\d+)$/)?.[1] || "0");
     return idB - idA;
   });
+
+  // Shuffle to mix sources (prevents one source dominating all 50 slots)
+  // Strategy: interleave sources so we get ~17 from each
+  const bySource = new Map<string, JoqArticleLink[]>();
+  for (const link of articleLinks) {
+    const src = (link as any)._source || "joq";
+    if (!bySource.has(src)) bySource.set(src, []);
+    bySource.get(src)!.push(link);
+  }
+  const interleaved: JoqArticleLink[] = [];
+  const sources = Array.from(bySource.values());
+  const maxLen = Math.max(...sources.map(s => s.length));
+  for (let i = 0; i < maxLen; i++) {
+    for (const sourceLinks of sources) {
+      if (i < sourceLinks.length) interleaved.push(sourceLinks[i]);
+    }
+  }
+  articleLinks.length = 0;
+  articleLinks.push(...interleaved);
 
   // Track consecutive duplicates - if we hit 15 in a row, the rest are likely all old
   let consecutiveDuplicates = 0;
@@ -784,8 +1045,11 @@ export async function runRssImport(): Promise<ImportResult> {
         continue;
       }
 
-      // Scrape article content
-      const scraped = scrapeJoqArticlePage(articleHtml);
+      // Scrape article content using the right parser per source
+      const source = (link as any)._source || "joq";
+      const scraped = source === "joq"
+        ? scrapeJoqArticlePage(articleHtml)
+        : scrapeMediadeskArticlePage(articleHtml, source);
       if (!scraped) {
         console.log(`[Scraper] Failed to parse article: ${link.url}`);
         result.errors++;
@@ -848,15 +1112,23 @@ export async function runRssImport(): Promise<ImportResult> {
         continue;
       }
 
-      // Determine category: specific JOQ mapping → keyword detection → default
+      // Determine category: source mapping → keyword detection → default
       let categorySlug = "aktualitet";
-      const joqCat = link.categorySlug || scraped.category;
-      const mappedCat = joqCat ? JOQ_CATEGORY_MAP[joqCat] : null;
+      const sourceCat = link.categorySlug || scraped.category;
+      // Build combined category map from all sources
+      let mappedCat: string | null = null;
+      if (sourceCat) {
+        if (source === "joq") {
+          mappedCat = JOQ_CATEGORY_MAP[sourceCat] || null;
+        } else {
+          // Find the Mediadesk site config for this source
+          const siteConfig = MEDIADESK_SITES.find(s => s.name.toLowerCase() === source);
+          mappedCat = siteConfig?.categoryMap[sourceCat] || null;
+        }
+      }
       if (mappedCat && mappedCat !== "aktualitet") {
-        // Use specific JOQ category (sport, bote, teknologji, etc.)
         categorySlug = mappedCat;
       } else {
-        // For generic/unknown categories, detect from content keywords
         categorySlug = detectCategory(finalTitle, finalContent, "aktualitet");
       }
 

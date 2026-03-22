@@ -12,6 +12,14 @@ const SOURCE_BRANDING = [
   /joq\s*news/gi,
   /\bjoq\b/gi,
   /jeta\s*osh?\s*qef/gi,
+  /\bvox\s*news\b/gi,
+  /\bvoxnews\b/gi,
+  /\bredaksia\s*vox\b/gi,
+  /\bversus\.al\b/gi,
+  /\bversus\s*news\b/gi,
+  /\bredaksia\s*versus\b/gi,
+  /shkruar\s*nga\s*redaksia\s*vox/gi,
+  /shkruar\s*nga\s*redaksia\s*versus/gi,
   /lexo\s*më\s*shumë[^.!?\n]*/gi,
   /burim[ieë]?:\s*[^.!?\n<]*[.!?]?/gi,
   /shkruar\s*nga\s*[A-Z][a-z]+\s*[A-Z][a-z]*/gi,
@@ -32,6 +40,9 @@ const TITLE_CLEANUP = [
   /\s*[-–—|]\s*JOQ\s*/gi,
   /\s*[-–—|]\s*Jeta\s*Osh?\s*Qef\s*/gi,
   /\s*[-–—|]\s*Vec\s*[eë]\s*Jona\s*/gi,
+  /\s*[-–—|]\s*VOX\s*News\s*/gi,
+  /\s*[-–—|]\s*VoxNews\s*/gi,
+  /\s*[-–—|]\s*Versus\s*/gi,
 ];
 
 function decodeEntities(text: string): string {

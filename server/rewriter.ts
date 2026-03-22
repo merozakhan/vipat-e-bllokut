@@ -31,6 +31,13 @@ const SOURCE_BRANDING = [
   /\bnga\s*redaksia\b/gi,
   /\bredaksia\s*joq\b/gi,
   /\bvec\s*e\s*jona\b/gi,
+  /blerina\s*spaho/gi,
+  /drejtor\s*i\s*p[eë]rgjithsh[eë]m\s*:?\s*[^.!?\n<]*/gi,
+  /kontakt\s*:\s*\+?\d[\d\s-]*/gi,
+  /\+355\s*\d[\d\s]*/gi,
+  /d[eë]rgoni\s+informacion[^.!?\n<]*[.!?]?/gi,
+  /m[eë]nyr[eë]\s+anonime[^.!?\n<]*/gi,
+  /SHKRUAR\s*NGA\s*REDAKSIA\s*(?:VOX|VERSUS|JOQ)[^.!?\n<]*/gi,
 ];
 
 // Patterns to remove from titles
@@ -118,9 +125,31 @@ function isBoilerplateParagraph(text: string): boolean {
     /^\s*etiket/i,
     /^\s*foto\s*:\s*/i,
     /^\s*video\s*:\s*/i,
+    /^\s*drejtor\s*i\s*p[eë]rgjithsh[eë]m/i,
+    /^\s*kontakt\s*:/i,
+    /drejtor.*:.*kontakt/i,
+    /blerina\s*spaho/i,
+    /\+355\s*\d/i,
   ];
 
-  return boilerplate.some((p) => p.test(lower));
+  // Check if paragraph contains ANY source identity (anywhere, not just start)
+  const sourceIdentity = [
+    /versus\s+[eë]sht[eë]\s+nj[eë]\s+media/i,
+    /vox\s*news\s+[eë]sht[eë]/i,
+    /joq\s+[eë]sht[eë]/i,
+    /n[eë]\s+interes\s+t[eë]\s+publikut\s+dhe\s+transparenc/i,
+    /d[eë]rgoni\s+informacion/i,
+    /m[eë]nyr[eë]\s+anonime/i,
+    /ne\s+do\s+t['']a\s+ndjekim/i,
+    /raportimi\s+i\s+paansh[eë]m/i,
+    /ne\s+q[eë]ndrojm[eë]\s+p[eë]rball[eë]/i,
+    /nxjerrja\s+n[eë]\s+drit[eë]/i,
+    /shkruar\s*nga\s*redaksia/i,
+    /redaksia\s+vox/i,
+    /redaksia\s+versus/i,
+  ];
+
+  return boilerplate.some((p) => p.test(lower)) || sourceIdentity.some((p) => p.test(lower));
 }
 
 /**

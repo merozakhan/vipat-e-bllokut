@@ -632,6 +632,28 @@ function containsCssJunk(text: string): boolean {
   return cssPatterns.some(p => p.test(text));
 }
 
+// Source boilerplate that should be stripped at scrape time
+const SOURCE_BOILERPLATE = [
+  /versus\s+[eë]sht[eë]\s+nj[eë]\s+media/i,
+  /vox\s*news\s+[eë]sht[eë]/i,
+  /joq\s+[eë]sht[eë]/i,
+  /d[eë]rgoni\s+informacion/i,
+  /m[eë]nyr[eë]\s+anonime/i,
+  /raportimi\s+i\s+paansh[eë]m/i,
+  /ne\s+q[eë]ndrojm[eë]\s+p[eë]rball[eë]/i,
+  /drejtor\s+i\s+p[eë]rgjithsh[eë]m/i,
+  /blerina\s*spaho/i,
+  /\+355\s*\d/i,
+  /shkruar\s*nga\s*redaksia/i,
+  /redaksia\s+(?:vox|versus|joq)/i,
+  /n[eë]\s+interes\s+t[eë]\s+publikut/i,
+  /nxjerrja\s+n[eë]\s+drit[eë]/i,
+];
+
+function isSourceBoilerplate(text: string): boolean {
+  return SOURCE_BOILERPLATE.some(p => p.test(text));
+}
+
 function isJunkText(text: string): boolean {
   if (/^[.#@{}]/.test(text)) return true;
   if (/\{[^}]*(?:display|color|font|margin|padding|background|border|position|width|height)\s*:/i.test(text)) return true;
@@ -639,6 +661,7 @@ function isJunkText(text: string): boolean {
   if (/window\.|document\.|function\s*\(|addEventListener|querySelector|insertAdjacentHTML/i.test(text)) return true;
   if (/\.[a-z_-]+\s*\{/i.test(text)) return true;
   if ((text.match(/[a-z-]+\s*:\s*[^;]+;/gi) || []).length > 2) return true;
+  if (isSourceBoilerplate(text)) return true;
   return false;
 }
 
@@ -658,7 +681,7 @@ function cleanArticleHtml(html: string): string {
   const paragraphs = cleaned.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
   const text = paragraphs
     .map(p => stripHtml(p))
-    .filter(p => p.length >= 20 && !isJunkText(p))
+    .filter(p => p.length >= 20 && !isJunkText(p) && !isSourceBoilerplate(p))
     .join("\n\n");
 
   return (text || "").substring(0, 50000);

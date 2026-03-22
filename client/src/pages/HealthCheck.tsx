@@ -10,9 +10,13 @@ interface HealthData {
     urlConfigured: boolean;
     publishedArticles: number;
     categories: number;
+    sizeMb: number;
+    maxSizeMb: number;
   };
   importer: {
     running: boolean;
+    schedule: string;
+    sources: string[];
     lastResult: {
       timestamp: string;
       totalFetched: number;
@@ -22,6 +26,10 @@ interface HealthData {
       skippedNoContent: number;
       errors: number;
     } | null;
+  };
+  maintenance: {
+    wipeSchedule: string;
+    lastWipe: string | null;
   };
   services: {
     cloudinary: string;
@@ -143,7 +151,7 @@ export default function HealthCheck() {
                 <h3 className="text-sm font-bold text-foreground">Database</h3>
                 <StatusBadge ok={health.database.status === "connected"} label={health.database.status} />
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="p-3 bg-background/50 rounded-lg">
                   <p className="text-2xl font-black text-foreground">{health.database.publishedArticles}</p>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">Published Articles</p>
@@ -153,8 +161,14 @@ export default function HealthCheck() {
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">Categories</p>
                 </div>
                 <div className="p-3 bg-background/50 rounded-lg">
-                  <p className="text-2xl font-black text-foreground">{health.database.urlConfigured ? "Yes" : "No"}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">DB URL Set</p>
+                  <p className={`text-2xl font-black ${health.database.sizeMb > health.database.maxSizeMb * 0.8 ? "text-red-400" : "text-foreground"}`}>{health.database.sizeMb}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">Size MB / {health.database.maxSizeMb}</p>
+                </div>
+                <div className="p-3 bg-background/50 rounded-lg">
+                  <div className="w-full bg-background rounded-full h-3 mb-1.5 mt-1">
+                    <div className={`h-3 rounded-full ${health.database.sizeMb > health.database.maxSizeMb * 0.8 ? "bg-red-500" : health.database.sizeMb > health.database.maxSizeMb * 0.5 ? "bg-yellow-500" : "bg-green-500"}`} style={{ width: `${Math.min(100, (health.database.sizeMb / health.database.maxSizeMb) * 100)}%` }} />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">DB Usage</p>
                 </div>
               </div>
             </div>
@@ -169,6 +183,11 @@ export default function HealthCheck() {
                 ) : (
                   <StatusBadge ok={!!health.importer.lastResult && health.importer.lastResult.errors < 5} label="Idle" />
                 )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="text-[10px] text-muted-foreground font-sans">Schedule: {health.importer.schedule}</span>
+                <span className="text-muted-foreground/30">|</span>
+                <span className="text-[10px] text-muted-foreground font-sans">Sources: {health.importer.sources?.join(", ")}</span>
               </div>
               {health.importer.lastResult ? (
                 <>
@@ -194,6 +213,24 @@ export default function HealthCheck() {
               ) : (
                 <p className="text-xs text-muted-foreground">No import has run yet. First import starts 30s after server boot.</p>
               )}
+            </div>
+
+            {/* Maintenance */}
+            <div className="p-5 bg-card/50 rounded-xl border border-border/30">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-4 h-4 text-orange-400" />
+                <h3 className="text-sm font-bold text-foreground">Maintenance</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-background/50 rounded-lg">
+                  <p className="text-sm font-bold text-foreground">{health.maintenance?.wipeSchedule || "Not set"}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">Wipe Schedule</p>
+                </div>
+                <div className="p-3 bg-background/50 rounded-lg">
+                  <p className="text-sm font-bold text-foreground">{health.maintenance?.lastWipe ? formatTimeAgo(health.maintenance.lastWipe) : "Never"}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">Last Wipe</p>
+                </div>
+              </div>
             </div>
 
             {/* Services */}

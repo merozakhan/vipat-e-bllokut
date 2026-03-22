@@ -134,24 +134,25 @@ async function startServer() {
   // Detailed health check endpoint
   app.get("/health", async (_req, res) => {
     const { getPublishedArticles, getAllCategories, getDb } = await import("../db");
-    const { getLastImportResult, isImportRunning } = await import("../cronScheduler");
+    const { getLastImportResult, isImportRunning, getLastWipeTime } = await import("../cronScheduler");
 
     let dbStatus = "disconnected";
     let articleCount = 0;
     let categoryCount = 0;
+    let dbSizeMb = 0;
     try {
       const db = await getDb();
       if (db) {
         dbStatus = "connected";
-        const arts = await getPublishedArticles(1, 0);
-        articleCount = arts.length > 0 ? -1 : 0; // -1 = at least 1, will get real count below
         const cats = await getAllCategories();
         categoryCount = cats.length;
-        // Get approximate article count
         const { articles } = await import("../../drizzle/schema");
         const { eq, sql } = await import("drizzle-orm");
         const countResult = await db.select({ count: sql<number>`count(*)` }).from(articles).where(eq(articles.status, "published"));
         articleCount = countResult[0]?.count ?? 0;
+        // DB size
+        const sizeResult = await db.execute(sql`SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size_mb FROM information_schema.tables WHERE table_schema = DATABASE()`);
+        dbSizeMb = parseFloat((sizeResult as any)[0]?.[0]?.size_mb || "0");
       }
     } catch (e: any) {
       dbStatus = `error: ${e.message}`;
@@ -159,6 +160,7 @@ async function startServer() {
 
     const lastImport = getLastImportResult();
     const importRunning = isImportRunning();
+    const lastWipe = getLastWipeTime();
 
     const cloudinaryConfigured = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
     const dbUrlSet = !!process.env.DATABASE_URL;
@@ -171,9 +173,13 @@ async function startServer() {
         urlConfigured: dbUrlSet,
         publishedArticles: articleCount,
         categories: categoryCount,
+        sizeMb: dbSizeMb,
+        maxSizeMb: 500,
       },
       importer: {
         running: importRunning,
+        schedule: "Every 3 hours",
+        sources: ["JOQ Albania", "VoxNews", "Versus"],
         lastResult: lastImport ? {
           timestamp: lastImport.timestamp,
           totalFetched: lastImport.totalFetched,
@@ -183,6 +189,10 @@ async function startServer() {
           skippedNoContent: lastImport.skippedNoContent,
           errors: lastImport.errors,
         } : null,
+      },
+      maintenance: {
+        wipeSchedule: "Every Monday at 4:00 AM UTC",
+        lastWipe: lastWipe?.toISOString() || null,
       },
       services: {
         cloudinary: cloudinaryConfigured ? "configured" : "missing credentials",

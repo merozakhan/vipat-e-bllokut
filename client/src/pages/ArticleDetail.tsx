@@ -141,13 +141,6 @@ export default function ArticleDetail() {
                 {article.title}
               </h1>
 
-              {/* Excerpt */}
-              {article.excerpt && (
-                <p className="text-base md:text-xl text-muted-foreground leading-relaxed mb-4 md:mb-6 font-sans">
-                  {article.excerpt}
-                </p>
-              )}
-
               {/* Meta */}
               <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-muted-foreground font-sans">
                 <span className="flex items-center gap-1.5">

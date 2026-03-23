@@ -2,7 +2,6 @@
  * Automated News Scraper for Albanian News Sites
  *
  * Sources:
- *   - JOQ Albania (joq-albania.com)
  *   - VoxNews (voxnews.al) — Mediadesk platform
  *   - Versus (versus.al) — Mediadesk platform
  *
@@ -43,35 +42,7 @@ function containsBlockedWord(text: string): string | null {
   return null;
 }
 
-// ─── JOQ Albania Scraper Configuration ──────────────────────────────
-
-const JOQ_BASE_URL = "https://joq-albania.com";
-const JOQ_ARTICLE_BASE = `${JOQ_BASE_URL}/artikull/`;
-
-// JOQ category slug → our category slug mapping
-const JOQ_CATEGORY_MAP: Record<string, string> = {
-  "lajme": "aktualitet",
-  "aktualitet": "aktualitet",
-  "sport": "sport",
-  "bota": "bote",
-  "teknologji": "teknologji",
-  "argetim": "kulture",
-  "argëtim": "kulture",
-  "maqedoni": "aktualitet",
-  "kosova": "aktualitet",
-  "sondazhe": "aktualitet",
-  "travel": "aktualitet",
-  "udhetime": "aktualitet",
-  "shendeti": "shendetesi",
-  "shëndeti": "shendetesi",
-  "kuriozitete": "aktualitet",
-  "thashetheme": "kulture",
-  "vec-e-jona": "aktualitet",
-  "si-te": "aktualitet",
-  "persekutimi-ndaj-joq": "aktualitet",
-};
-
-// Category keyword mapping (fallback when JOQ category is missing)
+// Category keyword mapping (fallback when category is missing)
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   sport: [
     "sport", "futboll", "basketboll", "tenis", "olimpik", "kampionat",
@@ -150,25 +121,7 @@ interface ParsedArticle {
   category: string;
 }
 
-// ─── JOQ Category Page Scraper ───────────────────────────────────────
-
-// All JOQ category pages to scrape (~100 articles each, all pre-loaded in HTML)
-const JOQ_CATEGORY_PAGES = [
-  "lajme",
-  "sport",
-  "bota",
-  "teknologji",
-  "argetim",
-  "shendeti",
-  "kuriozitete",
-  "thashetheme",
-  "udhetime",
-  "sondazhe",
-  "vec-e-jona",
-  "si-te",
-];
-
-interface JoqArticleLink {
+interface ArticleLink {
   url: string;
   title: string;
   imageUrl: string | null;
@@ -198,100 +151,6 @@ async function fetchPage(url: string): Promise<string | null> {
     console.error(`[Scraper] Failed to fetch ${url}:`, error);
     return null;
   }
-}
-
-/**
- * Scrape a single JOQ category page for all article links.
- * Each page has ~100 articles pre-loaded (the "Më shumë" button is just CSS).
- */
-async function scrapeJoqCategoryPage(categorySlug: string): Promise<JoqArticleLink[]> {
-  const url = `${JOQ_BASE_URL}/kategori/${categorySlug}.html`;
-  console.log(`[Scraper] Fetching category page: ${categorySlug}`);
-
-  const html = await fetchPage(url);
-  if (!html) {
-    console.log(`[Scraper] Failed to fetch category: ${categorySlug}`);
-    return [];
-  }
-
-  const links: JoqArticleLink[] = [];
-
-  // Extract article links - pattern: /artikull/{id}.html
-  const regex = /\/artikull\/(\d+)\.html/g;
-  const seen = new Set<string>();
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    const fullUrl = JOQ_BASE_URL + match[0];
-    if (seen.has(fullUrl)) continue;
-    seen.add(fullUrl);
-
-    links.push({
-      url: fullUrl,
-      title: "",  // Will be scraped from article page
-      imageUrl: null,
-      categorySlug: categorySlug,  // We know the category from the page
-      pubDate: null,
-    });
-  }
-
-  console.log(`[Scraper] Found ${links.length} articles in ${categorySlug}`);
-  return links;
-}
-
-/**
- * Fetch articles from all JOQ category pages.
- * Deduplicates across categories (same article can appear in multiple).
- */
-// Generic categories that should be overridden by more specific ones
-const GENERIC_CATEGORIES = new Set(["lajme", "aktualitet", "kuriozitete", "vec-e-jona", "si-te"]);
-
-async function fetchAllJoqArticles(): Promise<JoqArticleLink[]> {
-  const linkMap = new Map<string, JoqArticleLink>();
-
-  for (const categorySlug of JOQ_CATEGORY_PAGES) {
-    const categoryLinks = await scrapeJoqCategoryPage(categorySlug);
-
-    for (const link of categoryLinks) {
-      const existing = linkMap.get(link.url);
-      if (!existing) {
-        linkMap.set(link.url, link);
-      } else if (GENERIC_CATEGORIES.has(existing.categorySlug || "") && !GENERIC_CATEGORIES.has(categorySlug)) {
-        // Replace generic category with more specific one
-        existing.categorySlug = categorySlug;
-      }
-    }
-
-    // Small delay between category pages
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-
-  const allLinks = Array.from(linkMap.values());
-
-  // Also check the Kosova and Maqedoni sections (different URL pattern)
-  for (const section of ["kosova", "maqedoni"]) {
-    const url = `${JOQ_BASE_URL}/${section}/index.html`;
-    console.log(`[Scraper] Fetching section: ${section}`);
-    const html = await fetchPage(url);
-    if (html) {
-      const regex = /\/artikull\/(\d+)\.html/g;
-      let match;
-      while ((match = regex.exec(html)) !== null) {
-        const fullUrl = JOQ_BASE_URL + match[0];
-        if (linkMap.has(fullUrl)) continue;
-        linkMap.set(fullUrl, {
-          url: fullUrl,
-          title: "",
-          imageUrl: null,
-          categorySlug: section,
-          pubDate: null,
-        });
-      }
-      console.log(`[Scraper] Found articles in ${section}`);
-    }
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-
-  return allLinks;
 }
 
 // ─── Mediadesk Platform Scraper (VoxNews + Versus) ──────────────────
@@ -341,7 +200,7 @@ const MEDIADESK_SITES: MediadeskSite[] = [
  * Scrape a Mediadesk category page for article links.
  * Both VoxNews and Versus use the same platform with /{category}/{slug}-i{id} URLs.
  */
-async function scrapeMediadeskCategoryPage(site: MediadeskSite, categorySlug: string): Promise<JoqArticleLink[]> {
+async function scrapeMediadeskCategoryPage(site: MediadeskSite, categorySlug: string): Promise<ArticleLink[]> {
   const url = `${site.baseUrl}/category/${categorySlug}`;
   console.log(`[${site.name}] Fetching category: ${categorySlug}`);
 
@@ -351,7 +210,7 @@ async function scrapeMediadeskCategoryPage(site: MediadeskSite, categorySlug: st
     return [];
   }
 
-  const links: JoqArticleLink[] = [];
+  const links: ArticleLink[] = [];
   // Article URLs: /{category}/{slug}-i{id} — extract from href attributes
   const regex = new RegExp(`href=["']((?:${site.baseUrl})?/[a-z-]+/[^"']*-i(\\d+))["']`, "gi");
   const seen = new Set<string>();
@@ -381,8 +240,8 @@ async function scrapeMediadeskCategoryPage(site: MediadeskSite, categorySlug: st
 /**
  * Fetch all articles from a Mediadesk site across all category pages.
  */
-async function fetchAllMediadeskArticles(site: MediadeskSite): Promise<JoqArticleLink[]> {
-  const linkMap = new Map<string, JoqArticleLink>();
+async function fetchAllMediadeskArticles(site: MediadeskSite): Promise<ArticleLink[]> {
+  const linkMap = new Map<string, ArticleLink>();
 
   for (const categorySlug of site.categoryPages) {
     const categoryLinks = await scrapeMediadeskCategoryPage(site, categorySlug);
@@ -503,101 +362,6 @@ interface ScrapedArticle {
   category: string | null;
 }
 
-function scrapeJoqArticlePage(html: string): ScrapedArticle | null {
-  // Extract title - try multiple patterns
-  let title = "";
-  const titlePatterns = [
-    /<h1[^>]*>([\s\S]*?)<\/h1>/i,
-    /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i,
-    /<title[^>]*>([\s\S]*?)<\/title>/i,
-  ];
-  for (const pattern of titlePatterns) {
-    const match = html.match(pattern);
-    if (match && match[1]) {
-      title = stripHtml(match[1]).trim();
-      if (title.length > 5) break;
-    }
-  }
-
-  if (!title || title.length < 5) return null;
-
-  // Extract featured image
-  let imageUrl: string | null = null;
-  const imgPatterns = [
-    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
-    /<img[^>]+class="[^"]*featured[^"]*"[^>]+src=["']([^"']+)["']/i,
-    /static\.joq-albania\.com\/imagesNew\/[^"'\s]+/i,
-  ];
-  for (const pattern of imgPatterns) {
-    const match = html.match(pattern);
-    if (match) {
-      imageUrl = match[1] || match[0];
-      if (!imageUrl.startsWith("http")) {
-        imageUrl = "https://" + imageUrl;
-      }
-      break;
-    }
-  }
-
-  // Extract article content - JOQ uses "content-wrapper" div
-  let content = "";
-  const contentPatterns = [
-    /<div[^>]*class="[^"]*content-wrapper[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div[^>]*class="[^"]*(?:related|share|social|comment|ad-|mobile-only|joq-poll)[^"]*")/i,
-    /<div[^>]*class="[^"]*content-wrapper[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*class="[^"]*body-description[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*class="[^"]*article-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*class="[^"]*post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<article[^>]*>([\s\S]*?)<\/article>/i,
-  ];
-
-  for (const pattern of contentPatterns) {
-    const match = html.match(pattern);
-    if (match && match[1]) {
-      const cleaned = cleanArticleHtml(match[1]);
-      if (cleaned.length > 100) {
-        content = cleaned;
-        break;
-      }
-    }
-  }
-
-  // Fallback: extract all paragraphs
-  if (content.length < 100) {
-    const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
-    const text = paragraphs
-      .map(p => stripHtml(p))
-      .filter(p => p.length > 30 && !isJunkText(p))
-      .join("\n\n");
-    if (text.length > 100) {
-      content = text;
-    }
-  }
-
-  // Extract author
-  let author: string | null = null;
-  const authorMatch = html.match(/(?:Shkruar nga|author)[^>]*>?\s*([A-Z][a-z]+ [A-Z][a-z]+)/i)
-    || html.match(/<meta[^>]+name=["']author["'][^>]+content=["']([^"']+)["']/i);
-  if (authorMatch) author = authorMatch[1].trim();
-
-  // Extract publish date
-  let publishDate: string | null = null;
-  const dateMatch = html.match(/Publikuar më\s*:?\s*(\d{1,2}[./]\d{1,2}[./]\d{4}[,\s]*\d{1,2}:\d{2})/i)
-    || html.match(/<meta[^>]+property=["']article:published_time["'][^>]+content=["']([^"']+)["']/i)
-    || html.match(/<time[^>]+datetime=["']([^"']+)["']/i)
-    || html.match(/(\d{1,2}\.\d{1,2}\.\d{4},\s*\d{1,2}:\d{2})/);
-  if (dateMatch) publishDate = dateMatch[1].trim();
-
-  // Extract category from page
-  let category: string | null = null;
-  const catMatch = html.match(/category[_-]?slug["']?\s*[:=]\s*["']([^"']+)["']/i)
-    || html.match(/<a[^>]+href=["'][^"']*\/kategori\/([^"'/]+)["']/i)
-    || html.match(/<span[^>]*class="[^"]*category[^"]*"[^>]*>([^<]+)<\/span>/i);
-  if (catMatch) category = catMatch[1].trim().toLowerCase();
-
-  return { title, content, imageUrl, author, publishDate, category };
-}
-
 // ─── Helper Functions ───────────────────────────────────────────────
 
 function stripHtml(html: string): string {
@@ -645,7 +409,6 @@ const SOURCE_BOILERPLATE = [
   /versus\s+[eë]sht[eë]\s+nj[eë]\s+media/i,
   /vox\s*(?:news)?\s+[eë]sht[eë]\s+nj[eë]\s+media/i,
   /vox\s+[eë]sht[eë]\s+nj[eë]\s+media/i,
-  /joq\s+[eë]sht[eë]/i,
   /d[eë]rgoni\s+informacion/i,
   /m[eë]nyr[eë]\s+anonime/i,
   /raportimi\s+i\s+paansh[eë]m/i,
@@ -654,7 +417,7 @@ const SOURCE_BOILERPLATE = [
   /blerina\s*spaho/i,
   /\+355\s*\d/i,
   /shkruar\s*nga\s*redaksia/i,
-  /redaksia\s+(?:vox|versus|joq)/i,
+  /redaksia\s+(?:vox|versus)/i,
   /n[eë]\s+interes\s+t[eë]\s+publikut/i,
   /nxjerrja\s+n[eë]\s+drit[eë]/i,
   /ka\s+nisur\s+publikimet/i,
@@ -930,7 +693,7 @@ async function insertArticle(
   }
 }
 
-// ─── Parse JOQ date format (dd.mm.yyyy, HH:MM) ─────────────────────
+// ─── Parse article date format (dd.mm.yyyy, HH:MM) ─────────────────
 
 const ALBANIAN_MONTHS: Record<string, number> = {
   janar: 0, shkurt: 1, mars: 2, prill: 3, maj: 4, qershor: 5,
@@ -942,7 +705,7 @@ function parseArticleDate(dateStr: string): Date {
   const isoDate = new Date(dateStr);
   if (!isNaN(isoDate.getTime()) && dateStr.includes("T")) return isoDate;
 
-  // Try dd.mm.yyyy, HH:MM format (JOQ: "22.03.2026, 18:00")
+  // Try dd.mm.yyyy, HH:MM format (e.g. "22.03.2026, 18:00")
   const dotMatch = dateStr.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})[,\s]*(\d{1,2}):(\d{2})/);
   if (dotMatch) {
     const [, day, month, year, hour, minute] = dotMatch;
@@ -965,7 +728,6 @@ function parseArticleDate(dateStr: string): Date {
 }
 
 // Keep backward compat alias
-const parseJoqDate = parseArticleDate;
 
 // ─── Main Import Function ────────────────────────────────────────────
 
@@ -991,7 +753,7 @@ export async function runRssImport(): Promise<ImportResult> {
     skippedNoImage: 0,
     skippedNoContent: 0,
     errors: 0,
-    sources: ["JOQ Albania", "VoxNews", "Versus"],
+    sources: ["VoxNews", "Versus"],
     timestamp: new Date(),
   };
 
@@ -1007,28 +769,19 @@ export async function runRssImport(): Promise<ImportResult> {
     console.log(`[Scraper] Seeded ${Object.keys(categoryMap).length} categories.`);
   }
 
-  // Step 1: Fetch articles from ALL sources
-  const joqLinks = await fetchAllJoqArticles();
-  console.log(`[Scraper] JOQ: ${joqLinks.length} articles`);
-
-  // Tag JOQ links with source
-  for (const link of joqLinks) (link as any)._source = "joq";
-
-  const allMediadeskLinks: JoqArticleLink[] = [];
+  // Step 1: Fetch articles from all sources
+  const articleLinks: ArticleLink[] = [];
   for (const site of MEDIADESK_SITES) {
     try {
       const siteLinks = await fetchAllMediadeskArticles(site);
       for (const link of siteLinks) (link as any)._source = site.name.toLowerCase();
-      allMediadeskLinks.push(...siteLinks);
+      articleLinks.push(...siteLinks);
       console.log(`[Scraper] ${site.name}: ${siteLinks.length} articles`);
     } catch (e) {
       console.error(`[Scraper] ${site.name} failed:`, e);
       result.errors++;
     }
   }
-
-  // Merge all sources
-  const articleLinks = [...joqLinks, ...allMediadeskLinks];
   result.totalFetched = articleLinks.length;
   console.log(`[Scraper] Total: ${articleLinks.length} articles from ${result.sources.length} sources`);
 
@@ -1042,22 +795,22 @@ export async function runRssImport(): Promise<ImportResult> {
   const MAX_NEW_PER_RUN = 50;
 
   // Sort by article ID descending (newest first)
-  // JOQ: /artikull/{id}.html, Mediadesk: /{cat}/{slug}-i{id}
+  // Mediadesk: /{cat}/{slug}-i{id}
   articleLinks.sort((a, b) => {
-    const idA = parseInt(a.url.match(/(?:\/artikull\/(\d+)\.html|-i(\d+)$)/)?.[1] || a.url.match(/-i(\d+)$/)?.[1] || "0");
-    const idB = parseInt(b.url.match(/(?:\/artikull\/(\d+)\.html|-i(\d+)$)/)?.[1] || b.url.match(/-i(\d+)$/)?.[1] || "0");
+    const idA = parseInt(a.url.match(/-i(\d+)$/)?.[1] || "0");
+    const idB = parseInt(b.url.match(/-i(\d+)$/)?.[1] || "0");
     return idB - idA;
   });
 
   // Shuffle to mix sources (prevents one source dominating all 50 slots)
   // Strategy: interleave sources so we get ~17 from each
-  const bySource = new Map<string, JoqArticleLink[]>();
+  const bySource = new Map<string, ArticleLink[]>();
   for (const link of articleLinks) {
-    const src = (link as any)._source || "joq";
+    const src = (link as any)._source || "unknown";
     if (!bySource.has(src)) bySource.set(src, []);
     bySource.get(src)!.push(link);
   }
-  const interleaved: JoqArticleLink[] = [];
+  const interleaved: ArticleLink[] = [];
   const sources = Array.from(bySource.values());
   const maxLen = Math.max(...sources.map(s => s.length));
   for (let i = 0; i < maxLen; i++) {
@@ -1106,11 +859,9 @@ export async function runRssImport(): Promise<ImportResult> {
         continue;
       }
 
-      // Scrape article content using the right parser per source
-      const source = (link as any)._source || "joq";
-      const scraped = source === "joq"
-        ? scrapeJoqArticlePage(articleHtml)
-        : scrapeMediadeskArticlePage(articleHtml, source);
+      // Scrape article content using the Mediadesk parser
+      const source = (link as any)._source || "unknown";
+      const scraped = scrapeMediadeskArticlePage(articleHtml, source);
       if (!scraped) {
         console.log(`[Scraper] Failed to parse article: ${link.url}`);
         result.errors++;
@@ -1190,7 +941,7 @@ export async function runRssImport(): Promise<ImportResult> {
       let publishedAt = new Date();
       const dateStr = link.pubDate || scraped.publishDate;
       if (dateStr) {
-        publishedAt = parseJoqDate(dateStr);
+        publishedAt = parseArticleDate(dateStr);
       }
 
       const excerpt = stripHtml(fullContent).substring(0, 300) + (fullContent.length > 300 ? "..." : "");

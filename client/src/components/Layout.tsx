@@ -87,9 +87,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const mainNav = [
     { href: "/", label: "Faqja Kryesore" },
-    { href: "/about", label: "Rreth Nesh" },
-    { href: "/advertise", label: "Reklamoni" },
-    { href: "/contact", label: "Kontakt" },
   ];
 
   return (
@@ -258,21 +255,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
 
-              {/* Legal & Social in mobile menu */}
-              <div className="border-t border-border/50 pt-4">
-                <p className="px-4 text-[10px] text-gold/60 uppercase tracking-[0.2em] font-sans font-semibold mb-2">Ligjore</p>
-                <div className="grid grid-cols-2 gap-1 mb-4">
-                  <Link href="/privacy-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Politika e Privatësisë</span></Link>
-                  <Link href="/terms"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Kushtet e Shërbimit</span></Link>
-                  <Link href="/gdpr"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">GDPR</span></Link>
-                  <Link href="/cookie-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Politika e Cookies</span></Link>
-                  <Link href="/editorial-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Politika Editoriale</span></Link>
+              {/* Company & Legal in mobile menu */}
+              <div className="border-t border-border/50 pt-3">
+                <div className="grid grid-cols-3 gap-1 mb-2">
+                  <Link href="/about"><span className="block px-3 py-1.5 text-xs font-sans text-foreground/70 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors">Rreth Nesh</span></Link>
+                  <Link href="/advertise"><span className="block px-3 py-1.5 text-xs font-sans text-foreground/70 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors">Reklamoni</span></Link>
+                  <Link href="/contact"><span className="block px-3 py-1.5 text-xs font-sans text-foreground/70 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors">Kontakt</span></Link>
+                </div>
+                <p className="px-3 text-[10px] text-gold/60 uppercase tracking-[0.2em] font-sans font-semibold mb-1.5">Ligjore</p>
+                <div className="grid grid-cols-2 gap-0.5 mb-2">
+                  <Link href="/privacy-policy"><span className="block px-3 py-1.5 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Politika e Privatësisë</span></Link>
+                  <Link href="/terms"><span className="block px-3 py-1.5 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Kushtet e Shërbimit</span></Link>
+                  <Link href="/gdpr"><span className="block px-3 py-1.5 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">GDPR</span></Link>
+                  <Link href="/cookie-policy"><span className="block px-3 py-1.5 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Politika e Cookies</span></Link>
+                  <Link href="/editorial-policy"><span className="block px-3 py-1.5 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Politika Editoriale</span></Link>
                 </div>
                 <a
                   href="https://www.instagram.com/vipat_e_bllokut_al"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-3 text-sm text-foreground/70 hover:text-gold font-sans"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-foreground/70 hover:text-gold font-sans"
                 >
                   <Instagram className="w-4 h-4" />
                   Na ndiqni në Instagram

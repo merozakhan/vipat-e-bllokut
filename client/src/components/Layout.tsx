@@ -48,7 +48,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const { data: allCategories } = trpc.categories.getAllWithCounts.useQuery();
-  const categories = allCategories?.filter(c => c.articleCount > 0 && c.slug !== "te-gjitha");
+  const categories = allCategories?.filter(c => c.slug !== "te-gjitha");
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -86,7 +86,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const mainNav = [
-    { href: "/", label: "Kryefaqja" },
+    { href: "/", label: "Faqja Kryesore" },
     { href: "/about", label: "Rreth Nesh" },
     { href: "/advertise", label: "Reklamoni" },
     { href: "/contact", label: "Kontakt" },
@@ -284,7 +284,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* ═══════════════ CATEGORY NAVIGATION BAR ═══════════════ */}
-      {categories && categories.length > 1 && (
+      {categories && categories.length > 0 && (
         <div className="border-b border-border/30 bg-card/30">
           <div className="container">
             <div className="flex items-center gap-1 py-2 overflow-x-auto scrollbar-hide">

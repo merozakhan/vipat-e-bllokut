@@ -2,10 +2,10 @@
  * Article Rewriter — Deep HTML Cleaner & Formatter
  *
  * Aggressively strips ALL HTML artifacts, CSS, JS, inline styles,
- * data attributes, and source branding. Extracts pure text, then
- * rebuilds clean, well-structured HTML paragraphs.
+ * data attributes, source branding, and junk like "Live Updates".
+ * Extracts pure article text, then rebuilds clean HTML paragraphs.
  *
- * Pipeline: raw HTML → strip everything → extract sentences →
+ * Pipeline: raw HTML → strip everything → remove junk → extract sentences →
  *           remove boilerplate → clean branding → rebuild HTML
  */
 
@@ -13,9 +13,6 @@
 
 const SOURCE_BRANDING = [
   // Source names
-  /\bjoq\s*albania\b/gi,
-  /\bjoq\s*news\b/gi,
-  /\bjeta\s*osh?\s*qef\b/gi,
   /\bvox\s*news\b/gi,
   /\bvoxnews\b/gi,
   /\bversus\.al\b/gi,
@@ -29,7 +26,7 @@ const SOURCE_BRANDING = [
   /\blapsi\.al\b/gi,
   /\bbalkanweb\b/gi,
   // Redaksia patterns
-  /\bredaksia\s*(vox|versus|joq)\b/gi,
+  /\bredaksia\s*(vox|versus)\b/gi,
   /\bnga\s*redaksia\b/gi,
   /\bshkruar\s*nga\s*redaksia[^.!?\n]*/gi,
   /\bshkruar\s*nga\s*[A-ZÇË][a-zçë]+\s*[A-ZÇË][a-zçë]*/gi,
@@ -60,11 +57,6 @@ const SOURCE_BRANDING = [
 ];
 
 const TITLE_CLEANUP = [
-  /\s*[-–—|]\s*JOQ\s*Albania\s*/gi,
-  /\s*[-–—|]\s*JOQ\s*News\s*/gi,
-  /\s*[-–—|]\s*JOQ\s*/gi,
-  /\s*[-–—|]\s*Jeta\s*Osh?\s*Qef\s*/gi,
-  /\s*[-–—|]\s*Vec\s*[eë]\s*Jona\s*/gi,
   /\s*[-–—|]\s*VOX\s*News\s*/gi,
   /\s*[-–—|]\s*VoxNews\s*/gi,
   /\s*[-–—|]\s*Versus\s*/gi,
@@ -72,6 +64,46 @@ const TITLE_CLEANUP = [
   /\s*[-–—|]\s*Telegrafi\s*/gi,
   /\s*[-–—|]\s*Albeu\s*/gi,
   /\s*[-–—|]\s*Reporter\.al\s*/gi,
+  // Remove "Live Update" prefixes from titles
+  /^\s*live\s*updates?\s*[:–—-]?\s*/gi,
+];
+
+// ─── Junk Line Patterns ─────────────────────────────────────────────
+// Lines that are metadata/navigation garbage, not article content
+
+const JUNK_LINE_PATTERNS = [
+  // "Live Updates" blocks — the main offender
+  /^live\s*updates?\b/i,
+  /^breaking\s*news\b/i,
+  /^update\s*\d/i,
+  // Timestamps mixed with category names (e.g. "23 Mars 2026, 12:28")
+  /^\d{1,2}\s+\w+\s+\d{4},?\s*\d{1,2}:\d{2}/,
+  // Standalone category words that leaked from navigation
+  /^(politik[eë]|aktualitet|ekonomi|sport|bot[eë]|teknologji|showbiz|lifestyle|kultur[eë]|magazin[eë]|fokus|investigim|video)\s*$/i,
+  // "Created and monetized by" patterns
+  /created\s+(and\s+)?monetized\s+by/i,
+  /monetized\s+by\s+\w+/i,
+  // Standalone source/section labels
+  /^(AKTUALITET|POLITIKË|SPORT|BOTË|EKONOMI|TEKNOLOGJI|SHOWBIZ|LIFESTYLE|MAGAZINË|FOKUS|INVESTIGIM|VIDEO|MJEDIS)\s*$/,
+  /^(aktualitet|politike|sport|bote|ekonomi)\s*[/|]\s*/i,
+  // Date-only lines
+  /^\d{1,2}[./]\d{1,2}[./]\d{2,4}\s*$/,
+  /^\d{1,2}\s+(janar|shkurt|mars|prill|maj|qershor|korrik|gusht|shtator|tetor|nëntor|dhjetor)\s+\d{4}\s*$/i,
+  // Navigation crumbs
+  /^(home|kryefaqja|faqja\s*kryesore)\s*[>»›]/i,
+  // "ekstrakt" or "abstract" labels
+  /^"?ekstrakt"?\s*$/i,
+  // Share/social counters
+  /^\d+\s*(shares?|likes?|comments?|views?|shpërndarje|komente|shikime)\s*$/i,
+  // Author bylines as standalone
+  /^nga\s+[A-ZÇË][a-zçë]+\s+[A-ZÇË][a-zçë]+\s*$/,
+  // Video/photo captions that are just labels
+  /^(foto|video|galeri)\s*[:|-]\s*$/i,
+  // Ad markers
+  /^(\[ad\]|sponsored|reklam[eë]|advertisement)/i,
+  // Empty quotes or brackets
+  /^[""\u201c\u201d\s]*$/,
+  /^\s*&amp;\s*$/,
 ];
 
 // ─── Boilerplate Detection ───────────────────────────────────────────
@@ -106,12 +138,13 @@ const BOILERPLATE_PATTERNS = [
   /^\s*share\s*on/i,
   /^\s*loading/i,
   /^\s*cookie/i,
+  /^\s*live\s*updates?\b/i,
+  /^\s*breaking\s*:?\s*$/i,
 ];
 
 const BOILERPLATE_ANYWHERE = [
   /versus\s+është\s+një\s+media/i,
   /vox\s*news\s+është/i,
-  /joq\s+është/i,
   /në\s+interes\s+të\s+publikut/i,
   /raportimi\s+i\s+paanshëm/i,
   /ne\s+qëndrojmë\s+përballë/i,
@@ -120,14 +153,12 @@ const BOILERPLATE_ANYWHERE = [
   /qëllimi\s+ynë\s+është/i,
   /për\s+t['']u\s+informuar\s+mbi/i,
   /ne\s+do\s+t['']a\s+ndjekim/i,
+  /created\s+and\s+monetized/i,
+  /monetized\s+by/i,
 ];
 
 // ─── HTML Stripping ──────────────────────────────────────────────────
 
-/**
- * Aggressively strip ALL HTML to get pure text.
- * Handles nested tags, inline styles, scripts, CSS, comments, etc.
- */
 function stripHtmlDeep(html: string): string {
   let text = html;
 
@@ -137,6 +168,9 @@ function stripHtmlDeep(html: string): string {
   text = text.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
   text = text.replace(/<iframe[\s\S]*?<\/iframe>/gi, "");
   text = text.replace(/<svg[\s\S]*?<\/svg>/gi, "");
+  text = text.replace(/<nav[\s\S]*?<\/nav>/gi, "");
+  text = text.replace(/<aside[\s\S]*?<\/aside>/gi, "");
+  text = text.replace(/<footer[\s\S]*?<\/footer>/gi, "");
 
   // Remove HTML comments
   text = text.replace(/<!--[\s\S]*?-->/g, "");
@@ -144,7 +178,10 @@ function stripHtmlDeep(html: string): string {
   // Remove CDATA blocks
   text = text.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, "");
 
-  // Convert block elements to newlines (paragraphs, divs, headings, etc.)
+  // Remove elements with known junk classes
+  text = text.replace(/<[^>]*class="[^"]*(?:sidebar|widget|ad-|advert|social-share|related-posts|newsletter|cookie|popup|modal|nav|menu|breadcrumb|ticker|breaking)[^"]*"[^>]*>[\s\S]*?<\/[^>]+>/gi, "");
+
+  // Convert block elements to newlines
   text = text.replace(/<\/(p|div|h[1-6]|li|tr|blockquote|article|section|header|footer|figcaption)>/gi, "\n");
   text = text.replace(/<(br|hr)\s*\/?>/gi, "\n");
 
@@ -154,12 +191,12 @@ function stripHtmlDeep(html: string): string {
   // Decode HTML entities
   text = decodeEntities(text);
 
-  // Remove CSS that leaked as text (common scraping artifact)
-  text = text.replace(/\.[\w-]+\s*\{[^}]*\}/g, ""); // .class { ... }
-  text = text.replace(/@media[^{]*\{[^}]*\}/g, "");  // @media { ... }
-  text = text.replace(/@import\s+[^;]+;/g, "");       // @import ...;
-  text = text.replace(/@charset\s+[^;]+;/g, "");      // @charset ...;
-  text = text.replace(/@font-face\s*\{[^}]*\}/g, ""); // @font-face { ... }
+  // Remove CSS that leaked as text
+  text = text.replace(/\.[\w-]+\s*\{[^}]*\}/g, "");
+  text = text.replace(/@media[^{]*\{[^}]*\}/g, "");
+  text = text.replace(/@import\s+[^;]+;/g, "");
+  text = text.replace(/@charset\s+[^;]+;/g, "");
+  text = text.replace(/@font-face\s*\{[^}]*\}/g, "");
   text = text.replace(/\{[^}]*(?:display|margin|padding|font-size|color|background|border|position|width|height|overflow|text-align|float|clear)\s*:[^}]*\}/g, "");
 
   // Remove JS that leaked as text
@@ -173,7 +210,7 @@ function stripHtmlDeep(html: string): string {
   // Remove data URIs
   text = text.replace(/data:[a-z]+\/[a-z+]+;base64,[A-Za-z0-9+/=]+/g, "");
 
-  // Remove URLs that are clearly not part of article text
+  // Remove social media URLs
   text = text.replace(/https?:\/\/(?:www\.)?(?:facebook|twitter|instagram|youtube|tiktok|whatsapp)\.[a-z]+[^\s]*/gi, "");
 
   // Clean up whitespace
@@ -215,9 +252,32 @@ function cleanTitle(title: string): string {
     clean = clean.replace(pattern, "");
   }
   clean = decodeEntities(clean);
-  // Remove any leftover HTML tags in title
   clean = clean.replace(/<[^>]*>/g, "");
   return clean.trim();
+}
+
+/**
+ * Check if a line is junk (metadata, navigation, labels, etc.)
+ */
+function isJunkLine(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length < 3) return true;
+
+  // Check against junk patterns
+  if (JUNK_LINE_PATTERNS.some(p => p.test(trimmed))) return true;
+
+  // Too many UPPERCASE words in a short line = likely a nav/label
+  if (trimmed.length < 80) {
+    const words = trimmed.split(/\s+/);
+    const upperWords = words.filter(w => w === w.toUpperCase() && w.length > 2);
+    if (upperWords.length >= 3) return true;
+  }
+
+  // Line is mostly numbers/punctuation (timestamps, counters)
+  const alphaChars = trimmed.replace(/[^a-zA-ZçëÇËëàáâãäåèéêìíîòóôùúûüÿñ]/g, "");
+  if (alphaChars.length < trimmed.length * 0.3 && trimmed.length < 60) return true;
+
+  return false;
 }
 
 function isBoilerplate(text: string): boolean {
@@ -226,21 +286,15 @@ function isBoilerplate(text: string): boolean {
 
   const lower = trimmed.toLowerCase();
 
-  // Looks like a CSS class or JS variable
+  // CSS/JS artifacts
   if (/^[.#@]\w/.test(trimmed)) return true;
   if (/^(var|let|const|function|import|export)\s/.test(trimmed)) return true;
   if (/[{}]/.test(trimmed) && trimmed.length < 100) return true;
 
-  // Known boilerplate starts
   if (BOILERPLATE_PATTERNS.some(p => p.test(lower))) return true;
-
-  // Known boilerplate anywhere
   if (BOILERPLATE_ANYWHERE.some(p => p.test(lower))) return true;
 
-  // Looks like a URL list or navigation
   if (/^https?:\/\//.test(trimmed)) return true;
-
-  // Just numbers or dates
   if (/^\d[\d\s./:,-]*$/.test(trimmed)) return true;
 
   return false;
@@ -252,12 +306,21 @@ function cleanBranding(text: string): string {
     cleaned = cleaned.replace(pattern, "");
   }
 
-  // Clean residual punctuation artifacts from removals
+  // Remove "Live Updates" and similar prefixes inline
+  cleaned = cleaned.replace(/\blive\s*updates?\s*[:–—-]?\s*/gi, "");
+  cleaned = cleaned.replace(/\bbreaking\s*news\s*[:–—-]?\s*/gi, "");
+  cleaned = cleaned.replace(/\bcreated\s+and\s+monetized\s+by\s+\w+[^.!?\n]*/gi, "");
+  cleaned = cleaned.replace(/\bmonetized\s+by\s+\w+[^.!?\n]*/gi, "");
+
+  // Remove "SHBA ngrin" type live update fragments at start of text
+  cleaned = cleaned.replace(/^SHBA\s+"[^"]*"\s*/g, "");
+
+  // Clean residual punctuation artifacts
   cleaned = cleaned.replace(/\s*[-–—]\s*\.\s*/g, ". ");
   cleaned = cleaned.replace(/\.\s*\.\s*/g, ". ");
   cleaned = cleaned.replace(/,\s*,/g, ",");
-  cleaned = cleaned.replace(/\(\s*\)/g, "");      // empty parentheses
-  cleaned = cleaned.replace(/"\s*"/g, "");          // empty quotes
+  cleaned = cleaned.replace(/\(\s*\)/g, "");
+  cleaned = cleaned.replace(/"\s*"/g, "");
   cleaned = cleaned.replace(/\s{2,}/g, " ");
 
   return cleaned.trim();
@@ -265,16 +328,10 @@ function cleanBranding(text: string): string {
 
 // ─── Smart Typography ────────────────────────────────────────────────
 
-/**
- * Apply professional Albanian typography:
- * - Smart quotes
- * - Proper em-dashes
- * - Bold key entities (names, places, numbers)
- */
 function applyTypography(text: string): string {
   let t = text;
 
-  // Smart quotes: "text" → "text"
+  // Smart quotes
   t = t.replace(/"([^"]+)"/g, "\u201c$1\u201d");
   t = t.replace(/'([^']+)'/g, "\u2018$1\u2019");
 
@@ -282,10 +339,10 @@ function applyTypography(text: string): string {
   t = t.replace(/\s*--\s*/g, " \u2014 ");
   t = t.replace(/\s*-\s*-\s*/g, " \u2014 ");
 
-  // Bold quoted speech (indicates direct quotes — engaging)
+  // Bold quoted speech
   t = t.replace(/(\u201c[^\u201d]{10,}\u201d)/g, "<strong>$1</strong>");
 
-  // Bold percentages and big numbers (eye-catching facts)
+  // Bold percentages and big numbers
   t = t.replace(/(\d+(?:\.\d+)?%)/g, "<strong>$1</strong>");
   t = t.replace(/(\d{1,3}(?:\.\d{3})+(?:\s*(?:euro|dollarë|lekë|USD|EUR|ALL)))/gi, "<strong>$1</strong>");
 
@@ -294,18 +351,12 @@ function applyTypography(text: string): string {
 
 // ─── Pull Quote Extraction ───────────────────────────────────────────
 
-/**
- * Find the most quotable sentence — something with direct speech,
- * strong claims, or dramatic statements. Used as a visual pull quote.
- */
 function findPullQuote(paragraphs: string[]): string | null {
-  // Look for direct quotes first (most engaging)
   for (const p of paragraphs) {
     const quoteMatch = p.match(/["\u201c«]([^"\u201d»]{30,150})["\u201d»]/);
     if (quoteMatch) return quoteMatch[0];
   }
 
-  // Look for dramatic statements (short, punchy, with strong words)
   const dramatic = [
     /\b(skandal|krizë|tragjedi|revolucion|historik|rekord|shokues|i\s*paprecedent)\b/i,
     /\b(zbuloj|konfirmoj|paralajmëro|deklaroj|akuzoj|mohoj)\b/i,
@@ -321,27 +372,20 @@ function findPullQuote(paragraphs: string[]): string | null {
 
 // ─── Paragraph Merging & Splitting ───────────────────────────────────
 
-/**
- * Merge very short consecutive paragraphs that are clearly
- * fragments of the same thought (common scraping artifact).
- */
 function mergeParagraphs(paragraphs: string[]): string[] {
   const merged: string[] = [];
 
   for (let i = 0; i < paragraphs.length; i++) {
     const current = paragraphs[i];
 
-    // If current is short and doesn't end with sentence-ending punctuation,
-    // merge with next paragraph
     if (
       current.length < 60 &&
       !/[.!?:]\s*$/.test(current) &&
       i + 1 < paragraphs.length
     ) {
-      // Merge with next
       const next = paragraphs[i + 1];
       merged.push(current + " " + next);
-      i++; // skip next
+      i++;
     } else {
       merged.push(current);
     }
@@ -350,16 +394,11 @@ function mergeParagraphs(paragraphs: string[]): string[] {
   return merged;
 }
 
-/**
- * Split overly long paragraphs at natural sentence boundaries
- * for better readability on mobile.
- */
 function splitLongParagraphs(paragraphs: string[]): string[] {
   const result: string[] = [];
 
   for (const p of paragraphs) {
     if (p.length > 500) {
-      // Split at sentence boundaries near the middle
       const sentences = p.match(/[^.!?]+[.!?]+/g) || [p];
       if (sentences.length >= 2) {
         const mid = Math.ceil(sentences.length / 2);
@@ -376,6 +415,50 @@ function splitLongParagraphs(paragraphs: string[]): string[] {
   return result;
 }
 
+// ─── Leading Junk Stripper ──────────────────────────────────────────
+
+/**
+ * Many scraped articles start with navigation/ticker junk before the
+ * actual article begins. This finds where real content starts by
+ * looking for the first paragraph that reads like actual article text.
+ */
+function stripLeadingJunk(paragraphs: string[]): string[] {
+  let startIndex = 0;
+
+  for (let i = 0; i < Math.min(paragraphs.length, 8); i++) {
+    const p = paragraphs[i];
+    const trimmed = p.trim();
+
+    // If this paragraph looks like real article content, start here
+    // Real content: has proper sentences, decent length, no junk markers
+    const hasSentenceStructure = /[.!?]/.test(trimmed) && trimmed.length > 80;
+    const startsWithCapital = /^[A-ZÇËÀÁÂÃÄÅÈÉÊÌÍÎÒÓÔÙÚÛ]/.test(trimmed);
+    const looksLikeArticle = hasSentenceStructure && startsWithCapital;
+
+    if (looksLikeArticle) {
+      startIndex = i;
+      break;
+    }
+
+    // If it's clearly junk, skip it
+    if (isJunkLine(trimmed) || isBoilerplate(trimmed)) {
+      startIndex = i + 1;
+      continue;
+    }
+
+    // Short fragments at the start are likely junk
+    if (trimmed.length < 40 && i < 3) {
+      startIndex = i + 1;
+      continue;
+    }
+
+    // If we got here, it might be real content
+    break;
+  }
+
+  return paragraphs.slice(startIndex);
+}
+
 // ─── Main Rewriter ───────────────────────────────────────────────────
 
 function cleanContent(rawHtml: string): string {
@@ -384,24 +467,26 @@ function cleanContent(rawHtml: string): string {
 
   if (!plainText || plainText.length < 20) return "";
 
-  // Step 2: Split into paragraphs (handle both \n\n and single \n)
+  // Step 2: Split into paragraphs
   const rawParagraphs = plainText
     .split(/\n\n+/)
     .flatMap(block => {
-      // Only split single newlines if the block is long
       if (block.length > 300) return block.split(/\n/).map(p => p.trim());
       return [block.trim()];
     })
     .filter(p => p.length > 0);
 
-  // Step 3: Clean each paragraph
+  // Step 3: Strip leading junk (Live Updates, nav crumbs, tickers)
+  const withoutLeadingJunk = stripLeadingJunk(rawParagraphs);
+
+  // Step 4: Clean each paragraph
   let cleaned: string[] = [];
-  for (const para of rawParagraphs) {
+  for (const para of withoutLeadingJunk) {
+    if (isJunkLine(para)) continue;
     if (isBoilerplate(para)) continue;
 
     const cleanedText = cleanBranding(para);
 
-    // Only skip if truly empty or code-like
     if (cleanedText.length < 8) continue;
     if (/[{};]/.test(cleanedText) && cleanedText.length < 60) continue;
     if (/^\s*(px|em|rem|%|auto|none|inherit|flex|grid|block|inline)[\s;,]/.test(cleanedText)) continue;
@@ -411,11 +496,11 @@ function cleanContent(rawHtml: string): string {
 
   if (cleaned.length === 0) return "";
 
-  // Step 4: Smart paragraph restructuring
+  // Step 5: Smart paragraph restructuring
   cleaned = mergeParagraphs(cleaned);
   cleaned = splitLongParagraphs(cleaned);
 
-  // Remove near-duplicate paragraphs (scraping artifact)
+  // Remove near-duplicate paragraphs
   const seen = new Set<string>();
   cleaned = cleaned.filter(p => {
     const key = p.substring(0, 60).toLowerCase();
@@ -426,26 +511,25 @@ function cleanContent(rawHtml: string): string {
 
   if (cleaned.length === 0) return "";
 
-  // Step 5: Find a pull quote (most engaging sentence)
+  // Step 6: Find a pull quote
   const pullQuote = findPullQuote(cleaned);
 
-  // Step 6: Apply typography enhancements
+  // Step 7: Apply typography
   cleaned = cleaned.map(p => applyTypography(p));
 
-  // Step 7: Build professional HTML structure
+  // Step 8: Build professional HTML
   let html = "";
 
-  // Lead paragraph — bold, sets the hook
+  // Lead paragraph — bold
   html += `<p><strong>${cleaned[0]}</strong></p>`;
 
-  // Body paragraphs with visual breaks
   for (let i = 1; i < cleaned.length; i++) {
-    // Insert pull quote after 2nd paragraph if we have one
+    // Pull quote after 2nd paragraph
     if (i === 2 && pullQuote && cleaned.length > 4) {
       html += `<blockquote><p>${applyTypography(pullQuote)}</p></blockquote>`;
     }
 
-    // Insert a subtle divider every 4-5 paragraphs for visual breathing room
+    // Visual divider every 5 paragraphs
     if (i > 1 && i % 5 === 0 && i < cleaned.length - 1) {
       html += `<hr />`;
     }
@@ -458,8 +542,8 @@ function cleanContent(rawHtml: string): string {
 
 /**
  * Rewrites an article — deeply cleans HTML, strips all source branding,
- * removes CSS/JS artifacts, restructures paragraphs, applies professional
- * typography, extracts pull quotes, and outputs engaging formatted HTML.
+ * removes junk like "Live Updates", CSS/JS artifacts, restructures
+ * paragraphs, applies professional typography, and outputs clean HTML.
  */
 export async function rewriteArticle(
   title: string,

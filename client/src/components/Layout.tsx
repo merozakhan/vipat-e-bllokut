@@ -102,7 +102,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-5">
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-3 h-3 text-gold/60" />
-                London, United Kingdom
+                Manchester, United Kingdom
               </span>
               <span className="w-px h-3 bg-white/10" />
               <a href="tel:+447476921815" className="flex items-center gap-1.5 hover:text-gold transition-colors">
@@ -533,8 +533,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </div>
                   <div>
                     <p className="text-[13px] text-white/50 leading-relaxed">
-                      125 Kingsway, Holborn<br />
-                      London WC2B 6NH<br />
+                      Flat 1 Pmb 0512 85 Moss Bank<br />
+                      Manchester M8 5AP<br />
                       United Kingdom
                     </p>
                   </div>
@@ -560,7 +560,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Globe className="w-4 h-4 text-gold/70" />
                   </div>
                   <span className="text-[13px] text-white/50">
-                    Company No: 16606613<br />
+                    Company No: 17079235<br />
                     Registered in England & Wales
                   </span>
                 </div>
@@ -579,7 +579,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </p>
                 <span className="hidden sm:block text-white/10">|</span>
                 <p className="text-[11px] text-white/20 font-sans">
-                  UK Company Registration No: 16606613 | Registered in England & Wales
+                  UK Company Registration No: 17079235 | Registered in England & Wales
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-white/30 font-sans">

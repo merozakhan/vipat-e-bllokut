@@ -18,7 +18,7 @@ export default function GDPR() {
         <section>
           <h2 className="text-xl font-bold text-foreground mb-4">2. Data Controller</h2>
           <p className="text-muted-foreground">
-            Vipat E Bllokut Ltd acts as the Data Controller for personal data collected through this website. Our registered address is 125 Kingsway, Holborn, London WC2B 6NH, United Kingdom. For all data protection enquiries, please contact us at <a href="mailto:info@vipatebllokut.com" className="text-gold hover:text-gold-light transition-colors">info@vipatebllokut.com</a>.
+            Vipat E Bllokut Ltd acts as the Data Controller for personal data collected through this website. Our registered address is Flat 1 Pmb 0512 85 Moss Bank, Manchester M8 5AP, United Kingdom. For all data protection enquiries, please contact us at <a href="mailto:info@vipatebllokut.com" className="text-gold hover:text-gold-light transition-colors">info@vipatebllokut.com</a>.
           </p>
         </section>
 
@@ -146,8 +146,8 @@ export default function GDPR() {
             <p className="text-muted-foreground">
               <strong className="text-foreground">Data Protection Officer</strong><br />
               Vipat E Bllokut Ltd<br />
-              125 Kingsway, Holborn<br />
-              London WC2B 6NH, United Kingdom<br />
+              Flat 1 Pmb 0512 85 Moss Bank<br />
+              Manchester M8 5AP, United Kingdom<br />
               Email: <a href="mailto:info@vipatebllokut.com" className="text-gold hover:text-gold-light transition-colors">info@vipatebllokut.com</a>
             </p>
           </div>

@@ -117,7 +117,7 @@ export default function About() {
                 </div>
                 <div>
                   <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Registered Address</p>
-                  <p className="text-foreground font-sans">125 Kingsway, Holborn<br />London WC2B 6NH</p>
+                  <p className="text-foreground font-sans">Flat 1 Pmb 0512 85 Moss Bank<br />Manchester M8 5AP</p>
                 </div>
                 <div>
                   <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Contact</p>

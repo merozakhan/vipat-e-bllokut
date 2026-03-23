@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { Calendar, Clock, ArrowRight, TrendingUp, Flame, Zap, Globe, Shield, ChevronRight } from "lucide-react";
+import { Calendar, Clock, ArrowRight, TrendingUp, Flame, Zap, ChevronRight } from "lucide-react";
 import Layout from "@/components/Layout";
 import ArticleImage from "@/components/ArticleImage";
 import SEOHead from "@/components/SEOHead";
@@ -8,8 +8,6 @@ import SEOHead from "@/components/SEOHead";
 export default function Home() {
   const { data: trendingArticles, isLoading: trendingLoading } = trpc.articles.getTrending.useQuery({ limit: 8 });
   const { data: latestArticles, isLoading: latestLoading } = trpc.articles.getPublished.useQuery({ limit: 20 });
-  const { data: politikeArticles } = trpc.articles.getByCategorySlug.useQuery({ slug: "politike", limit: 6 });
-  const { data: boteArticles } = trpc.articles.getByCategorySlug.useQuery({ slug: "bote", limit: 6 });
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "";
@@ -178,138 +176,6 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══ POLITIKË Spotlight ═══ */}
-      {politikeArticles && politikeArticles.length > 0 && (
-        <section className="py-6 md:py-10 border-b border-border/30">
-          <div className="container">
-            <div className="flex items-center justify-between mb-4 md:mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-1 h-7 bg-gold rounded-full" />
-                <Shield className="w-4 h-4 md:w-5 md:h-5 text-gold" />
-                <h2 className="text-lg md:text-2xl font-black text-foreground">Politikë</h2>
-              </div>
-              <Link href="/category/politike">
-                <span className="text-xs md:text-sm text-gold hover:text-gold-light font-semibold font-sans flex items-center gap-1 cursor-pointer">
-                  Shiko Të Gjitha <ChevronRight className="w-3.5 h-3.5" />
-                </span>
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
-              {/* First article large */}
-              {politikeArticles[0] && (
-                <Link href={`/article/${politikeArticles[0].slug}`} className="col-span-2 lg:col-span-1 lg:row-span-2">
-                  <div className="group relative overflow-hidden rounded-xl cursor-pointer h-full">
-                    <div className="aspect-[16/9] lg:aspect-auto lg:h-full overflow-hidden relative">
-                      <ArticleImage
-                        src={politikeArticles[0].featuredImage}
-                        alt={politikeArticles[0].title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                      <span className="px-2 py-0.5 bg-gold/90 text-navy-dark text-[9px] md:text-[10px] font-bold uppercase tracking-wider rounded font-sans mb-2 inline-block">
-                        Politikë
-                      </span>
-                      <h3 className="text-sm md:text-xl font-bold text-white leading-snug line-clamp-3 group-hover:text-gold-light transition-colors">
-                        {politikeArticles[0].title}
-                      </h3>
-                      <span className="text-[9px] md:text-xs text-white/50 font-sans mt-2 block">
-                        {getTimeAgo(politikeArticles[0].publishedAt)}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              )}
-              {/* Remaining politics articles */}
-              {politikeArticles.slice(1, 5).map((article) => (
-                <Link key={article.id} href={`/article/${article.slug}`}>
-                  <div className="group flex flex-col bg-card/50 rounded-lg border border-border/30 hover:border-gold/30 overflow-hidden cursor-pointer h-full transition-all">
-                    <div className="aspect-[16/10] overflow-hidden relative">
-                      <ArticleImage
-                        src={article.featuredImage}
-                        alt={article.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        showOverlay
-                      />
-                    </div>
-                    <div className="p-2.5 md:p-4 flex-1 flex flex-col">
-                      <h4 className="text-xs md:text-sm font-bold text-card-foreground leading-snug line-clamp-2 group-hover:text-gold transition-colors">
-                        {article.title}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-auto pt-2 text-[9px] md:text-[10px] text-muted-foreground font-sans">
-                        <span>{getTimeAgo(article.publishedAt)}</span>
-                        <span className="text-gold/40">•</span>
-                        <span>{getReadingTime(article.content)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══ BOTË (World News) ═══ */}
-      {boteArticles && boteArticles.length > 0 && (
-        <section className="py-6 md:py-10 border-b border-border/30">
-          <div className="container">
-            <div className="flex items-center justify-between mb-4 md:mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-1 h-7 bg-blue-500 rounded-full" />
-                <Globe className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
-                <h2 className="text-lg md:text-2xl font-black text-foreground">Botë</h2>
-              </div>
-              <Link href="/category/bote">
-                <span className="text-xs md:text-sm text-blue-400 hover:text-blue-300 font-semibold font-sans flex items-center gap-1 cursor-pointer">
-                  Shiko Të Gjitha <ChevronRight className="w-3.5 h-3.5" />
-                </span>
-              </Link>
-            </div>
-
-            {/* World news horizontal scroll on mobile, grid on desktop */}
-            <div className="flex gap-3 md:gap-5 overflow-x-auto pb-2 md:pb-0 md:grid md:grid-cols-3 md:overflow-visible scrollbar-hide">
-              {boteArticles.slice(0, 6).map((article) => (
-                <Link key={article.id} href={`/article/${article.slug}`} className="flex-shrink-0 w-[70vw] md:w-auto">
-                  <div className="group flex flex-col bg-card/50 rounded-lg border border-border/30 hover:border-blue-500/30 overflow-hidden cursor-pointer h-full transition-all">
-                    <div className="aspect-[16/10] overflow-hidden relative">
-                      <ArticleImage
-                        src={article.featuredImage}
-                        alt={article.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        showOverlay
-                      />
-                      <div className="absolute top-2 left-2">
-                        <span className="px-1.5 py-0.5 bg-blue-600/80 text-white text-[8px] md:text-[9px] font-bold uppercase tracking-wider rounded font-sans">
-                          Botë
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-2.5 md:p-4 flex-1 flex flex-col">
-                      <h4 className="text-xs md:text-sm font-bold text-card-foreground leading-snug line-clamp-2 group-hover:text-blue-400 transition-colors">
-                        {article.title}
-                      </h4>
-                      {article.excerpt && (
-                        <p className="hidden md:block text-xs text-muted-foreground mt-1.5 line-clamp-2 font-sans leading-relaxed">
-                          {article.excerpt}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mt-auto pt-2 text-[9px] md:text-[10px] text-muted-foreground font-sans">
-                        <span>{getTimeAgo(article.publishedAt)}</span>
-                        <span className="text-blue-500/40">•</span>
-                        <span>{getReadingTime(article.content)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
             </div>
           </div>
         </section>

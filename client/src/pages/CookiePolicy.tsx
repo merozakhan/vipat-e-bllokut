@@ -124,8 +124,8 @@ export default function CookiePolicy() {
           <div className="mt-3 p-4 bg-secondary/50 rounded-lg border border-border/50">
             <p className="text-muted-foreground">
               <strong className="text-foreground">Vipat E Bllokut Ltd</strong><br />
-              125 Kingsway, Holborn<br />
-              London WC2B 6NH, United Kingdom<br />
+              Flat 1 Pmb 0512 85 Moss Bank<br />
+              Manchester M8 5AP, United Kingdom<br />
               Email: <a href="mailto:info@vipatebllokut.com" className="text-gold hover:text-gold-light transition-colors">info@vipatebllokut.com</a><br />
               Phone: +44 7476 921815
             </p>

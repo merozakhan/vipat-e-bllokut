@@ -117,8 +117,8 @@ export default function Contact() {
               </div>
               <h3 className="text-xs font-bold text-foreground font-sans uppercase tracking-wider mb-2">Office</h3>
               <p className="text-xs text-muted-foreground font-sans leading-relaxed">
-                125 Kingsway, Holborn<br />
-                London WC2B 6NH<br />
+                Flat 1 Pmb 0512 85 Moss Bank<br />
+                Manchester M8 5AP<br />
                 United Kingdom
               </p>
             </div>

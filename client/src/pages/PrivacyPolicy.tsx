@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
         <section>
           <h2 className="text-xl font-bold text-foreground mb-4">1. Introduction</h2>
           <p className="text-muted-foreground">
-            Vipat E Bllokut Ltd ("we", "our", "us") is a company registered in England and Wales with its registered office at 125 Kingsway, Holborn, London WC2B 6NH, United Kingdom. We are committed to protecting and respecting your privacy in accordance with the UK General Data Protection Regulation (UK GDPR), the Data Protection Act 2018, and other applicable data protection legislation.
+            Vipat E Bllokut Ltd ("we", "our", "us") is a company registered in England and Wales with its registered office at Flat 1 Pmb 0512 85 Moss Bank, Manchester M8 5AP, United Kingdom. We are committed to protecting and respecting your privacy in accordance with the UK General Data Protection Regulation (UK GDPR), the Data Protection Act 2018, and other applicable data protection legislation.
           </p>
           <p className="text-muted-foreground mt-3">
             This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services. Please read this policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site.
@@ -119,8 +119,8 @@ export default function PrivacyPolicy() {
           <div className="mt-3 p-4 bg-secondary/50 rounded-lg border border-border/50">
             <p className="text-muted-foreground">
               <strong className="text-foreground">Vipat E Bllokut Ltd</strong><br />
-              125 Kingsway, Holborn<br />
-              London WC2B 6NH, United Kingdom<br />
+              Flat 1 Pmb 0512 85 Moss Bank<br />
+              Manchester M8 5AP, United Kingdom<br />
               Email: <a href="mailto:info@vipatebllokut.com" className="text-gold hover:text-gold-light transition-colors">info@vipatebllokut.com</a><br />
               Phone: +44 7476 921815
             </p>

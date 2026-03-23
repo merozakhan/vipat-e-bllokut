@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { Calendar, Clock, ArrowRight, TrendingUp, Flame, Zap, ChevronRight, Eye } from "lucide-react";
+import { Calendar, Clock, ArrowRight, TrendingUp, Flame, Zap, ChevronRight, Eye, Layers } from "lucide-react";
 import Layout from "@/components/Layout";
 import ArticleImage from "@/components/ArticleImage";
 import SEOHead from "@/components/SEOHead";
@@ -11,6 +11,10 @@ export default function Home() {
   const { data: trendingArticles } = trpc.articles.getByPlacement.useQuery({ placement: "trending", limit: 5 });
   const { data: hotArticles } = trpc.articles.getByPlacement.useQuery({ placement: "hot", limit: 4 });
   const { data: mostReadArticles } = trpc.articles.getByPlacement.useQuery({ placement: "most_read", limit: 5 });
+
+  // Categories
+  const { data: allCategories } = trpc.categories.getAllWithCounts.useQuery();
+  const categoryList = allCategories?.filter(c => c.slug !== "te-gjitha") || [];
 
   // Fallback: auto-trending by engagement score
   const { data: autoTrending } = trpc.articles.getTrending.useQuery({ limit: 8 });
@@ -191,6 +195,36 @@ export default function Home() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══ CATEGORIES Block ═══ */}
+      {categoryList.length > 0 && (
+        <section className="py-5 md:py-8 border-b border-border/30">
+          <div className="container">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-6 bg-gold rounded-full" />
+              <Layers className="w-4 h-4 text-gold" />
+              <h3 className="text-sm font-bold text-gold uppercase tracking-wider font-sans">Eksploro Kategoritë</h3>
+            </div>
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+              {categoryList.map((cat) => (
+                <Link key={cat.id} href={`/category/${cat.slug}`}>
+                  <div className="group flex-shrink-0 w-36 md:w-44 bg-gradient-to-br from-card to-card/50 rounded-xl border border-border/40 hover:border-gold/40 p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:shadow-gold/5">
+                    <h4 className="text-sm md:text-base font-bold text-foreground group-hover:text-gold transition-colors truncate">
+                      {cat.name}
+                    </h4>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-[10px] md:text-xs text-muted-foreground font-sans">
+                        {cat.articleCount} artikuj
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-gold group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </section>

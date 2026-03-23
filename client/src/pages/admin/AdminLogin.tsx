@@ -7,8 +7,12 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [, navigate] = useLocation();
+  const utils = trpc.useUtils();
   const login = trpc.admin.login.useMutation({
-    onSuccess: () => navigate("/admin"),
+    onSuccess: async () => {
+      await utils.admin.me.invalidate();
+      navigate("/admin");
+    },
     onError: (e) => setError(e.message),
   });
 

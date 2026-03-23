@@ -79,3 +79,19 @@ export const articleCategories = mysqlTable("article_categories", {
 
 export type ArticleCategory = typeof articleCategories.$inferSelect;
 export type InsertArticleCategory = typeof articleCategories.$inferInsert;
+
+/**
+ * Page views tracking for analytics
+ */
+export const pageViews = mysqlTable("page_views", {
+  id: int("id").autoincrement().primaryKey(),
+  path: varchar("path", { length: 500 }).notNull(),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+  count: int("count").default(0).notNull(),
+}, (table) => ({
+  pathDateIdx: unique("unique_path_date").on(table.path, table.date),
+  dateIdx: index("date_idx").on(table.date),
+}));
+
+export type PageView = typeof pageViews.$inferSelect;
+export type InsertPageView = typeof pageViews.$inferInsert;

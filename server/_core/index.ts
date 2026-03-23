@@ -314,6 +314,14 @@ Sitemap: https://vipatebllokut.com/sitemap.xml
     }
   });
 
+  // Page view tracking (non-blocking)
+  app.use((req, _res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api/") && !req.path.startsWith("/assets/") && !req.path.includes(".")) {
+      import("../db").then(({ trackPageView }) => trackPageView(req.path)).catch(() => {});
+    }
+    next();
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

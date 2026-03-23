@@ -29,6 +29,9 @@ import {
   incrementViews,
   upsertUser,
   getUserByOpenId,
+  getAnalyticsStats,
+  getArticleStats,
+  trackPageView,
 } from "./db";
 import { uploadImageBase64 } from "./cloudinaryStorage";
 import { getLastImportResult, isImportRunning, triggerManualImport } from "./cronScheduler";
@@ -307,6 +310,15 @@ export const appRouter = router({
         if (!url) throw new Error("Image upload failed");
         return { url };
       }),
+
+    // Analytics
+    analyticsStats: adminProcedure.query(async () => {
+      return await getAnalyticsStats();
+    }),
+
+    articleStats: adminProcedure.query(async () => {
+      return await getArticleStats();
+    }),
   }),
 });
 

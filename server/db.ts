@@ -1,6 +1,6 @@
 import { eq, desc, and, or, like, sql, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, articles, categories, articleCategories, InsertArticle, InsertCategory, InsertArticleCategory } from "../drizzle/schema";
+import { InsertUser, users, articles, categories, articleCategories, pageViews, InsertArticle, InsertCategory, InsertArticleCategory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -524,4 +524,118 @@ export async function setArticleCategories(articleId: number, categoryIds: numbe
       categoryIds.map(categoryId => ({ articleId, categoryId }))
     );
   }
+}
+
+// ─── Page View Analytics ────────────────────────────────────────────
+
+let pageViewsTableReady = false;
+
+async function ensurePageViewsTable(): Promise<void> {
+  if (pageViewsTableReady) return;
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS page_views (
+      id int AUTO_INCREMENT PRIMARY KEY,
+      path varchar(500) NOT NULL,
+      date varchar(10) NOT NULL,
+      count int NOT NULL DEFAULT 0,
+      UNIQUE KEY unique_path_date (path, date),
+      KEY date_idx (date)
+    )`);
+    pageViewsTableReady = true;
+  } catch {
+    // Table might already exist or DB might not support it
+    pageViewsTableReady = true;
+  }
+}
+
+export async function trackPageView(path: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await ensurePageViewsTable();
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  try {
+    await db.insert(pageViews).values({ path, date: today, count: 1 })
+      .onDuplicateKeyUpdate({ set: { count: sql`count + 1` } });
+  } catch (e) {
+    // Silently fail — analytics should never break the app
+  }
+}
+
+export async function getAnalyticsStats(): Promise<{
+  today: number;
+  yesterday: number;
+  thisWeek: number;
+  thisMonth: number;
+  allTime: number;
+  dailyBreakdown: { date: string; views: number }[];
+}> {
+  const db = await getDb();
+  if (!db) return { today: 0, yesterday: 0, thisWeek: 0, thisMonth: 0, allTime: 0, dailyBreakdown: [] };
+
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoStr = weekAgo.toISOString().split("T")[0];
+
+  const monthAgo = new Date(now);
+  monthAgo.setDate(monthAgo.getDate() - 30);
+  const monthAgoStr = monthAgo.toISOString().split("T")[0];
+
+  const [todayResult] = await db.select({ total: sql<number>`COALESCE(SUM(count), 0)` })
+    .from(pageViews).where(eq(pageViews.date, todayStr));
+  const [yesterdayResult] = await db.select({ total: sql<number>`COALESCE(SUM(count), 0)` })
+    .from(pageViews).where(eq(pageViews.date, yesterdayStr));
+  const [weekResult] = await db.select({ total: sql<number>`COALESCE(SUM(count), 0)` })
+    .from(pageViews).where(sql`${pageViews.date} >= ${weekAgoStr}`);
+  const [monthResult] = await db.select({ total: sql<number>`COALESCE(SUM(count), 0)` })
+    .from(pageViews).where(sql`${pageViews.date} >= ${monthAgoStr}`);
+  const [allTimeResult] = await db.select({ total: sql<number>`COALESCE(SUM(count), 0)` })
+    .from(pageViews);
+
+  // Daily breakdown for last 30 days
+  const dailyBreakdown = await db
+    .select({ date: pageViews.date, views: sql<number>`SUM(count)` })
+    .from(pageViews)
+    .where(sql`${pageViews.date} >= ${monthAgoStr}`)
+    .groupBy(pageViews.date)
+    .orderBy(desc(pageViews.date));
+
+  return {
+    today: todayResult?.total ?? 0,
+    yesterday: yesterdayResult?.total ?? 0,
+    thisWeek: weekResult?.total ?? 0,
+    thisMonth: monthResult?.total ?? 0,
+    allTime: allTimeResult?.total ?? 0,
+    dailyBreakdown: dailyBreakdown.map(d => ({ date: d.date, views: d.views })),
+  };
+}
+
+export async function getArticleStats(): Promise<{
+  total: number;
+  published: number;
+  draft: number;
+  totalViews: number;
+}> {
+  const db = await getDb();
+  if (!db) return { total: 0, published: 0, draft: 0, totalViews: 0 };
+
+  const [totalResult] = await db.select({ count: sql<number>`COUNT(*)` }).from(articles);
+  const [publishedResult] = await db.select({ count: sql<number>`COUNT(*)` }).from(articles).where(eq(articles.status, "published"));
+  const [draftResult] = await db.select({ count: sql<number>`COUNT(*)` }).from(articles).where(eq(articles.status, "draft"));
+  const [viewsResult] = await db.select({ total: sql<number>`COALESCE(SUM(views), 0)` }).from(articles);
+
+  return {
+    total: totalResult?.count ?? 0,
+    published: publishedResult?.count ?? 0,
+    draft: draftResult?.count ?? 0,
+    totalViews: viewsResult?.total ?? 0,
+  };
 }

@@ -113,10 +113,10 @@ export default function AdminArticleForm() {
         <button onClick={() => navigate("/admin/articles")} className="p-1.5 rounded-lg hover:bg-card text-muted-foreground">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-black text-foreground">{isEdit ? "Edit Article" : "New Article"}</h1>
+        <h1 className="text-xl md:text-2xl font-black text-foreground">{isEdit ? "Edit Article" : "New Article"}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
+      <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6 max-w-3xl">
         {/* Title */}
         <div>
           <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Title</label>
@@ -145,7 +145,7 @@ export default function AdminArticleForm() {
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center gap-3 p-8 border-2 border-dashed border-border/50 rounded-lg cursor-pointer hover:border-gold/50 transition-colors">
+            <label className="flex flex-col items-center gap-3 p-5 md:p-8 border-2 border-dashed border-border/50 rounded-lg cursor-pointer hover:border-gold/50 transition-colors">
               {uploading ? (
                 <div className="animate-spin w-6 h-6 border-2 border-gold border-t-transparent rounded-full" />
               ) : (
@@ -199,7 +199,7 @@ export default function AdminArticleForm() {
         </div>
 
         {/* Homepage Placement */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Homepage Section</label>
             <select
@@ -229,7 +229,7 @@ export default function AdminArticleForm() {
         </div>
 
         {/* Status + Submit */}
-        <div className="flex items-center gap-4 pt-4 border-t border-border/50">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-4 border-t border-border/50">
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as "draft" | "published")}

@@ -349,27 +349,6 @@ function applyTypography(text: string): string {
   return t;
 }
 
-// ─── Pull Quote Extraction ───────────────────────────────────────────
-
-function findPullQuote(paragraphs: string[]): string | null {
-  for (const p of paragraphs) {
-    const quoteMatch = p.match(/["\u201c«]([^"\u201d»]{30,150})["\u201d»]/);
-    if (quoteMatch) return quoteMatch[0];
-  }
-
-  const dramatic = [
-    /\b(skandal|krizë|tragjedi|revolucion|historik|rekord|shokues|i\s*paprecedent)\b/i,
-    /\b(zbuloj|konfirmoj|paralajmëro|deklaroj|akuzoj|mohoj)\b/i,
-  ];
-  for (const p of paragraphs) {
-    if (p.length > 40 && p.length < 200) {
-      if (dramatic.some(d => d.test(p))) return p;
-    }
-  }
-
-  return null;
-}
-
 // ─── Paragraph Merging & Splitting ───────────────────────────────────
 
 function mergeParagraphs(paragraphs: string[]): string[] {
@@ -511,24 +490,16 @@ function cleanContent(rawHtml: string): string {
 
   if (cleaned.length === 0) return "";
 
-  // Step 6: Find a pull quote
-  const pullQuote = findPullQuote(cleaned);
-
-  // Step 7: Apply typography
+  // Step 6: Apply typography
   cleaned = cleaned.map(p => applyTypography(p));
 
-  // Step 8: Build professional HTML
+  // Step 7: Build professional HTML
   let html = "";
 
   // Lead paragraph — plain text, CSS handles larger font via :first-child
   html += `<p>${cleaned[0]}</p>`;
 
   for (let i = 1; i < cleaned.length; i++) {
-    // Pull quote after 3rd paragraph (only for longer articles)
-    if (i === 3 && pullQuote && cleaned.length > 6) {
-      html += `<blockquote><p>${applyTypography(pullQuote)}</p></blockquote>`;
-    }
-
     // Visual divider only for long articles (10+ paragraphs), every 7 paragraphs
     if (cleaned.length >= 10 && i > 2 && i % 7 === 0 && i < cleaned.length - 2) {
       html += `<hr />`;

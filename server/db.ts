@@ -639,3 +639,15 @@ export async function getArticleStats(): Promise<{
     totalViews: viewsResult?.total ?? 0,
   };
 }
+
+export async function getTopArticlesByViews(limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(articles)
+    .where(eq(articles.status, "published"))
+    .orderBy(desc(articles.views))
+    .limit(limit);
+}

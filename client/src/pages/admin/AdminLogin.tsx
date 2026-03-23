@@ -10,7 +10,9 @@ export default function AdminLogin() {
   const utils = trpc.useUtils();
   const login = trpc.admin.login.useMutation({
     onSuccess: async () => {
-      await utils.admin.me.invalidate();
+      // Must refetch (not just invalidate) so the cache has the new user
+      // before we navigate — otherwise AdminLayout sees stale null
+      await utils.admin.me.refetch();
       navigate("/admin");
     },
     onError: (e) => setError(e.message),

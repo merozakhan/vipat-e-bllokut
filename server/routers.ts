@@ -31,6 +31,7 @@ import {
   getUserByOpenId,
   getAnalyticsStats,
   getArticleStats,
+  getTopArticlesByViews,
   trackPageView,
 } from "./db";
 import { uploadImageBase64, uploadMediaBase64, listMedia, deleteMedia } from "./cloudinaryStorage";
@@ -319,6 +320,12 @@ export const appRouter = router({
     articleStats: adminProcedure.query(async () => {
       return await getArticleStats();
     }),
+
+    topArticles: adminProcedure
+      .input(z.object({ limit: z.number().max(20).optional() }))
+      .query(async ({ input }) => {
+        return await getTopArticlesByViews(input.limit || 10);
+      }),
 
     // Media Library
     mediaList: adminProcedure

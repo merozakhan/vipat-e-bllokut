@@ -1,12 +1,13 @@
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { FileText, Plus, Eye, TrendingUp, Users, Calendar, BarChart3, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { FileText, Plus, Eye, TrendingUp, Users, Calendar, BarChart3, ArrowUpRight, ArrowDownRight, Trophy } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 
 export default function AdminDashboard() {
   const { data: articles } = trpc.admin.articlesList.useQuery({ limit: 5 });
   const { data: articleStats } = trpc.admin.articleStats.useQuery();
   const { data: analytics } = trpc.admin.analyticsStats.useQuery();
+  const { data: topArticles } = trpc.admin.topArticles.useQuery({ limit: 5 });
 
   const todayVsYesterday = analytics && analytics.yesterday > 0
     ? Math.round(((analytics.today - analytics.yesterday) / analytics.yesterday) * 100)
@@ -147,6 +148,34 @@ export default function AdminDashboard() {
         )}
       </div>
 
+      {/* Top Articles + Recent Articles side by side on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-0">
+
+      {/* Top Articles by Views */}
+      {topArticles && topArticles.length > 0 && (
+        <div className="bg-card border border-border/50 rounded-xl">
+          <div className="p-4 border-b border-border/50 flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-gold" />
+            <h2 className="text-sm font-bold text-foreground">Top Articles by Views</h2>
+          </div>
+          <div className="divide-y divide-border/30">
+            {topArticles.map((a, i) => (
+              <Link key={a.id} href={`/admin/articles/${a.id}/edit`}>
+                <div className="flex items-center gap-3 p-3 md:p-4 hover:bg-card/80 cursor-pointer transition-colors">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black font-sans flex-shrink-0 ${
+                    i === 0 ? "bg-gold/20 text-gold" : i === 1 ? "bg-gray-400/20 text-gray-400" : i === 2 ? "bg-orange-400/20 text-orange-400" : "bg-card text-muted-foreground"
+                  }`}>{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs md:text-sm font-semibold text-foreground truncate">{a.title}</p>
+                  </div>
+                  <span className="text-xs font-bold text-gold font-sans">{a.views?.toLocaleString()}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Recent Articles */}
       <div className="bg-card border border-border/50 rounded-xl">
         <div className="p-4 border-b border-border/50 flex items-center justify-between">
@@ -178,6 +207,8 @@ export default function AdminDashboard() {
           ))}
         </div>
       </div>
+
+      </div>{/* close grid */}
     </AdminLayout>
   );
 }

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import {
   Activity, Database, Cloud, Clock, RefreshCw, CheckCircle, XCircle,
-  AlertTriangle, Wifi, WifiOff, Zap, PenTool, Globe, Server,
-  HardDrive, ImageIcon, Shield, TrendingUp
+  AlertTriangle, Wifi, Zap, PenTool, Globe, Server,
+  HardDrive, ImageIcon, Shield, TrendingUp, Play
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import AdminLayout from "./AdminLayout";
 
 interface HealthData {
@@ -20,6 +22,7 @@ interface HealthData {
   importer: {
     running: boolean;
     schedule: string;
+    nextImportAt: string;
     sources: string[];
     lastResult: {
       timestamp: string;
@@ -62,6 +65,16 @@ function formatTimeAgo(timestamp: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function formatETA(isoString: string): string {
+  const diff = new Date(isoString).getTime() - Date.now();
+  if (diff <= 0) return "any moment";
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(mins / 60);
+  const remainMins = mins % 60;
+  if (hours > 0) return `${hours}h ${remainMins}m`;
+  return `${mins}m`;
+}
+
 function PulsingDot({ color }: { color: string }) {
   return (
     <span className="relative flex h-2.5 w-2.5">
@@ -72,14 +85,13 @@ function PulsingDot({ color }: { color: string }) {
 }
 
 function ServiceCard({ icon: Icon, name, status, detail, color }: {
-  icon: any; name: string; status: "active" | "idle" | "error" | "off";
+  icon: any; name: string; status: "active" | "standby" | "error";
   detail?: string; color: string;
 }) {
   const statusConfig = {
     active: { label: "Active", dotColor: "bg-green-400", bgColor: "bg-green-500/5 border-green-500/20", textColor: "text-green-400" },
-    idle: { label: "Idle", dotColor: "bg-blue-400", bgColor: "bg-blue-500/5 border-blue-500/20", textColor: "text-blue-400" },
+    standby: { label: "Standby", dotColor: "bg-blue-400", bgColor: "bg-blue-500/5 border-blue-500/20", textColor: "text-blue-400" },
     error: { label: "Error", dotColor: "bg-red-400", bgColor: "bg-red-500/5 border-red-500/20", textColor: "text-red-400" },
-    off: { label: "Offline", dotColor: "bg-gray-400", bgColor: "bg-gray-500/5 border-gray-500/20", textColor: "text-gray-400" },
   };
   const cfg = statusConfig[status];
 
@@ -100,27 +112,33 @@ function ServiceCard({ icon: Icon, name, status, detail, color }: {
   );
 }
 
-function SourceCard({ name, url, connected, lastFetched, articleCount }: {
-  name: string; url: string; connected: boolean; lastFetched?: string; articleCount?: number;
+function SourceCard({ name, url, active, lastFetched, nextIn }: {
+  name: string; url: string; active: boolean; lastFetched?: string; nextIn?: string;
 }) {
   return (
-    <div className={`rounded-xl border p-4 ${connected ? "bg-green-500/5 border-green-500/20" : "bg-red-500/5 border-red-500/20"}`}>
+    <div className="rounded-xl border p-4 bg-green-500/5 border-green-500/20">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          {connected ? <Wifi className="w-4 h-4 text-green-400" /> : <WifiOff className="w-4 h-4 text-red-400" />}
+          <Wifi className="w-4 h-4 text-green-400" />
           <span className="text-sm font-bold text-foreground">{name}</span>
         </div>
-        <PulsingDot color={connected ? "bg-green-400" : "bg-red-400"} />
+        <PulsingDot color={active ? "bg-green-400" : "bg-blue-400"} />
       </div>
       <p className="text-[10px] text-muted-foreground font-sans truncate">{url}</p>
       <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border/20">
-        <span className={`text-[10px] font-semibold font-sans ${connected ? "text-green-400" : "text-red-400"}`}>
-          {connected ? "Connected" : "Unreachable"}
+        <span className={`text-[10px] font-semibold font-sans ${active ? "text-green-400" : "text-blue-400"}`}>
+          {active ? "Scraping..." : "Ready"}
         </span>
         {lastFetched && (
           <>
             <span className="text-muted-foreground/30">|</span>
             <span className="text-[10px] text-muted-foreground font-sans">Last: {lastFetched}</span>
+          </>
+        )}
+        {nextIn && !active && (
+          <>
+            <span className="text-muted-foreground/30">|</span>
+            <span className="text-[10px] text-gold font-sans">Next: {nextIn}</span>
           </>
         )}
       </div>
@@ -148,6 +166,14 @@ export default function AdminHealth() {
     }
   };
 
+  const triggerImport = trpc.rssImport.trigger.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Import complete: ${data.result?.newArticles ?? 0} new articles`);
+      fetchHealth();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   useEffect(() => {
     fetchHealth();
     const interval = setInterval(fetchHealth, 30000);
@@ -157,6 +183,8 @@ export default function AdminHealth() {
   const isHealthy = health?.status === "healthy";
   const hasImported = !!health?.importer?.lastResult;
   const lastResult = health?.importer?.lastResult;
+  const isRunning = health?.importer?.running;
+  const nextETA = health?.importer?.nextImportAt ? formatETA(health.importer.nextImportAt) : null;
   const successRate = lastResult
     ? Math.round((lastResult.newArticles / Math.max(lastResult.totalFetched, 1)) * 100)
     : 0;
@@ -168,14 +196,28 @@ export default function AdminHealth() {
           <Activity className="w-5 h-5 text-gold" />
           <h1 className="text-xl md:text-2xl font-black text-foreground">System Health</h1>
         </div>
-        <button
-          onClick={fetchHealth}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/50 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => triggerImport.mutate()}
+            disabled={triggerImport.isPending || !!isRunning}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gold text-navy-dark font-bold rounded-lg text-xs transition-colors hover:bg-gold-light disabled:opacity-50 font-sans"
+          >
+            {triggerImport.isPending || isRunning ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+            {triggerImport.isPending ? "Importing..." : isRunning ? "Running..." : "Run Import"}
+          </button>
+          <button
+            onClick={fetchHealth}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/50 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -239,22 +281,22 @@ export default function AdminHealth() {
               <ServiceCard
                 icon={Globe}
                 name="Scraper"
-                status={health.importer.running ? "active" : hasImported ? "idle" : "off"}
-                detail={health.importer.running ? "Scraping articles now..." : hasImported ? `Last run ${formatTimeAgo(lastResult!.timestamp)}` : "Waiting for first run"}
+                status={isRunning ? "active" : "standby"}
+                detail={isRunning ? "Scraping articles now..." : nextETA ? `Next run in ${nextETA}` : hasImported ? `Last run ${formatTimeAgo(lastResult!.timestamp)}` : "Waiting for first run"}
                 color="bg-blue-500"
               />
               <ServiceCard
                 icon={PenTool}
                 name="Rewriter"
-                status={health.importer.running ? "active" : hasImported ? "idle" : "off"}
-                detail={health.importer.running ? "Cleaning & rewriting..." : "Strips branding, formats HTML"}
+                status={isRunning ? "active" : "standby"}
+                detail={isRunning ? "Cleaning & rewriting..." : nextETA ? `Next run in ${nextETA}` : "Ready — strips branding, formats HTML"}
                 color="bg-purple-500"
               />
               <ServiceCard
                 icon={ImageIcon}
                 name="Cloudinary"
                 status={health.services.cloudinary === "configured" ? "active" : "error"}
-                detail={health.services.cloudinary === "configured" ? "Image uploads active" : "Missing credentials"}
+                detail={health.services.cloudinary === "configured" ? "Image uploads ready" : "Missing credentials"}
                 color="bg-pink-500"
               />
               <ServiceCard
@@ -278,20 +320,23 @@ export default function AdminHealth() {
               <SourceCard
                 name="JOQ Albania"
                 url="joq-albania.com"
-                connected={isHealthy}
+                active={!!isRunning}
                 lastFetched={hasImported ? formatTimeAgo(lastResult!.timestamp) : undefined}
+                nextIn={nextETA || undefined}
               />
               <SourceCard
                 name="VoxNews"
                 url="voxnews.al"
-                connected={isHealthy}
+                active={!!isRunning}
                 lastFetched={hasImported ? formatTimeAgo(lastResult!.timestamp) : undefined}
+                nextIn={nextETA || undefined}
               />
               <SourceCard
                 name="Versus"
                 url="versus.al"
-                connected={isHealthy}
+                active={!!isRunning}
                 lastFetched={hasImported ? formatTimeAgo(lastResult!.timestamp) : undefined}
+                nextIn={nextETA || undefined}
               />
             </div>
           </div>

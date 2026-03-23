@@ -129,6 +129,19 @@ export function getLastWipeTime(): Date | null {
 }
 
 /**
+ * Get the next scheduled import time (next :00 that's a multiple of 3 hours)
+ */
+export function getNextImportTime(): Date {
+  const now = new Date();
+  const currentHour = now.getUTCHours();
+  const nextHour = Math.ceil((currentHour + 1) / 3) * 3;
+  const next = new Date(now);
+  next.setUTCHours(nextHour % 24, 0, 0, 0);
+  if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+  return next;
+}
+
+/**
  * Manually trigger an import (for admin use via tRPC)
  */
 export async function triggerManualImport(): Promise<ImportResult | null> {

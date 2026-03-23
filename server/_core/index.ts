@@ -136,7 +136,7 @@ async function startServer() {
   // Detailed health check endpoint
   app.get("/health", async (_req, res) => {
     const { getPublishedArticles, getAllCategories, getDb } = await import("../db");
-    const { getLastImportResult, isImportRunning, getLastWipeTime } = await import("../cronScheduler");
+    const { getLastImportResult, isImportRunning, getLastWipeTime, getNextImportTime } = await import("../cronScheduler");
 
     let dbStatus = "disconnected";
     let articleCount = 0;
@@ -181,6 +181,7 @@ async function startServer() {
       importer: {
         running: importRunning,
         schedule: "Every 3 hours",
+        nextImportAt: getNextImportTime().toISOString(),
         sources: ["JOQ Albania", "VoxNews", "Versus"],
         lastResult: lastImport ? {
           timestamp: lastImport.timestamp,

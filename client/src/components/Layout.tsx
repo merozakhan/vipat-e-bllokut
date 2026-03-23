@@ -45,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const { data: allCategories } = trpc.categories.getAllWithCounts.useQuery();
-  const categories = allCategories?.filter(c => c.slug !== "te-gjitha");
+  const categories = allCategories;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -280,17 +280,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="border-b border-border/30 bg-card/30">
           <div className="container">
             <div className="flex items-center gap-1 py-2 overflow-x-auto scrollbar-hide">
-              <Link href="/">
-                <span className={`px-4 py-1.5 text-xs font-semibold font-sans uppercase tracking-wider rounded-full transition-all whitespace-nowrap ${
-                  location === "/" ? "bg-gold/15 text-gold" : "text-muted-foreground hover:text-gold hover:bg-gold/5"
-                }`}>
-                  Të Gjitha
-                </span>
-              </Link>
               {categories.map((cat) => (
-                <Link key={cat.id} href={`/category/${cat.slug}`}>
+                <Link key={cat.id} href={cat.slug === "te-gjitha" ? "/" : `/category/${cat.slug}`}>
                   <span className={`px-4 py-1.5 text-xs font-semibold font-sans uppercase tracking-wider rounded-full transition-all whitespace-nowrap ${
-                    location === `/category/${cat.slug}` ? "bg-gold/15 text-gold" : "text-muted-foreground hover:text-gold hover:bg-gold/5"
+                    (cat.slug === "te-gjitha" ? location === "/" : location === `/category/${cat.slug}`)
+                      ? "bg-gold/15 text-gold"
+                      : "text-muted-foreground hover:text-gold hover:bg-gold/5"
                   }`}>
                     {cat.name}
                   </span>

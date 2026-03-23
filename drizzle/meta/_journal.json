@@ -29,6 +29,13 @@
       "when": 1742860800000,
       "tag": "0003_add_views_index",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1742947200000,
+      "tag": "0004_add_homepage_placement",
+      "breakpoints": true
     }
   ]
 }

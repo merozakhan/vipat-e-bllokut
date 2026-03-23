@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { Calendar, Clock, ArrowRight, TrendingUp, Flame, Zap, ChevronRight, Eye, Layers } from "lucide-react";
+import { Calendar, Clock, ArrowRight, Flame, Zap, ChevronRight, Eye, Layers } from "lucide-react";
 import Layout from "@/components/Layout";
 import ArticleImage from "@/components/ArticleImage";
 import SEOHead from "@/components/SEOHead";
@@ -8,7 +8,6 @@ import SEOHead from "@/components/SEOHead";
 export default function Home() {
   // Placement-based queries
   const { data: breakingArticles } = trpc.articles.getByPlacement.useQuery({ placement: "breaking", limit: 3 });
-  const { data: trendingArticles } = trpc.articles.getByPlacement.useQuery({ placement: "trending", limit: 5 });
   const { data: hotArticles } = trpc.articles.getByPlacement.useQuery({ placement: "hot", limit: 4 });
   const { data: mostReadArticles } = trpc.articles.getByPlacement.useQuery({ placement: "most_read", limit: 5 });
 
@@ -23,15 +22,13 @@ export default function Home() {
   // Use placement articles if available, otherwise fallback to auto-trending
   const heroArticle = breakingArticles?.[0] || autoTrending?.[0];
   const secondaryHero = breakingArticles?.slice(1, 3) || [];
-  const trendingList = (trendingArticles?.length ? trendingArticles : autoTrending?.slice(1, 6)) || [];
   const hotList = (hotArticles?.length ? hotArticles : autoTrending?.slice(1, 3)) || [];
   const mostReadList = (mostReadArticles?.length ? mostReadArticles : autoTrending?.slice(3, 8)) || [];
 
-  // Latest articles excluding those already shown
+  // Latest articles excluding those already shown in hero/hot/most_read
   const shownIds = new Set([
     heroArticle?.id,
     ...secondaryHero.map(a => a.id),
-    ...trendingList.map(a => a.id),
     ...hotList.map(a => a.id),
     ...mostReadList.map(a => a.id),
   ].filter(Boolean));
@@ -221,51 +218,6 @@ export default function Home() {
                         {cat.articleCount} artikuj
                       </span>
                       <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-gold group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══ TRENDING Section ═══ */}
-      {trendingList.length > 0 && (
-        <section className="py-6 md:py-10 border-b border-border/30">
-          <div className="container">
-            <div className="flex items-center gap-2 mb-4 md:mb-6">
-              <div className="w-1 h-7 bg-purple-500 rounded-full" />
-              <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-purple-500" />
-              <h2 className="text-lg md:text-2xl font-black text-foreground">Trending</h2>
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
-              {trendingList.slice(0, 4).map((article) => (
-                <Link key={article.id} href={`/article/${article.slug}`}>
-                  <div className="group bg-card/50 rounded-lg overflow-hidden border border-border/30 hover:border-purple-500/30 transition-all cursor-pointer h-full flex flex-col">
-                    <div className="relative aspect-[16/10] overflow-hidden">
-                      <ArticleImage
-                        src={article.featuredImage}
-                        alt={article.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        showOverlay
-                      />
-                      <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-purple-600/80 text-white text-[8px] font-bold uppercase tracking-wider rounded font-sans">
-                        <TrendingUp className="w-2.5 h-2.5 inline mr-0.5" />
-                        Trending
-                      </span>
-                    </div>
-                    <div className="p-2.5 md:p-4 flex-1 flex flex-col">
-                      <h3 className="text-xs md:text-sm font-bold text-card-foreground leading-snug line-clamp-2 group-hover:text-purple-400 transition-colors">
-                        {article.title}
-                      </h3>
-                      <div className="flex items-center justify-between text-[9px] md:text-[10px] text-muted-foreground mt-auto pt-2 border-t border-border/30 font-sans">
-                        <span>{getTimeAgo(article.publishedAt)}</span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-2.5 h-2.5 text-purple-500/50" />
-                          {getReadingTime(article.content)}
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </Link>

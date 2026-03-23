@@ -115,7 +115,7 @@ export default function Contact() {
               <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center mx-auto mb-3">
                 <MapPin className="w-6 h-6 text-gold" />
               </div>
-              <h3 className="text-xs font-bold text-foreground font-sans uppercase tracking-wider mb-2">Office</h3>
+              <h3 className="text-xs font-bold text-foreground font-sans uppercase tracking-wider mb-2">Zyra</h3>
               <p className="text-xs text-muted-foreground font-sans leading-relaxed">
                 Flat 1 Pmb 0512 85 Moss Bank<br />
                 Manchester M8 5AP<br />
@@ -126,9 +126,9 @@ export default function Contact() {
               <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center mx-auto mb-3">
                 <Phone className="w-6 h-6 text-gold" />
               </div>
-              <h3 className="text-xs font-bold text-foreground font-sans uppercase tracking-wider mb-2">Phone</h3>
+              <h3 className="text-xs font-bold text-foreground font-sans uppercase tracking-wider mb-2">Telefon</h3>
               <p className="text-xs text-muted-foreground font-sans">+44 7476 921815</p>
-              <p className="text-xs text-muted-foreground/60 font-sans mt-1">Mon-Fri, 9:00-18:00 GMT</p>
+              <p className="text-xs text-muted-foreground/60 font-sans mt-1">Hën-Pre, 9:00-18:00 GMT</p>
             </div>
             <a href="mailto:info@vipatebllokut.com" className="glass-card rounded-xl p-5 text-center group">
               <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-gold/20 transition-colors">
@@ -136,7 +136,7 @@ export default function Contact() {
               </div>
               <h3 className="text-xs font-bold text-foreground font-sans uppercase tracking-wider mb-2">Email</h3>
               <p className="text-xs text-gold font-sans">info@vipatebllokut.com</p>
-              <p className="text-xs text-muted-foreground/60 font-sans mt-1">We respond within 24h</p>
+              <p className="text-xs text-muted-foreground/60 font-sans mt-1">Përgjigjemi brenda 24 orëve</p>
             </a>
             <a
               href="https://www.instagram.com/vipat_e_bllokut_al"
@@ -149,7 +149,7 @@ export default function Contact() {
               </div>
               <h3 className="text-xs font-bold text-foreground font-sans uppercase tracking-wider mb-2">Instagram</h3>
               <p className="text-xs text-gold font-sans">@vipat_e_bllokut_al</p>
-              <p className="text-xs text-muted-foreground/60 font-sans mt-1">Follow for updates</p>
+              <p className="text-xs text-muted-foreground/60 font-sans mt-1">Na ndiqni për përditësime</p>
             </a>
           </div>
         </div>
@@ -167,14 +167,14 @@ export default function Contact() {
                     <div className="w-20 h-20 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-6 glow-gold">
                       <CheckCircle className="w-10 h-10 text-gold" />
                     </div>
-                    <h3 className="text-2xl font-bold text-foreground mb-3">Message Sent Successfully</h3>
+                    <h3 className="text-2xl font-bold text-foreground mb-3">Mesazhi u Dërgua me Sukses</h3>
                     <p className="text-muted-foreground font-sans mb-2 max-w-md mx-auto">
-                      Thank you for reaching out. Your message has been sent to <strong className="text-gold">info@vipatebllokut.com</strong> and routed to our <strong className="text-foreground">{selectedReason?.label}</strong> team.
+                      Faleminderit që na kontaktuat. Mesazhi juaj është dërguar në <strong className="text-gold">info@vipatebllokut.com</strong> dhe është drejtuar te ekipi ynë i <strong className="text-foreground">{selectedReason?.label}</strong>.
                     </p>
                     {selectedReason && (
                       <div className="flex items-center justify-center gap-2 text-sm text-gold font-sans mb-8">
                         <Clock className="w-4 h-4" />
-                        Expected response time: {selectedReason.responseTime}
+                        Koha e pritshme e përgjigjes: {selectedReason.responseTime}
                       </div>
                     )}
                     <Button
@@ -184,24 +184,24 @@ export default function Contact() {
                       }}
                       className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans"
                     >
-                      Send Another Message
+                      Dërgo një Mesazh Tjetër
                     </Button>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-3 mb-2">
                       <MessageSquare className="w-5 h-5 text-gold" />
-                      <h2 className="text-2xl font-bold text-foreground">Send a Message</h2>
+                      <h2 className="text-2xl font-bold text-foreground">Dërgoni një Mesazh</h2>
                     </div>
                     <p className="text-sm text-muted-foreground font-sans mb-8">
-                      Select a department and fill out the form below. Your message will be sent directly to <strong className="text-gold">info@vipatebllokut.com</strong>. Required fields are marked with an asterisk.
+                      Zgjidhni një departament dhe plotësoni formularin më poshtë. Mesazhi juaj do të dërgohet direkt në <strong className="text-gold">info@vipatebllokut.com</strong>. Fushat e detyrueshme shënohen me yll.
                     </p>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                       {/* Reason Selector */}
                       <div>
                         <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2 font-sans">
-                          Reason for Contact <span className="text-gold">*</span>
+                          Arsyeja e Kontaktit <span className="text-gold">*</span>
                         </label>
                         <div className="relative">
                           <select
@@ -209,7 +209,7 @@ export default function Contact() {
                             onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                             className="w-full px-4 py-3.5 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm appearance-none input-premium"
                           >
-                            <option value="">Select a department...</option>
+                            <option value="">Zgjidhni një departament...</option>
                             {contactReasons.map((reason) => (
                               <option key={reason.value} value={reason.value}>
                                 {reason.label}
@@ -223,7 +223,7 @@ export default function Contact() {
                             <span>{selectedReason.desc}</span>
                             <span className="flex items-center gap-1 text-gold/80">
                               <Clock className="w-3 h-3" />
-                              Response: {selectedReason.responseTime}
+                              Përgjigje: {selectedReason.responseTime}
                             </span>
                           </div>
                         )}
@@ -233,19 +233,19 @@ export default function Contact() {
                       <div className="grid sm:grid-cols-2 gap-5">
                         <div>
                           <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2 font-sans">
-                            Full Name <span className="text-gold">*</span>
+                            Emri i Plotë <span className="text-gold">*</span>
                           </label>
                           <input
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             className="w-full px-4 py-3 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm input-premium"
-                            placeholder="Your full name"
+                            placeholder="Emri juaj i plotë"
                           />
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2 font-sans">
-                            Email Address <span className="text-gold">*</span>
+                            Adresa Email <span className="text-gold">*</span>
                           </label>
                           <input
                             type="email"
@@ -261,7 +261,7 @@ export default function Contact() {
                       <div className="grid sm:grid-cols-2 gap-5">
                         <div>
                           <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2 font-sans">
-                            Phone Number
+                            Numri i Telefonit
                           </label>
                           <input
                             type="tel"
@@ -273,14 +273,14 @@ export default function Contact() {
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2 font-sans">
-                            Company / Organisation
+                            Kompania / Organizata
                           </label>
                           <input
                             type="text"
                             value={formData.company}
                             onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                             className="w-full px-4 py-3 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm input-premium"
-                            placeholder="Your company name"
+                            placeholder="Emri i kompanisë suaj"
                           />
                         </div>
                       </div>
@@ -289,7 +289,7 @@ export default function Contact() {
                       {showBudget && (
                         <div>
                           <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2 font-sans">
-                            Budget Range
+                            Buxheti i Parashikuar
                           </label>
                           <div className="relative">
                             <select
@@ -297,14 +297,14 @@ export default function Contact() {
                               onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                               className="w-full px-4 py-3.5 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm appearance-none input-premium"
                             >
-                              <option value="">Select budget range...</option>
-                              <option value="Under £500">Under £500</option>
+                              <option value="">Zgjidhni buxhetin...</option>
+                              <option value="Under £500">Nën £500</option>
                               <option value="£500 - £1,000">£500 - £1,000</option>
                               <option value="£1,000 - £5,000">£1,000 - £5,000</option>
                               <option value="£5,000 - £10,000">£5,000 - £10,000</option>
                               <option value="£10,000 - £25,000">£10,000 - £25,000</option>
                               <option value="£25,000+">£25,000+</option>
-                              <option value="Prefer to discuss">Prefer to discuss</option>
+                              <option value="Prefer to discuss">Preferoj ta diskutoj</option>
                             </select>
                             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                           </div>
@@ -314,36 +314,36 @@ export default function Contact() {
                       {/* Subject */}
                       <div>
                         <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2 font-sans">
-                          Subject
+                          Subjekti
                         </label>
                         <input
                           type="text"
                           value={formData.subject}
                           onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                           className="w-full px-4 py-3 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm input-premium"
-                          placeholder="Brief subject of your message"
+                          placeholder="Subjekti i shkurtër i mesazhit tuaj"
                         />
                       </div>
 
                       {/* Message */}
                       <div>
                         <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2 font-sans">
-                          Message <span className="text-gold">*</span>
+                          Mesazhi <span className="text-gold">*</span>
                         </label>
                         <textarea
                           value={formData.message}
                           onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                           rows={6}
                           className="w-full px-4 py-3 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm resize-none input-premium"
-                          placeholder="Please provide as much detail as possible..."
+                          placeholder="Ju lutem jepni sa më shumë detaje të jetë e mundur..."
                         />
                       </div>
 
                       {/* Submit */}
                       <div className="flex items-center justify-between pt-2">
                         <p className="text-xs text-muted-foreground font-sans">
-                          By submitting, you agree to our{" "}
-                          <a href="/privacy-policy" className="text-gold hover:text-gold-light transition-colors">Privacy Policy</a>.
+                          Duke dërguar, ju pranoni{" "}
+                          <a href="/privacy-policy" className="text-gold hover:text-gold-light transition-colors">Politikën e Privatësisë</a>.
                         </p>
                         <Button
                           type="submit"
@@ -353,12 +353,12 @@ export default function Contact() {
                           {contactMutation.isPending ? (
                             <>
                               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Sending...
+                              Duke dërguar...
                             </>
                           ) : (
                             <>
                               <Send className="w-4 h-4 mr-2" />
-                              Send Message
+                              Dërgo Mesazhin
                             </>
                           )}
                         </Button>
@@ -374,7 +374,7 @@ export default function Contact() {
               <div className="sticky top-28">
                 <div className="flex items-center gap-2 mb-6">
                   <HelpCircle className="w-5 h-5 text-gold" />
-                  <h3 className="text-lg font-bold text-foreground">Frequently Asked Questions</h3>
+                  <h3 className="text-lg font-bold text-foreground">Pyetjet më të Shpeshta</h3>
                 </div>
 
                 <div className="space-y-3">
@@ -405,9 +405,9 @@ export default function Contact() {
 
                 {/* Quick Contact */}
                 <div className="mt-8 glass-card rounded-xl p-6">
-                  <h4 className="text-sm font-bold text-foreground font-sans uppercase tracking-wider mb-3">Need Urgent Help?</h4>
+                  <h4 className="text-sm font-bold text-foreground font-sans uppercase tracking-wider mb-3">Keni Nevojë për Ndihmë Urgjente?</h4>
                   <p className="text-xs text-muted-foreground font-sans mb-4">
-                    For time-sensitive matters, contact us directly:
+                    Për çështje urgjente, na kontaktoni direkt:
                   </p>
                   <div className="space-y-2">
                     <a href="tel:+447476921815" className="flex items-center gap-2 text-sm text-gold hover:text-gold-light font-sans transition-colors">

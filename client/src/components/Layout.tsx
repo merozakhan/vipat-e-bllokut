@@ -117,7 +117,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-gold/60" />
-                {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                {new Date().toLocaleDateString("sq-AL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </span>
               <span className="w-px h-3 bg-white/10" />
               <a

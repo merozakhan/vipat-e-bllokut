@@ -6,32 +6,32 @@ import SEOHead from "@/components/SEOHead";
 
 export default function Advertise() {
   const stats = [
-    { icon: Eye, value: "500K+", label: "Monthly Page Views" },
-    { icon: Users, value: "150K+", label: "Unique Visitors" },
-    { icon: Globe, value: "45+", label: "Countries Reached" },
-    { icon: BarChart3, value: "8min", label: "Avg. Session Duration" },
+    { icon: Eye, value: "500K+", label: "Shikime Mujore" },
+    { icon: Users, value: "150K+", label: "Vizitorë Unikë" },
+    { icon: Globe, value: "45+", label: "Vende të Arritura" },
+    { icon: BarChart3, value: "8min", label: "Kohëzgjatja Mesatare" },
   ];
 
   const adFormats = [
     {
-      title: "Display Advertising",
-      desc: "Premium banner placements across our website with targeted positioning on high-traffic pages.",
+      title: "Reklama Banner",
+      desc: "Vendosje premium e bannerëve në të gjithë faqen tonë me pozicionim të synuar në faqet me trafik të lartë.",
       features: ["Leaderboard (728x90)", "Medium Rectangle (300x250)", "Skyscraper (160x600)", "Mobile Banner (320x50)"],
     },
     {
-      title: "Sponsored Content",
-      desc: "Native articles crafted by our editorial team that align with your brand message and our audience interests.",
-      features: ["Professional writing", "SEO optimised", "Social media promotion", "Clearly labelled"],
+      title: "Përmbajtje e Sponsorizuar",
+      desc: "Artikuj të krijuar nga ekipi ynë editorial që përputhen me mesazhin e brendit tuaj dhe interesat e audiencës sonë.",
+      features: ["Shkrim profesional", "I optimizuar për SEO", "Promovim në rrjete sociale", "I etiketuar qartë"],
     },
     {
-      title: "Newsletter Sponsorship",
-      desc: "Reach our engaged email subscribers with dedicated newsletter placements and sponsored editions.",
-      features: ["Dedicated send", "Banner placement", "Audience targeting", "Performance reporting"],
+      title: "Sponsorizim Buletini",
+      desc: "Arrini abonentët tanë të angazhuar përmes vendosjeve të dedikuara në buletin dhe edicioneve të sponsorizuara.",
+      features: ["Dërgim i dedikuar", "Vendosje banneri", "Targetim i audiencës", "Raportim i performancës"],
     },
     {
-      title: "Custom Partnerships",
-      desc: "Bespoke media partnerships tailored to your specific marketing objectives and target audience.",
-      features: ["Event coverage", "Video production", "Social campaigns", "Brand integration"],
+      title: "Partneritete të Personalizuara",
+      desc: "Partneritete mediatike të personalizuara sipas objektivave tuaja specifike të marketingut dhe audiencës së synuar.",
+      features: ["Mbulim eventesh", "Prodhim video", "Fushata sociale", "Integrim brendi"],
     },
   ];
 
@@ -45,17 +45,17 @@ export default function Advertise() {
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-[2px] bg-gold" />
-              <span className="text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Partner With Us</span>
+              <span className="text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Bashkëpunoni me Ne</span>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
-              Advertise With <span className="text-gradient-gold">Vipat E Bllokut</span>
+              Reklamoni me <span className="text-gradient-gold">Vipat E Bllokut</span>
             </h1>
             <p className="text-lg text-muted-foreground font-sans leading-relaxed mb-8">
-              Connect your brand with Albania's most engaged digital audience. Our premium readership spans the Albanian diaspora across 45+ countries, offering unparalleled reach and engagement for your marketing campaigns.
+              Lidhni brendin tuaj me audiencën dixhitale shqiptare më të angazhuar. Lexuesit tanë premium shtrihen në diasporën shqiptare në mbi 45 vende, duke ofruar përhapje dhe angazhim të pakrahasueshëm për fushatat tuaja të marketingut.
             </p>
             <Link href="/contact">
               <Button className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans px-8 py-3 text-sm uppercase tracking-wider font-semibold">
-                Get Started
+                Filloni Tani
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
@@ -84,37 +84,37 @@ export default function Advertise() {
           <div className="text-center mb-12">
             <div className="flex items-center justify-center gap-2 mb-4">
               <div className="w-8 h-[2px] bg-gold" />
-              <span className="text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Why Choose Us</span>
+              <span className="text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Pse të Na Zgjidhni</span>
               <div className="w-8 h-[2px] bg-gold" />
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Why Advertise With Us?
+              Pse të Reklamoni me Ne?
             </h2>
             <p className="text-muted-foreground font-sans max-w-2xl mx-auto">
-              We offer a unique combination of premium audience, editorial credibility, and measurable results.
+              Ofrojmë një kombinim unik të audiencës premium, besueshmërisë editoriale dhe rezultateve të matshme.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
             <div className="glass-card rounded-xl p-8">
               <Target className="w-10 h-10 text-gold mb-4" />
-              <h3 className="text-lg font-bold text-foreground mb-3">Targeted Reach</h3>
+              <h3 className="text-lg font-bold text-foreground mb-3">Përhapje e Synuar</h3>
               <p className="text-sm text-muted-foreground font-sans leading-relaxed">
-                Our audience is predominantly Albanian-speaking professionals and diaspora members across Europe, North America, and beyond. Reach the exact demographic your business needs.
+                Audienca jonë përbëhet kryesisht nga profesionistë shqiptarfolës dhe anëtarë të diasporës në Europë, Amerikën e Veriut dhe më gjerë. Arrini demografikun e saktë që biznesi juaj ka nevojë.
               </p>
             </div>
             <div className="glass-card rounded-xl p-8">
               <Zap className="w-10 h-10 text-gold mb-4" />
-              <h3 className="text-lg font-bold text-foreground mb-3">High Engagement</h3>
+              <h3 className="text-lg font-bold text-foreground mb-3">Angazhim i Lartë</h3>
               <p className="text-sm text-muted-foreground font-sans leading-relaxed">
-                Our readers spend an average of 8 minutes per session, with high return visitor rates. Your message will be seen by an audience that is actively engaged with our content.
+                Lexuesit tanë kalojnë mesatarisht 8 minuta për seancë, me norma të larta kthimi. Mesazhi juaj do të shihet nga një audiencë që është aktivisht e angazhuar me përmbajtjen tonë.
               </p>
             </div>
             <div className="glass-card rounded-xl p-8">
               <BarChart3 className="w-10 h-10 text-gold mb-4" />
-              <h3 className="text-lg font-bold text-foreground mb-3">Measurable Results</h3>
+              <h3 className="text-lg font-bold text-foreground mb-3">Rezultate të Matshme</h3>
               <p className="text-sm text-muted-foreground font-sans leading-relaxed">
-                We provide detailed analytics and performance reports for all advertising campaigns, ensuring complete transparency and data-driven optimisation.
+                Ofrojmë analitika të detajuara dhe raporte performancë për të gjitha fushatat reklamuese, duke siguruar transparencë të plotë dhe optimizim të bazuar në të dhëna.
               </p>
             </div>
           </div>
@@ -126,10 +126,10 @@ export default function Advertise() {
         <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Advertising Formats
+              Formatet e Reklamimit
             </h2>
             <p className="text-muted-foreground font-sans max-w-2xl mx-auto">
-              Choose from our range of premium advertising solutions designed to maximise your brand's impact.
+              Zgjidhni nga gama jonë e zgjidhjeve premium të reklamimit të dizajnuara për të maksimizuar ndikimin e brendit tuaj.
             </p>
           </div>
 
@@ -157,21 +157,21 @@ export default function Advertise() {
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Ready to Grow Your Brand?
+              Gati të Rritni Brendin Tuaj?
             </h2>
             <p className="text-muted-foreground font-sans mb-8 leading-relaxed">
-              Contact our advertising team today to discuss how we can help you reach Albania's most engaged digital audience. We offer flexible packages tailored to your budget and objectives.
+              Kontaktoni ekipin tonë të reklamimit sot për të diskutuar se si mund t'ju ndihmojmë të arrini audiencën dixhitale shqiptare më të angazhuar. Ofrojmë paketa fleksibël të përshtatura sipas buxhetit dhe objektivave tuaja.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/contact">
                 <Button className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans px-8 py-3 text-sm uppercase tracking-wider font-semibold">
-                  Contact Advertising Team
+                  Kontaktoni Ekipin e Reklamimit
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
               <a href="mailto:info@vipatebllokut.com">
                 <Button variant="outline" className="border-gold/30 text-gold hover:bg-gold/10 font-sans px-8 py-3 text-sm uppercase tracking-wider font-semibold">
-                  Email Us Directly
+                  Na Dërgoni Email Direkt
                 </Button>
               </a>
             </div>

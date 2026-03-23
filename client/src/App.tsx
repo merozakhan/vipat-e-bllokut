@@ -21,6 +21,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminArticles from "./pages/admin/AdminArticles";
 import AdminArticleForm from "./pages/admin/AdminArticleForm";
 import AdminHealth from "./pages/admin/AdminHealth";
+import AdminMedia from "./pages/admin/AdminMedia";
 
 function Router() {
   return (
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/admin/articles" component={AdminArticles} />
       <Route path="/admin/articles/new" component={AdminArticleForm} />
       <Route path="/admin/articles/:id/edit" component={AdminArticleForm} />
+      <Route path="/admin/media" component={AdminMedia} />
       <Route path="/admin/health" component={AdminHealth} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

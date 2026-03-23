@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, LogOut, Newspaper, Menu, X, Activity } from "lucide-react";
+import { LayoutDashboard, FileText, LogOut, Newspaper, Menu, X, Activity, ImageIcon } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
@@ -25,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const nav = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/articles", label: "Articles", icon: FileText },
+    { href: "/admin/media", label: "Media Library", icon: ImageIcon },
     { href: "/admin/health", label: "System Health", icon: Activity },
   ];
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft, Upload, X, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Upload, X, Image as ImageIcon, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import AdminLayout from "./AdminLayout";
 
@@ -27,6 +27,12 @@ export default function AdminArticleForm() {
   const [placement, setPlacement] = useState("");
   const [position, setPosition] = useState(1);
   const [uploading, setUploading] = useState(false);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+
+  const { data: mediaFiles } = trpc.admin.mediaList.useQuery(
+    { limit: 100 },
+    { enabled: showMediaPicker }
+  );
 
   const { data: existing } = trpc.admin.articlesGetById.useQuery(
     { id: parseInt(params.id || "0") },
@@ -162,15 +168,57 @@ export default function AdminArticleForm() {
               <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
             </label>
           )}
-          {/* Or paste URL */}
-          <input
-            type="text"
-            value={featuredImage}
-            onChange={(e) => setFeaturedImage(e.target.value)}
-            className="w-full mt-2 px-4 py-2 bg-card border border-border/50 rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans"
-            placeholder="Or paste image URL"
-          />
+          {/* Choose from Library or paste URL */}
+          <div className="flex gap-2 mt-2">
+            <input
+              type="text"
+              value={featuredImage}
+              onChange={(e) => setFeaturedImage(e.target.value)}
+              className="flex-1 px-4 py-2 bg-card border border-border/50 rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans"
+              placeholder="Or paste image URL"
+            />
+            <button
+              type="button"
+              onClick={() => setShowMediaPicker(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border/50 rounded-lg text-sm font-sans text-muted-foreground hover:text-gold hover:border-gold/30 transition-colors whitespace-nowrap"
+            >
+              <FolderOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">Library</span>
+            </button>
+          </div>
         </div>
+
+        {/* Media Picker Modal */}
+        {showMediaPicker && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowMediaPicker(false)}>
+            <div className="bg-card border border-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="p-4 border-b border-border/50 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground">Choose from Media Library</h3>
+                <button onClick={() => setShowMediaPicker(false)} className="p-1 text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                {!mediaFiles?.files?.length ? (
+                  <p className="text-sm text-muted-foreground text-center py-8 font-sans">No media files yet. Upload some in the Media Library.</p>
+                ) : (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    {mediaFiles.files.filter(f => f.type === "image").map(file => (
+                      <button
+                        key={file.publicId}
+                        type="button"
+                        onClick={() => { setFeaturedImage(file.url); setShowMediaPicker(false); toast.success("Image selected"); }}
+                        className="aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-gold transition-colors"
+                      >
+                        <img src={file.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div>

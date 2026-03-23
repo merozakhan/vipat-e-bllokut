@@ -33,7 +33,7 @@ import {
   getArticleStats,
   trackPageView,
 } from "./db";
-import { uploadImageBase64 } from "./cloudinaryStorage";
+import { uploadImageBase64, uploadMediaBase64, listMedia, deleteMedia } from "./cloudinaryStorage";
 import { getLastImportResult, isImportRunning, triggerManualImport } from "./cronScheduler";
 import { sendContactEmail, sendNewsletterConfirmation } from "./emailService";
 
@@ -319,6 +319,33 @@ export const appRouter = router({
     articleStats: adminProcedure.query(async () => {
       return await getArticleStats();
     }),
+
+    // Media Library
+    mediaList: adminProcedure
+      .input(z.object({ limit: z.number().max(200).optional(), cursor: z.string().optional() }))
+      .query(async ({ input }) => {
+        return await listMedia(input.limit || 100, input.cursor);
+      }),
+
+    mediaUpload: adminProcedure
+      .input(z.object({
+        base64: z.string(),
+        filename: z.string(),
+        type: z.enum(["image", "video"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await uploadMediaBase64(input.base64, input.filename, input.type || "image");
+        if (!result) throw new Error("Upload failed");
+        return result;
+      }),
+
+    mediaDelete: adminProcedure
+      .input(z.object({ publicId: z.string(), type: z.enum(["image", "video"]).optional() }))
+      .mutation(async ({ input }) => {
+        const ok = await deleteMedia(input.publicId, input.type || "image");
+        if (!ok) throw new Error("Delete failed");
+        return { success: true };
+      }),
   }),
 });
 

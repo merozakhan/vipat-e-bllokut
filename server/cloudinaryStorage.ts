@@ -126,3 +126,128 @@ export async function uploadImageBase64(base64Data: string, filename: string, fo
     return null;
   }
 }
+
+/**
+ * Upload any file (image or video) to the media library folder.
+ */
+export async function uploadMediaBase64(
+  base64Data: string,
+  filename: string,
+  resourceType: "image" | "video" = "image"
+): Promise<{ url: string; publicId: string; type: string; bytes: number; width?: number; height?: number; format: string; createdAt: string } | null> {
+  if (!ensureConfigured()) return null;
+
+  try {
+    const prefix = resourceType === "video" ? "data:video/mp4;base64," : "data:image/jpeg;base64,";
+    const result = await cloudinary.uploader.upload(
+      `${prefix}${base64Data}`,
+      {
+        folder: "vipat-media",
+        public_id: filename,
+        resource_type: resourceType,
+      }
+    );
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+      type: result.resource_type,
+      bytes: result.bytes,
+      width: result.width,
+      height: result.height,
+      format: result.format,
+      createdAt: result.created_at,
+    };
+  } catch (error: any) {
+    console.warn(`[Cloudinary] Media upload error: ${error?.message || error}`);
+    return null;
+  }
+}
+
+/**
+ * List all media files from the media library folder.
+ */
+export async function listMedia(maxResults: number = 100, nextCursor?: string): Promise<{
+  files: { url: string; publicId: string; type: string; bytes: number; width?: number; height?: number; format: string; createdAt: string }[];
+  nextCursor?: string;
+  totalCount: number;
+}> {
+  if (!ensureConfigured()) return { files: [], totalCount: 0 };
+
+  try {
+    const options: any = {
+      type: "upload",
+      prefix: "vipat-media",
+      max_results: maxResults,
+      ...(nextCursor ? { next_cursor: nextCursor } : {}),
+    };
+
+    // Fetch images
+    const imgResult = await cloudinary.api.resources({ ...options, resource_type: "image" });
+    // Fetch videos
+    let vidResult: any = { resources: [] };
+    try {
+      vidResult = await cloudinary.api.resources({ ...options, resource_type: "video" });
+    } catch { /* no videos yet */ }
+
+    const allResources = [...(imgResult.resources || []), ...(vidResult.resources || [])];
+
+    // Sort by created_at desc
+    allResources.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    const files = allResources.map((r: any) => ({
+      url: r.secure_url,
+      publicId: r.public_id,
+      type: r.resource_type,
+      bytes: r.bytes,
+      width: r.width,
+      height: r.height,
+      format: r.format,
+      createdAt: r.created_at,
+    }));
+
+    // Also fetch from vipat-articles folder
+    const artResult = await cloudinary.api.resources({
+      type: "upload",
+      prefix: "vipat-articles",
+      max_results: maxResults,
+      resource_type: "image",
+    });
+    const artFiles = (artResult.resources || []).map((r: any) => ({
+      url: r.secure_url,
+      publicId: r.public_id,
+      type: r.resource_type,
+      bytes: r.bytes,
+      width: r.width,
+      height: r.height,
+      format: r.format,
+      createdAt: r.created_at,
+    }));
+
+    const combined = [...files, ...artFiles];
+    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return {
+      files: combined.slice(0, maxResults),
+      nextCursor: imgResult.next_cursor,
+      totalCount: combined.length,
+    };
+  } catch (error: any) {
+    console.warn(`[Cloudinary] List error: ${error?.message || error}`);
+    return { files: [], totalCount: 0 };
+  }
+}
+
+/**
+ * Delete a media file from Cloudinary.
+ */
+export async function deleteMedia(publicId: string, resourceType: "image" | "video" = "image"): Promise<boolean> {
+  if (!ensureConfigured()) return false;
+
+  try {
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+    return true;
+  } catch (error: any) {
+    console.warn(`[Cloudinary] Delete error: ${error?.message || error}`);
+    return false;
+  }
+}

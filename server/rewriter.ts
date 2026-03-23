@@ -266,6 +266,119 @@ function cleanBranding(text: string): string {
   return cleaned.trim();
 }
 
+// ─── Smart Typography ────────────────────────────────────────────────
+
+/**
+ * Apply professional Albanian typography:
+ * - Smart quotes
+ * - Proper em-dashes
+ * - Bold key entities (names, places, numbers)
+ */
+function applyTypography(text: string): string {
+  let t = text;
+
+  // Smart quotes: "text" → "text"
+  t = t.replace(/"([^"]+)"/g, "\u201c$1\u201d");
+  t = t.replace(/'([^']+)'/g, "\u2018$1\u2019");
+
+  // Proper em-dashes
+  t = t.replace(/\s*--\s*/g, " \u2014 ");
+  t = t.replace(/\s*-\s*-\s*/g, " \u2014 ");
+
+  // Bold quoted speech (indicates direct quotes — engaging)
+  t = t.replace(/(\u201c[^\u201d]{10,}\u201d)/g, "<strong>$1</strong>");
+
+  // Bold percentages and big numbers (eye-catching facts)
+  t = t.replace(/(\d+(?:\.\d+)?%)/g, "<strong>$1</strong>");
+  t = t.replace(/(\d{1,3}(?:\.\d{3})+(?:\s*(?:euro|dollarë|lekë|USD|EUR|ALL)))/gi, "<strong>$1</strong>");
+
+  return t;
+}
+
+// ─── Pull Quote Extraction ───────────────────────────────────────────
+
+/**
+ * Find the most quotable sentence — something with direct speech,
+ * strong claims, or dramatic statements. Used as a visual pull quote.
+ */
+function findPullQuote(paragraphs: string[]): string | null {
+  // Look for direct quotes first (most engaging)
+  for (const p of paragraphs) {
+    const quoteMatch = p.match(/["\u201c«]([^"\u201d»]{30,150})["\u201d»]/);
+    if (quoteMatch) return quoteMatch[0];
+  }
+
+  // Look for dramatic statements (short, punchy, with strong words)
+  const dramatic = [
+    /\b(skandal|krizë|tragjedi|revolucion|historik|rekord|shokues|i\s*paprecedent)\b/i,
+    /\b(zbuloj|konfirmoj|paralajmëro|deklaroj|akuzoj|mohoj)\b/i,
+  ];
+  for (const p of paragraphs) {
+    if (p.length > 40 && p.length < 200) {
+      if (dramatic.some(d => d.test(p))) return p;
+    }
+  }
+
+  return null;
+}
+
+// ─── Paragraph Merging & Splitting ───────────────────────────────────
+
+/**
+ * Merge very short consecutive paragraphs that are clearly
+ * fragments of the same thought (common scraping artifact).
+ */
+function mergeParagraphs(paragraphs: string[]): string[] {
+  const merged: string[] = [];
+
+  for (let i = 0; i < paragraphs.length; i++) {
+    const current = paragraphs[i];
+
+    // If current is short and doesn't end with sentence-ending punctuation,
+    // merge with next paragraph
+    if (
+      current.length < 60 &&
+      !/[.!?:]\s*$/.test(current) &&
+      i + 1 < paragraphs.length
+    ) {
+      // Merge with next
+      const next = paragraphs[i + 1];
+      merged.push(current + " " + next);
+      i++; // skip next
+    } else {
+      merged.push(current);
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * Split overly long paragraphs at natural sentence boundaries
+ * for better readability on mobile.
+ */
+function splitLongParagraphs(paragraphs: string[]): string[] {
+  const result: string[] = [];
+
+  for (const p of paragraphs) {
+    if (p.length > 500) {
+      // Split at sentence boundaries near the middle
+      const sentences = p.match(/[^.!?]+[.!?]+/g) || [p];
+      if (sentences.length >= 2) {
+        const mid = Math.ceil(sentences.length / 2);
+        result.push(sentences.slice(0, mid).join(" ").trim());
+        result.push(sentences.slice(mid).join(" ").trim());
+      } else {
+        result.push(p);
+      }
+    } else {
+      result.push(p);
+    }
+  }
+
+  return result;
+}
+
 // ─── Main Rewriter ───────────────────────────────────────────────────
 
 function cleanContent(rawHtml: string): string {
@@ -281,18 +394,13 @@ function cleanContent(rawHtml: string): string {
     .filter(p => p.length > 0);
 
   // Step 3: Clean each paragraph
-  const cleaned: string[] = [];
+  let cleaned: string[] = [];
   for (const para of rawParagraphs) {
-    // Skip boilerplate
     if (isBoilerplate(para)) continue;
 
-    // Strip source branding
     const cleanedText = cleanBranding(para);
 
-    // Skip if too short after cleaning
     if (cleanedText.length < 15) continue;
-
-    // Skip if it looks like code/CSS/JS after cleaning
     if (/[{};]/.test(cleanedText) && cleanedText.length < 80) continue;
     if (/^\s*(px|em|rem|%|auto|none|inherit|flex|grid|block|inline)[\s;,]/.test(cleanedText)) continue;
 
@@ -301,14 +409,45 @@ function cleanContent(rawHtml: string): string {
 
   if (cleaned.length === 0) return "";
 
-  // Step 4: Build clean HTML
+  // Step 4: Smart paragraph restructuring
+  cleaned = mergeParagraphs(cleaned);
+  cleaned = splitLongParagraphs(cleaned);
+
+  // Remove near-duplicate paragraphs (scraping artifact)
+  const seen = new Set<string>();
+  cleaned = cleaned.filter(p => {
+    const key = p.substring(0, 60).toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  if (cleaned.length === 0) return "";
+
+  // Step 5: Find a pull quote (most engaging sentence)
+  const pullQuote = findPullQuote(cleaned);
+
+  // Step 6: Apply typography enhancements
+  cleaned = cleaned.map(p => applyTypography(p));
+
+  // Step 7: Build professional HTML structure
   let html = "";
 
-  // First paragraph gets bold lead
+  // Lead paragraph — bold, sets the hook
   html += `<p><strong>${cleaned[0]}</strong></p>`;
 
-  // Remaining paragraphs
+  // Body paragraphs with visual breaks
   for (let i = 1; i < cleaned.length; i++) {
+    // Insert pull quote after 2nd paragraph if we have one
+    if (i === 2 && pullQuote && cleaned.length > 4) {
+      html += `<blockquote><p>${applyTypography(pullQuote)}</p></blockquote>`;
+    }
+
+    // Insert a subtle divider every 4-5 paragraphs for visual breathing room
+    if (i > 1 && i % 5 === 0 && i < cleaned.length - 1) {
+      html += `<hr />`;
+    }
+
     html += `<p>${cleaned[i]}</p>`;
   }
 
@@ -317,13 +456,14 @@ function cleanContent(rawHtml: string): string {
 
 /**
  * Rewrites an article — deeply cleans HTML, strips all source branding,
- * removes CSS/JS artifacts, and outputs clean formatted HTML paragraphs.
+ * removes CSS/JS artifacts, restructures paragraphs, applies professional
+ * typography, extracts pull quotes, and outputs engaging formatted HTML.
  */
 export async function rewriteArticle(
   title: string,
   content: string
 ): Promise<{ title: string; content: string }> {
-  console.log(`[Rewriter] Cleaning: ${title.substring(0, 60)}...`);
+  console.log(`[Rewriter] Processing: ${title.substring(0, 60)}...`);
 
   try {
     const cleanedTitle = cleanTitle(title);

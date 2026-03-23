@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect } from "react";
 import {
-  Search, Menu, X, Instagram, Phone, MapPin,
+  Search, Menu, X, Instagram, Mail, Phone, MapPin,
   ChevronRight, Globe, Clock, Newspaper,
   Shield, BookOpen, Megaphone, Users
 } from "lucide-react";

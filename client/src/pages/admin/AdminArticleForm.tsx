@@ -4,6 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { ArrowLeft, Upload, X, Image as ImageIcon, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import AdminLayout from "./AdminLayout";
+import RichTextEditor from "@/components/RichTextEditor";
 
 const PLACEMENTS = [
   { value: "", label: "None" },
@@ -95,7 +96,7 @@ export default function AdminArticleForm() {
     e.preventDefault();
     const data = {
       title,
-      content: content.includes("<p>") ? content : content.split("\n").filter(p => p.trim()).map(p => `<p>${p}</p>`).join(""),
+      content,
       excerpt: excerpt || undefined,
       featuredImage: featuredImage || undefined,
       status,
@@ -223,15 +224,11 @@ export default function AdminArticleForm() {
         {/* Content */}
         <div>
           <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Content</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={12}
-            className="w-full px-4 py-3 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans text-sm leading-relaxed resize-y"
-            placeholder="Write your article content here. Each paragraph on a new line. HTML is supported."
-            required
+          <RichTextEditor
+            content={content}
+            onChange={setContent}
+            placeholder="Write your article content here..."
           />
-          <p className="text-[10px] text-muted-foreground font-sans mt-1">Plain text (auto-wrapped in paragraphs) or HTML.</p>
         </div>
 
         {/* Excerpt */}

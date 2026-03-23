@@ -36,6 +36,7 @@ import {
 } from "./db";
 import { uploadImageBase64, uploadMediaBase64, listMedia, deleteMedia } from "./cloudinaryStorage";
 import { getLastImportResult, isImportRunning, triggerManualImport } from "./cronScheduler";
+import { getBlockedWords, setBlockedWords } from "./rssImporter";
 import { sendContactEmail, sendNewsletterConfirmation } from "./emailService";
 
 export const appRouter = router({
@@ -344,6 +345,18 @@ export const appRouter = router({
         const result = await uploadMediaBase64(input.base64, input.filename, input.type || "image");
         if (!result) throw new Error("Upload failed");
         return result;
+      }),
+
+    // Blocked Words
+    blockedWordsGet: adminProcedure.query(() => {
+      return getBlockedWords();
+    }),
+
+    blockedWordsSet: adminProcedure
+      .input(z.object({ words: z.array(z.string()) }))
+      .mutation(({ input }) => {
+        setBlockedWords(input.words);
+        return { success: true, words: getBlockedWords() };
       }),
 
     mediaDelete: adminProcedure

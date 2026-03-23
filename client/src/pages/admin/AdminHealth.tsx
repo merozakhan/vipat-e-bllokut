@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Activity, Database, Cloud, Clock, RefreshCw, CheckCircle, XCircle,
   AlertTriangle, Wifi, Zap, PenTool, Globe, Server,
-  HardDrive, ImageIcon, Shield, TrendingUp, Play
+  HardDrive, ImageIcon, Shield, TrendingUp, Play, Ban, Plus, X
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -150,6 +150,13 @@ export default function AdminHealth() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [newWord, setNewWord] = useState("");
+
+  const { data: blockedWords } = trpc.admin.blockedWordsGet.useQuery();
+  const utils = trpc.useUtils();
+  const updateBlockedWords = trpc.admin.blockedWordsSet.useMutation({
+    onSuccess: () => utils.admin.blockedWordsGet.invalidate(),
+  });
 
   const fetchHealth = async () => {
     setLoading(true);
@@ -383,6 +390,57 @@ export default function AdminHealth() {
               </div>
             </div>
           )}
+
+          {/* ═══ Blocked Words ═══ */}
+          <div className="bg-card/50 rounded-xl border border-border/30 p-4 md:p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Ban className="w-4 h-4 text-red-400" />
+              <h3 className="text-sm font-bold text-foreground">Blocked Words</h3>
+              <span className="text-[10px] text-muted-foreground font-sans">Articles containing these words are skipped</span>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {blockedWords?.map(word => (
+                <span key={word} className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-xs font-semibold text-red-400 font-sans">
+                  {word}
+                  <button
+                    onClick={() => updateBlockedWords.mutate({ words: blockedWords.filter(w => w !== word) })}
+                    className="hover:text-red-300 ml-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+              {(!blockedWords || blockedWords.length === 0) && (
+                <span className="text-xs text-muted-foreground font-sans">No blocked words set</span>
+              )}
+            </div>
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                if (newWord.trim() && blockedWords) {
+                  updateBlockedWords.mutate({ words: [...blockedWords, newWord.trim()] });
+                  setNewWord("");
+                }
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="text"
+                value={newWord}
+                onChange={e => setNewWord(e.target.value)}
+                placeholder="Add word to block..."
+                className="flex-1 px-3 py-1.5 bg-background border border-border/50 rounded-lg text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans"
+              />
+              <button
+                type="submit"
+                disabled={!newWord.trim()}
+                className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-xs font-semibold font-sans hover:bg-red-500/30 disabled:opacity-50 transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+                Block
+              </button>
+            </form>
+          </div>
 
           {/* ═══ Database Storage ═══ */}
           <div className="bg-card/50 rounded-xl border border-border/30 p-4 md:p-5">

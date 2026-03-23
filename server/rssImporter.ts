@@ -25,11 +25,19 @@ import { rewriteArticle } from "./rewriter";
 
 // ─── Blocked Words ──────────────────────────────────────────────────
 // Articles containing any of these words (case-insensitive) are skipped entirely.
-const BLOCKED_WORDS = ["rraja", "capaj"];
+let blockedWords: string[] = ["rraja", "capaj"];
+
+export function getBlockedWords(): string[] {
+  return [...blockedWords];
+}
+
+export function setBlockedWords(words: string[]): void {
+  blockedWords = words.map(w => w.toLowerCase().trim()).filter(w => w.length > 0);
+}
 
 function containsBlockedWord(text: string): string | null {
   const lower = text.toLowerCase();
-  for (const word of BLOCKED_WORDS) {
+  for (const word of blockedWords) {
     if (lower.includes(word)) return word;
   }
   return null;

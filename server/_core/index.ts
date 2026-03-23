@@ -288,7 +288,7 @@ Sitemap: https://vipatebllokut.com/sitemap.xml
       rss += `  <language>sq</language>\n`;
       rss += `  <lastBuildDate>${now}</lastBuildDate>\n`;
       rss += `  <atom:link href="https://vipatebllokut.com/feed.xml" rel="self" type="application/rss+xml" />\n`;
-      rss += `  <image>\n    <url>https://vipatebllokut.com/favicon.svg</url>\n    <title>Vipat E Bllokut</title>\n    <link>https://vipatebllokut.com</link>\n  </image>\n`;
+      rss += `  <image>\n    <url>https://vipatebllokut.com/api/og-image.png</url>\n    <title>Vipat E Bllokut</title>\n    <link>https://vipatebllokut.com</link>\n  </image>\n`;
 
       for (const article of recentArticles) {
         const pubDate = article.publishedAt ? new Date(article.publishedAt).toUTCString() : now;
@@ -311,6 +311,33 @@ Sitemap: https://vipatebllokut.com/sitemap.xml
     } catch (error) {
       console.error("[RSS Feed] Error generating feed:", error);
       res.status(500).send("Error generating feed");
+    }
+  });
+
+  // OG image endpoint — serves a proper PNG for social sharing
+  // Uploads SVG to Cloudinary on first request, caches the PNG URL
+  let cachedOgImageUrl: string | null = null;
+  app.get("/api/og-image.png", async (_req, res) => {
+    if (cachedOgImageUrl) {
+      return res.redirect(301, cachedOgImageUrl);
+    }
+    try {
+      const { uploadImageBase64 } = await import("../cloudinaryStorage");
+      // Generate a simple OG-friendly image via Cloudinary text overlay
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      if (cloudName) {
+        // Use Cloudinary's text overlay API to generate a branded OG image
+        const ogUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:1a1a2e/co_rgb:d4a843,l_text:Georgia_72_bold:Vipat%20E%20Bllokut/fl_layer_apply,g_center,y_-40/co_rgb:ffffff80,l_text:Arial_24:Albania%20News%20%26%20Media/fl_layer_apply,g_center,y_40/co_rgb:ffffff40,l_text:Arial_18:vipatebllokut.com/fl_layer_apply,g_center,y_90/vipat-media/og-placeholder.png`;
+        // Upload a 1x1 placeholder to create the base image
+        const base64Pixel = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        await uploadImageBase64(base64Pixel, "og-placeholder", "vipat-media").catch(() => {});
+        cachedOgImageUrl = ogUrl;
+        return res.redirect(301, ogUrl);
+      }
+      // Fallback: serve the SVG with correct content type
+      res.redirect("/og-image.svg");
+    } catch {
+      res.redirect("/og-image.svg");
     }
   });
 

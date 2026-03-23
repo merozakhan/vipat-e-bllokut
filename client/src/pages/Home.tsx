@@ -87,11 +87,6 @@ export default function Home() {
                       <h1 className="text-xl md:text-3xl lg:text-4xl font-black text-white leading-tight mb-2 md:mb-3 group-hover:text-gold-light transition-colors line-clamp-3">
                         {heroArticle.title}
                       </h1>
-                      {heroArticle.excerpt && (
-                        <p className="hidden md:block text-white/70 text-sm md:text-base leading-relaxed line-clamp-2 font-sans max-w-3xl">
-                          {heroArticle.excerpt}
-                        </p>
-                      )}
                       <div className="flex items-center gap-4 mt-2 md:mt-4 text-white/50 text-[10px] md:text-xs font-sans">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -222,11 +217,6 @@ export default function Home() {
                       <h3 className="text-xs md:text-sm font-bold text-card-foreground leading-snug line-clamp-2 group-hover:text-gold transition-colors">
                         {article.title}
                       </h3>
-                      {article.excerpt && (
-                        <p className="hidden md:block text-xs text-muted-foreground mt-1.5 line-clamp-2 font-sans leading-relaxed flex-1">
-                          {article.excerpt}
-                        </p>
-                      )}
                       <div className="flex items-center justify-between text-[9px] md:text-[10px] text-muted-foreground mt-auto pt-2 border-t border-border/30 font-sans">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-2.5 h-2.5 text-gold/50" />

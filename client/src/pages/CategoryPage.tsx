@@ -94,11 +94,6 @@ export default function CategoryPage() {
                   <h2 className="text-xl md:text-3xl font-bold text-foreground leading-tight mb-2 md:mb-4 group-hover:text-gold transition-colors line-clamp-3">
                     {featuredArticle.title}
                   </h2>
-                  {featuredArticle.excerpt && (
-                    <p className="text-sm md:text-base text-muted-foreground font-sans leading-relaxed line-clamp-3 mb-3 md:mb-4">
-                      {featuredArticle.excerpt}
-                    </p>
-                  )}
                   <div className="flex items-center gap-3 text-[10px] md:text-xs text-muted-foreground font-sans">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3 text-gold/60" />
@@ -150,12 +145,6 @@ export default function CategoryPage() {
                       <h3 className="text-xs md:text-lg font-bold text-card-foreground mb-1 md:mb-2 leading-snug line-clamp-2 group-hover:text-gold transition-colors">
                         {article.title}
                       </h3>
-
-                      {article.excerpt && (
-                        <p className="hidden md:block text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 font-sans leading-relaxed">
-                          {article.excerpt}
-                        </p>
-                      )}
 
                       <div className="flex items-center justify-between text-[9px] md:text-xs text-muted-foreground mt-auto pt-2 md:pt-4 border-t border-border/50 font-sans">
                         <span className="flex items-center gap-1">

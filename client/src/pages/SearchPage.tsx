@@ -141,12 +141,6 @@ export default function SearchPage() {
                         {article.title}
                       </h3>
 
-                      {article.excerpt && (
-                        <p className="hidden md:block text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 font-sans leading-relaxed">
-                          {article.excerpt}
-                        </p>
-                      )}
-
                       <div className="flex items-center justify-between text-[9px] md:text-xs text-muted-foreground mt-auto pt-2 md:pt-4 border-t border-border/50 font-sans">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3 text-gold/60" />

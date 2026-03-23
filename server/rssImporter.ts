@@ -762,14 +762,7 @@ function generateUniqueSlug(title: string): string {
 // ─── Database Operations ─────────────────────────────────────────────
 
 const DEFAULT_CATEGORIES = [
-  { name: "Aktualitet", slug: "aktualitet", description: "Lajme aktuale nga Shqipëria" },
-  { name: "Politikë", slug: "politike", description: "Lajme politike" },
-  { name: "Sport", slug: "sport", description: "Lajme sportive" },
-  { name: "Botë", slug: "bote", description: "Lajme ndërkombëtare" },
-  { name: "Ekonomi", slug: "ekonomi", description: "Lajme ekonomike" },
-  { name: "Teknologji", slug: "teknologji", description: "Lajme teknologjike" },
-  { name: "Kulturë", slug: "kulture", description: "Art, muzikë dhe kulturë" },
-  { name: "Shëndetësi", slug: "shendetesi", description: "Lajme shëndetësore" },
+  { name: "Të Gjitha", slug: "te-gjitha", description: "Lajme të përgjithshme" },
 ];
 
 async function seedDefaultCategories(): Promise<void> {
@@ -1160,25 +1153,8 @@ export async function runRssImport(): Promise<ImportResult> {
         continue;
       }
 
-      // Determine category: source mapping → keyword detection → default
-      let categorySlug = "aktualitet";
-      const sourceCat = link.categorySlug || scraped.category;
-      // Build combined category map from all sources
-      let mappedCat: string | null = null;
-      if (sourceCat) {
-        if (source === "joq") {
-          mappedCat = JOQ_CATEGORY_MAP[sourceCat] || null;
-        } else {
-          // Find the Mediadesk site config for this source
-          const siteConfig = MEDIADESK_SITES.find(s => s.name.toLowerCase() === source);
-          mappedCat = siteConfig?.categoryMap[sourceCat] || null;
-        }
-      }
-      if (mappedCat && mappedCat !== "aktualitet") {
-        categorySlug = mappedCat;
-      } else {
-        categorySlug = detectCategory(finalTitle, finalContent, "aktualitet");
-      }
+      // All articles go into the single "Të Gjitha" category
+      const categorySlug = "te-gjitha";
 
       const slug = generateUniqueSlug(finalTitle);
       const categoryId = categoryMap[categorySlug] || categoryMap["aktualitet"] || null;

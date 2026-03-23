@@ -23,12 +23,11 @@ export default function AdminArticleForm() {
   const [excerpt, setExcerpt] = useState("");
   const [featuredImage, setFeaturedImage] = useState("");
   const [status, setStatus] = useState<"draft" | "published">("published");
-  const [selectedCats, setSelectedCats] = useState<number[]>([]);
+  const [selectedCats] = useState<number[]>([]);
   const [placement, setPlacement] = useState("");
   const [position, setPosition] = useState(1);
   const [uploading, setUploading] = useState(false);
 
-  const { data: categories } = trpc.categories.getAll.useQuery();
   const { data: existing } = trpc.admin.articlesGetById.useQuery(
     { id: parseInt(params.id || "0") },
     { enabled: isEdit }
@@ -53,7 +52,6 @@ export default function AdminArticleForm() {
       setExcerpt(existing.excerpt || "");
       setFeaturedImage(existing.featuredImage || "");
       setStatus(existing.status as "draft" | "published");
-      setSelectedCats(existing.categories?.map((c: any) => c?.id).filter(Boolean) || []);
       setPlacement(existing.homepagePlacement || "");
       setPosition(existing.homepagePosition || 1);
     }
@@ -197,29 +195,6 @@ export default function AdminArticleForm() {
             className="w-full px-4 py-2.5 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans text-sm resize-y"
             placeholder="Short summary (auto-generated from content if empty)"
           />
-        </div>
-
-        {/* Categories */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Categories</label>
-          <div className="flex flex-wrap gap-2">
-            {categories?.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCats(prev =>
-                  prev.includes(cat.id) ? prev.filter(id => id !== cat.id) : [...prev, cat.id]
-                )}
-                className={`px-3 py-1.5 rounded-lg text-xs font-sans font-semibold transition-colors ${
-                  selectedCats.includes(cat.id)
-                    ? "bg-gold text-navy-dark"
-                    : "bg-card border border-border/50 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Homepage Placement */}

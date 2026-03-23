@@ -293,7 +293,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* ═══════════════ CATEGORY NAVIGATION BAR ═══════════════ */}
-      {categories && categories.length > 0 && (
+      {categories && categories.length > 1 && (
         <div className="border-b border-border/30 bg-card/30">
           <div className="container">
             <div className="flex items-center gap-1 py-2 overflow-x-auto scrollbar-hide">
@@ -301,7 +301,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span className={`px-4 py-1.5 text-xs font-semibold font-sans uppercase tracking-wider rounded-full transition-all whitespace-nowrap ${
                   location === "/" ? "bg-gold/15 text-gold" : "text-muted-foreground hover:text-gold hover:bg-gold/5"
                 }`}>
-                  All News
+                  Të Gjitha
                 </span>
               </Link>
               {categories.map((cat) => (

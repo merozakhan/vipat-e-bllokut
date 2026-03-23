@@ -231,7 +231,6 @@ export const appRouter = router({
         excerpt: z.string().optional(),
         featuredImage: z.string().optional(),
         status: z.enum(["draft", "published"]).optional(),
-        categoryIds: z.array(z.number()).optional(),
         homepagePlacement: z.enum(["breaking", "trending", "hot", "most_read"]).nullable().optional(),
         homepagePosition: z.number().min(1).max(5).nullable().optional(),
       }))
@@ -266,8 +265,12 @@ export const appRouter = router({
         });
 
         const article = await getArticleBySlug(slug);
-        if (article && input.categoryIds?.length) {
-          await setArticleCategories(article.id, input.categoryIds);
+        if (article) {
+          // Auto-assign to "Të Gjitha" category
+          const teGjitha = await getCategoryBySlug("te-gjitha");
+          if (teGjitha) {
+            await setArticleCategories(article.id, [teGjitha.id]);
+          }
         }
 
         return { success: true, slug, id: article?.id };
@@ -281,16 +284,12 @@ export const appRouter = router({
         excerpt: z.string().optional(),
         featuredImage: z.string().nullable().optional(),
         status: z.enum(["draft", "published"]).optional(),
-        categoryIds: z.array(z.number()).optional(),
         homepagePlacement: z.enum(["breaking", "trending", "hot", "most_read"]).nullable().optional(),
         homepagePosition: z.number().min(1).max(5).nullable().optional(),
       }))
       .mutation(async ({ input }) => {
-        const { id, categoryIds, ...data } = input;
+        const { id, ...data } = input;
         await updateArticle(id, data as any);
-        if (categoryIds) {
-          await setArticleCategories(id, categoryIds);
-        }
         return { success: true };
       }),
 

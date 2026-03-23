@@ -49,7 +49,6 @@ export default function AdminArticles() {
             <thead>
               <tr className="border-b border-border/50 text-left">
                 <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Article</th>
-                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Category</th>
                 <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Placement</th>
                 <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Status</th>
                 <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Views</th>
@@ -64,9 +63,6 @@ export default function AdminArticles() {
                       {a.featuredImage && <img src={a.featuredImage} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />}
                       <span className="text-sm font-medium text-foreground truncate max-w-xs">{a.title}</span>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground font-sans">
-                    {a.categories?.map((c: any) => c?.name).filter(Boolean).join(", ") || "-"}
                   </td>
                   <td className="px-4 py-3">
                     {a.homepagePlacement ? (

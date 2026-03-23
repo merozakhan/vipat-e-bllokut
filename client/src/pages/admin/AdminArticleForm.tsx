@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import AdminLayout from "./AdminLayout";
 import RichTextEditor from "@/components/RichTextEditor";
 
-const PLACEMENTS = [
-  { value: "", label: "Asnjë" },
-  { value: "breaking", label: "Breaking (Hero — Pozicioni 1 = lajmi kryesor)" },
-  { value: "hot", label: "Hot (2 karta nën hero)" },
-  { value: "most_read", label: "Më të lexuarat (lista anësore)" },
+const PLACEMENTS: { value: string; label: string; maxPositions: number }[] = [
+  { value: "", label: "Asnjë", maxPositions: 0 },
+  { value: "breaking", label: "Breaking (Hero — Poz. 1 = lajmi kryesor)", maxPositions: 3 },
+  { value: "hot", label: "Hot (2 karta nën hero)", maxPositions: 2 },
+  { value: "most_read", label: "Më të lexuarat (lista anësore)", maxPositions: 5 },
 ];
 
 export default function AdminArticleForm() {
@@ -314,7 +314,7 @@ export default function AdminArticleForm() {
             <div>
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Pozicioni</label>
               <div className="flex flex-col gap-1.5">
-                {[1, 2, 3, 4, 5].map((n) => {
+                {Array.from({ length: PLACEMENTS.find(p => p.value === placement)?.maxPositions || 0 }, (_, i) => i + 1).map((n) => {
                   const occupied = occupiedPositions.get(n);
                   const isSelected = position === n;
                   return (

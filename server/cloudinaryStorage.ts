@@ -16,19 +16,22 @@ import { v2 as cloudinary } from "cloudinary";
 
 let configured = false;
 
-// Watermark overlay transformation — bottom-right text stamp
+// Watermark: dark semi-transparent banner at bottom with white text
 const WATERMARK_OVERLAY = {
   overlay: {
-    font_family: "Arial",
-    font_size: 18,
+    font_family: "Lato",
+    font_size: 38,
     font_weight: "bold",
-    text: "Vipat e Bllokut",
+    letter_spacing: 4,
+    text: "  © VIPAT E BLLOKUT  ",
   },
-  gravity: "south_east",
-  x: 15,
-  y: 15,
+  gravity: "south",
+  y: 0,
   color: "#FFFFFF",
-  opacity: 70,
+  background: "rgb:000000AA",
+  width: 1.0,
+  crop: "scale",
+  flags: "relative",
 };
 
 function ensureConfigured(): boolean {

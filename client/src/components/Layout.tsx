@@ -146,10 +146,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
               {categories?.map((cat) => (
-                <Link key={cat.id} href={`/category/${cat.slug}`}>
+                <Link key={cat.id} href={cat.slug === "te-gjitha" ? "/" : `/category/${cat.slug}`}>
                   <span
                     className={`px-4 py-2 text-sm font-medium font-sans uppercase tracking-wider transition-colors underline-gold ${
-                      location === `/category/${cat.slug}`
+                      (cat.slug === "te-gjitha" ? location === "/" : location === `/category/${cat.slug}`)
                         ? "text-gold"
                         : "text-foreground/70 hover:text-gold"
                     }`}
@@ -231,10 +231,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </Link>
                 ))}
                 {categories?.map((cat) => (
-                  <Link key={cat.id} href={`/category/${cat.slug}`}>
+                  <Link key={cat.id} href={cat.slug === "te-gjitha" ? "/" : `/category/${cat.slug}`}>
                     <span
                       className={`block px-4 py-3 text-sm font-medium font-sans uppercase tracking-wider rounded-lg transition-colors ${
-                        location === `/category/${cat.slug}`
+                        (cat.slug === "te-gjitha" ? location === "/" : location === `/category/${cat.slug}`)
                           ? "text-gold bg-gold/10"
                           : "text-foreground/70 hover:text-gold hover:bg-gold/5"
                       }`}

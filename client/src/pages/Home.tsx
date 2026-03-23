@@ -208,7 +208,7 @@ export default function Home() {
             </div>
             <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
               {categoryList.map((cat) => (
-                <Link key={cat.id} href={`/category/${cat.slug}`}>
+                <Link key={cat.id} href={cat.slug === "te-gjitha" ? "/" : `/category/${cat.slug}`}>
                   <div className="group flex-shrink-0 w-36 md:w-44 bg-gradient-to-br from-card to-card/50 rounded-xl border border-border/40 hover:border-gold/40 p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:shadow-gold/5">
                     <h4 className="text-sm md:text-base font-bold text-foreground group-hover:text-gold transition-colors truncate">
                       {cat.name}

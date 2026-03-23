@@ -16,7 +16,7 @@ interface SEOHeadProps {
 
 const SITE_NAME = "Vipat E Bllokut";
 const DEFAULT_DESCRIPTION = "Portali kryesor i lajmeve shqiptare. Lajme të fundit nga Shqipëria, Kosova dhe bota. Politikë, ekonomi, sport, kulturë, teknologji dhe më shumë.";
-const DEFAULT_IMAGE = "https://vipatebllokut.com/favicon.svg";
+const DEFAULT_IMAGE = "https://vipatebllokut.com/og-image.svg";
 const SITE_URL = "https://vipatebllokut.com";
 
 export default function SEOHead({

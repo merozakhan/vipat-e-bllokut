@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import {
   Search, Menu, X, Instagram, Mail, Phone, MapPin,
   ChevronRight, ArrowRight, Globe, Clock, Newspaper,
-  Shield, FileText, BookOpen, Megaphone, Users, ExternalLink,
-  Facebook, Twitter, Youtube, Rss
+  Shield, FileText, BookOpen, Megaphone, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -121,23 +120,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </span>
               <span className="w-px h-3 bg-white/10" />
-              <div className="flex items-center gap-2">
-                <a
-                  href="https://www.instagram.com/vipat_e_bllokut_al"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-gold transition-colors"
-                  aria-label="Instagram"
-                >
-                  <Instagram className="w-3.5 h-3.5" />
-                </a>
-                <a href="#" className="hover:text-gold transition-colors" aria-label="Facebook">
-                  <Facebook className="w-3.5 h-3.5" />
-                </a>
-                <a href="#" className="hover:text-gold transition-colors" aria-label="Twitter">
-                  <Twitter className="w-3.5 h-3.5" />
-                </a>
-              </div>
+              <a
+                href="https://www.instagram.com/vipat_e_bllokut_al"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-gold transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-3.5 h-3.5" />
+              </a>
             </div>
           </div>
         </div>
@@ -377,29 +368,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 Albania's premier digital news and media platform. Delivering truth, insight, and perspective to the Albanian diaspora worldwide since 2026.
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <a
-                href="https://www.instagram.com/vipat_e_bllokut_al"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all" aria-label="Facebook">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all" aria-label="Twitter">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all" aria-label="YouTube">
-                <Youtube className="w-5 h-5" />
-              </a>
-              <a href="#" className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all" aria-label="RSS">
-                <Rss className="w-5 h-5" />
-              </a>
-            </div>
+            <a
+              href="https://www.instagram.com/vipat_e_bllokut_al"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-all"
+              aria-label="Instagram"
+            >
+              <Instagram className="w-5 h-5" />
+            </a>
           </div>
 
           {/* Links Grid */}
@@ -448,15 +425,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     Editorial Policy
                   </span>
                 </Link>
-                <a
-                  href="https://www.instagram.com/vipat_e_bllokut_al"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all"
-                >
-                  Instagram
-                  <ExternalLink className="w-3 h-3" />
-                </a>
               </div>
             </div>
 

@@ -231,8 +231,8 @@ shared/               Shared types and constants
 
 **Vipat E Bllokut Ltd**
 - Registered in United Kingdom
-- Company Number: 16606613
-- Address: 125 Kingsway, Holborn, London WC2B 6NH, United Kingdom
+- Company Number: 17079235
+- Address: Flat 1 Pmb 0512 85 Moss Bank, Manchester M8 5AP, United Kingdom
 - Phone: +44 7476 921815
 - Email: info@vipatebllokut.com
 

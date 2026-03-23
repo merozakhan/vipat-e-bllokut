@@ -1,4 +1,4 @@
-import { eq, desc, and, or, like, sql, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, or, like, sql, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, articles, categories, articleCategories, pageViews, InsertArticle, InsertCategory, InsertArticleCategory } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -214,7 +214,7 @@ export async function getArticlesByPlacement(placement: string, limit: number = 
       eq(articles.status, "published"),
       eq(articles.homepagePlacement, placement as any),
     ))
-    .orderBy(articles.homepagePosition, desc(articles.publishedAt))
+    .orderBy(asc(articles.homepagePosition), desc(articles.publishedAt))
     .limit(limit);
 
   setCache(cacheKey, result, 2 * 60 * 1000); // 2 min cache

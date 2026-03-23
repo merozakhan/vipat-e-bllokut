@@ -2,12 +2,10 @@ import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect } from "react";
 import {
-  Search, Menu, X, Instagram, Mail, Phone, MapPin,
-  ChevronRight, ArrowRight, Globe, Clock, Newspaper,
-  Shield, FileText, BookOpen, Megaphone, Users
+  Search, Menu, X, Instagram, Phone, MapPin,
+  ChevronRight, Globe, Clock, Newspaper,
+  Shield, BookOpen, Megaphone, Users
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 
 function BreakingNewsTicker() {
   const { data: articles } = trpc.articles.getPublished.useQuery({ limit: 5 });
@@ -46,7 +44,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
-  const [newsletterEmail, setNewsletterEmail] = useState("");
   const { data: allCategories } = trpc.categories.getAllWithCounts.useQuery();
   const categories = allCategories?.filter(c => c.slug !== "te-gjitha");
 
@@ -65,23 +62,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     e.preventDefault();
     if (searchQuery.trim()) {
       window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
-    }
-  };
-
-  const newsletterMutation = trpc.contact.newsletter.useMutation({
-    onSuccess: () => {
-      toast.success("Faleminderit për abonimin! Do të merrni lajmet më të fundit.");
-      setNewsletterEmail("");
-    },
-    onError: () => {
-      toast.error("Diçka shkoi keq. Provoni përsëri.");
-    },
-  });
-
-  const handleNewsletter = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newsletterEmail.trim()) {
-      newsletterMutation.mutate({ email: newsletterEmail.trim() });
     }
   };
 
@@ -328,40 +308,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1">
         {children}
       </main>
-
-      {/* ═══════════════ NEWSLETTER SECTION ═══════════════ */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.25_0.04_55)] to-[oklch(0.20_0.03_55)]" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djJoLTJ2LTJoMnptMC00aDJ2MmgtMnYtMnptLTQgMHYyaC0ydi0yaDJ6bTIgMGgydjJoLTJ2LTJ6bS0yLTRoMnYyaC0ydi0yem0yIDBoMnYyaC0ydi0yeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
-        <div className="container py-14 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm mb-5">
-              <Mail className="w-3.5 h-3.5 text-gold" />
-              <span className="text-[11px] text-white/80 uppercase tracking-[0.2em] font-sans font-semibold">Qëndroni të Informuar</span>
-            </div>
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
-              Abonohu në Buletinin Tonë
-            </h3>
-            <p className="text-sm text-white/60 font-sans mb-6 max-w-md mx-auto">
-              Merrni lajmet më të fundit shqiptare direkt në emailin tuaj çdo mëngjes. Pa spam, çabonohu në çdo kohë.
-            </p>
-            <form onSubmit={handleNewsletter} className="flex flex-col sm:flex-row items-center gap-3 max-w-lg mx-auto">
-              <input
-                type="email"
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Shkruani adresën tuaj email"
-                className="w-full sm:flex-1 px-5 py-3.5 bg-white/10 backdrop-blur-sm text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm placeholder:text-white/40"
-                required
-              />
-              <Button type="submit" className="w-full sm:w-auto bg-gold hover:bg-gold-dark text-[oklch(0.15_0.01_250)] font-sans px-8 py-3.5 text-sm uppercase tracking-wider font-bold rounded-lg">
-                Abonohu
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </form>
-          </div>
-        </div>
-      </section>
 
       {/* ═══════════════ PREMIUM FOOTER ═══════════════ */}
       <footer className="bg-[oklch(0.12_0.01_250)]">

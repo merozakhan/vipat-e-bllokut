@@ -452,10 +452,10 @@ export async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
       description: categories.description,
       createdAt: categories.createdAt,
       updatedAt: categories.updatedAt,
-      articleCount: sql<number>`(SELECT COUNT(*) FROM article_categories INNER JOIN articles ON articles.id = article_categories.articleId WHERE article_categories.categoryId = ${categories.id} AND articles.status = 'published')`,
+      articleCount: sql<number>`(SELECT COUNT(*) FROM article_categories INNER JOIN articles ON articles.id = article_categories.articleId WHERE article_categories.categoryId = categories.id AND articles.status = 'published')`,
     })
     .from(categories)
-    .orderBy(sql`CASE WHEN ${categories.slug} = 'te-gjitha' THEN 0 ELSE 1 END`, categories.name);
+    .orderBy(sql`CASE WHEN categories.slug = 'te-gjitha' THEN 0 ELSE 1 END, categories.name`);
 
   setCache('categoriesWithCounts', result, 10 * 60 * 1000);
   return result;

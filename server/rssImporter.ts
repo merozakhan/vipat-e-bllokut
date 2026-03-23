@@ -806,9 +806,21 @@ function normalizeTitle(title: string): string {
     .trim();
 }
 
+// Common Albanian words that appear in many titles but don't indicate duplicates
+const COMMON_WORDS = new Set([
+  "shqiperi", "shqiperise", "qeveria", "ministri", "kryeministri",
+  "eshte", "jane", "kane", "para", "mire", "keq", "madhe", "vogel",
+  "ndaj", "sipas", "mund", "duhet", "rreth", "gjate", "deri", "pritet",
+  "sot", "neser", "dje", "java", "muaji", "viti", "dite", "ore",
+  "tirana", "tirane", "kosove", "kosoves", "prishtine", "shkoder",
+  "policia", "gjykata", "prokuroria", "parlamenti", "kuvendi",
+  "lajme", "lajmi", "artikull", "deklarate", "vendimi", "ligji",
+  "mund", "nder", "pasi", "nese", "keshtu", "atehere", "megjithate",
+]);
+
 function titleSimilarity(a: string, b: string): number {
-  const wordsA = normalizeTitle(a).split(" ").filter(w => w.length > 3);
-  const wordsB = normalizeTitle(b).split(" ").filter(w => w.length > 3);
+  const wordsA = normalizeTitle(a).split(" ").filter(w => w.length > 3 && !COMMON_WORDS.has(w));
+  const wordsB = normalizeTitle(b).split(" ").filter(w => w.length > 3 && !COMMON_WORDS.has(w));
   const setB = new Set(wordsB);
   if (wordsA.length === 0 || wordsB.length === 0) return 0;
   const uniqueA = Array.from(new Set(wordsA));
@@ -816,7 +828,10 @@ function titleSimilarity(a: string, b: string): number {
   for (let i = 0; i < uniqueA.length; i++) {
     if (setB.has(uniqueA[i])) overlap++;
   }
-  return overlap / Math.min(uniqueA.length, wordsB.length);
+  // Require overlap in BOTH directions (not just min)
+  const ratioA = overlap / uniqueA.length;
+  const ratioB = overlap / new Set(wordsB).size;
+  return Math.min(ratioA, ratioB);
 }
 
 let recentTitlesCache: string[] = [];
@@ -856,7 +871,7 @@ async function articleExists(title: string): Promise<boolean> {
 
   const recentTitles = await loadRecentTitles();
   for (const existingTitle of recentTitles) {
-    if (titleSimilarity(title, existingTitle) >= 0.70) {
+    if (titleSimilarity(title, existingTitle) >= 0.85) {
       return true;
     }
   }
@@ -1050,7 +1065,7 @@ export async function runRssImport(): Promise<ImportResult> {
 
   // Track consecutive duplicates - if we hit 15 in a row, the rest are likely all old
   let consecutiveDuplicates = 0;
-  const MAX_CONSECUTIVE_DUPES = 15;
+  const MAX_CONSECUTIVE_DUPES = 30;
 
   // Step 2: Process each article (newest first)
   for (const link of articleLinks) {

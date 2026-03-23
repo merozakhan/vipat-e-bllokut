@@ -288,7 +288,7 @@ Sitemap: https://vipatebllokut.com/sitemap.xml
       rss += `  <language>sq</language>\n`;
       rss += `  <lastBuildDate>${now}</lastBuildDate>\n`;
       rss += `  <atom:link href="https://vipatebllokut.com/feed.xml" rel="self" type="application/rss+xml" />\n`;
-      rss += `  <image>\n    <url>https://files.manuscdn.com/user_upload_by_module/session_file/310419663030573139/dSMzXKooKwxKipAr.png</url>\n    <title>Vipat E Bllokut</title>\n    <link>https://vipatebllokut.com</link>\n  </image>\n`;
+      rss += `  <image>\n    <url>https://vipatebllokut.com/favicon.ico</url>\n    <title>Vipat E Bllokut</title>\n    <link>https://vipatebllokut.com</link>\n  </image>\n`;
 
       for (const article of recentArticles) {
         const pubDate = article.publishedAt ? new Date(article.publishedAt).toUTCString() : now;

@@ -49,7 +49,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const { data: allCategories } = trpc.categories.getAllWithCounts.useQuery();
-  const categories = allCategories?.filter(c => c.articleCount > 0);
+  const categories = allCategories?.filter(c => c.articleCount > 0 && c.slug !== "te-gjitha");
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);

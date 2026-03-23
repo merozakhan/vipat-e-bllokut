@@ -5,10 +5,11 @@ import AdminLayout from "./AdminLayout";
 
 export default function AdminDashboard() {
   const { data: articles } = trpc.admin.articlesList.useQuery({ limit: 5 });
+  const { data: allArticles } = trpc.admin.articlesList.useQuery({ limit: 100 });
   const { data: categories } = trpc.categories.getAllWithCounts.useQuery();
 
-  const totalArticles = articles?.length || 0;
-  const published = articles?.filter(a => a.status === "published").length || 0;
+  const totalArticles = allArticles?.length || 0;
+  const published = allArticles?.filter(a => a.status === "published").length || 0;
 
   return (
     <AdminLayout>

@@ -68,15 +68,16 @@ export default function AdminArticleForm() {
 
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        const filename = file.name.replace(/\.[^.]+$/, "") + "-" + Date.now();
-        const result = await uploadMutation.mutateAsync({ base64, filename });
-        setFeaturedImage(result.url);
-        toast.success("Image uploaded");
-      };
-      reader.readAsDataURL(file);
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+      const filename = file.name.replace(/\.[^.]+$/, "") + "-" + Date.now();
+      const result = await uploadMutation.mutateAsync({ base64, filename });
+      setFeaturedImage(result.url);
+      toast.success("Image uploaded");
     } catch (e: any) {
       toast.error("Upload failed: " + e.message);
     } finally {

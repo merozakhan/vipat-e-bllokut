@@ -16,7 +16,7 @@ interface SEOHeadProps {
 
 const SITE_NAME = "Vipat E Bllokut";
 const DEFAULT_DESCRIPTION = "Portali kryesor i lajmeve shqiptare. Lajme të fundit nga Shqipëria, Kosova dhe bota. Politikë, ekonomi, sport, kulturë, teknologji dhe më shumë.";
-const DEFAULT_IMAGE = "https://files.manuscdn.com/user_upload_by_module/session_file/310419663030573139/QipgFkGifGoFtIkn.png";
+const DEFAULT_IMAGE = "https://vipatebllokut.com/favicon.svg";
 const SITE_URL = "https://vipatebllokut.com";
 
 export default function SEOHead({
@@ -122,7 +122,7 @@ export default function SEOHead({
           "name": "Vipat E Bllokut",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://files.manuscdn.com/user_upload_by_module/session_file/310419663030573139/dSMzXKooKwxKipAr.png",
+            "url": "https://vipatebllokut.com/favicon.svg",
           },
         },
         "mainEntityOfPage": {

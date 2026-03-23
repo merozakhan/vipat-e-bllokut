@@ -157,7 +157,7 @@ export const appRouter = router({
       };
     }),
 
-    trigger: publicProcedure.mutation(async () => {
+    trigger: adminProcedure.mutation(async () => {
       const result = await triggerManualImport();
       return { success: !!result, result };
     }),

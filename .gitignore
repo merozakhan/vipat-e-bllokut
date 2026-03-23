@@ -109,8 +109,11 @@ temp/
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 
-# Manus debug logs
+# Manus debug logs and artifacts
 .manus-logs/
+.manus/
+__manus__/
+client/public/__manus__/
 
 # Attached assets (local only)
 attached_assets/

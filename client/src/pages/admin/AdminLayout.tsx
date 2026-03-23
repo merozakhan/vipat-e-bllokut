@@ -41,7 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {nav.map((item) => (
             <Link key={item.href} href={item.href}>
               <span className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-sans cursor-pointer transition-colors ${
-                location === item.href ? "bg-gold/10 text-gold font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-card"
+                (item.href === "/admin" ? location === "/admin" : location.startsWith(item.href)) ? "bg-gold/10 text-gold font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-card"
               }`}>
                 <item.icon className="w-4 h-4" />
                 {item.label}

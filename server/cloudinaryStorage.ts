@@ -16,22 +16,14 @@ import { v2 as cloudinary } from "cloudinary";
 
 let configured = false;
 
-// Watermark: dark semi-transparent banner at bottom with white text
+// Logo watermark overlay — pre-uploaded to Cloudinary as vipat-assets/vipat-watermark
 const WATERMARK_OVERLAY = {
-  overlay: {
-    font_family: "Lato",
-    font_size: 38,
-    font_weight: "bold",
-    letter_spacing: 4,
-    text: "  © VIPAT E BLLOKUT  ",
-  },
-  gravity: "south",
-  y: 0,
-  color: "#FFFFFF",
-  background: "rgb:000000AA",
-  width: 1.0,
-  crop: "scale",
-  flags: "relative",
+  overlay: "vipat-assets:vipat-watermark",
+  gravity: "south_east",
+  width: 130,
+  opacity: 45,
+  x: 10,
+  y: 10,
 };
 
 function ensureConfigured(): boolean {

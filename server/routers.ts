@@ -21,6 +21,7 @@ import {
   updateArticle,
   deleteArticle,
   clearAllArticles,
+  getArticlesByPlacement,
   setArticleCategories,
   getArticleCategories,
   getArticleBySlug,
@@ -60,6 +61,12 @@ export const appRouter = router({
       .input(z.object({ limit: z.number().max(50).optional() }))
       .query(async ({ input }) => {
         return await getTrendingArticles(input.limit || 10);
+      }),
+
+    getByPlacement: publicProcedure
+      .input(z.object({ placement: z.enum(["breaking", "trending", "hot", "most_read"]), limit: z.number().max(20).optional() }))
+      .query(async ({ input }) => {
+        return await getArticlesByPlacement(input.placement, input.limit || 10);
       }),
 
     getByCategorySlug: publicProcedure
@@ -238,12 +245,12 @@ export const appRouter = router({
         excerpt: z.string().optional(),
         featuredImage: z.string().optional(),
         status: z.enum(["draft", "published"]).optional(),
+        categoryIds: z.array(z.number()).optional(),
         homepagePlacement: z.enum(["breaking", "trending", "hot", "most_read"]).nullable().optional(),
         homepagePosition: z.number().min(1).max(5).nullable().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const status = input.status || "published";
-        // Generate slug
         const baseSlug = input.title
           .toLowerCase()
           .replace(/[^a-z0-9\s-]/g, "")
@@ -273,10 +280,14 @@ export const appRouter = router({
 
         const article = await getArticleBySlug(slug);
         if (article) {
-          // Auto-assign to "Të Gjitha" category
-          const teGjitha = await getCategoryBySlug("te-gjitha");
-          if (teGjitha) {
-            await setArticleCategories(article.id, [teGjitha.id]);
+          // Use selected categories, fallback to "Të Gjitha"
+          if (input.categoryIds && input.categoryIds.length > 0) {
+            await setArticleCategories(article.id, input.categoryIds);
+          } else {
+            const teGjitha = await getCategoryBySlug("te-gjitha");
+            if (teGjitha) {
+              await setArticleCategories(article.id, [teGjitha.id]);
+            }
           }
         }
 
@@ -291,12 +302,16 @@ export const appRouter = router({
         excerpt: z.string().optional(),
         featuredImage: z.string().nullable().optional(),
         status: z.enum(["draft", "published"]).optional(),
+        categoryIds: z.array(z.number()).optional(),
         homepagePlacement: z.enum(["breaking", "trending", "hot", "most_read"]).nullable().optional(),
         homepagePosition: z.number().min(1).max(5).nullable().optional(),
       }))
       .mutation(async ({ input }) => {
-        const { id, ...data } = input;
+        const { id, categoryIds, ...data } = input;
         await updateArticle(id, data as any);
+        if (categoryIds) {
+          await setArticleCategories(id, categoryIds);
+        }
         return { success: true };
       }),
 

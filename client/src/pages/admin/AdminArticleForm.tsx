@@ -24,12 +24,13 @@ export default function AdminArticleForm() {
   const [excerpt, setExcerpt] = useState("");
   const [featuredImage, setFeaturedImage] = useState("");
   const [status, setStatus] = useState<"draft" | "published">("published");
-  const [selectedCats] = useState<number[]>([]);
+  const [selectedCats, setSelectedCats] = useState<number[]>([]);
   const [placement, setPlacement] = useState("");
   const [position, setPosition] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
 
+  const { data: allCategories } = trpc.categories.getAll.useQuery();
   const { data: mediaFiles } = trpc.admin.mediaList.useQuery(
     { limit: 100 },
     { enabled: showMediaPicker }
@@ -61,6 +62,9 @@ export default function AdminArticleForm() {
       setStatus(existing.status as "draft" | "published");
       setPlacement(existing.homepagePlacement || "");
       setPosition(existing.homepagePosition || 1);
+      if (existing.categories?.length) {
+        setSelectedCats(existing.categories.map((c: any) => c.id));
+      }
     }
   }, [existing]);
 
@@ -241,6 +245,32 @@ export default function AdminArticleForm() {
             className="w-full px-4 py-2.5 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans text-sm resize-y"
             placeholder="Përmbledhje e shkurtër (gjenerohet automatikisht nëse lihet bosh)"
           />
+        </div>
+
+        {/* Categories */}
+        <div>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Kategoritë</label>
+          <div className="flex flex-wrap gap-2">
+            {allCategories?.filter(c => c.slug !== "te-gjitha").map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCats(prev =>
+                  prev.includes(cat.id) ? prev.filter(id => id !== cat.id) : [...prev, cat.id]
+                )}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-sans border transition-colors ${
+                  selectedCats.includes(cat.id)
+                    ? "bg-gold/20 border-gold/50 text-gold"
+                    : "bg-card border-border/50 text-muted-foreground hover:border-gold/30 hover:text-foreground"
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+          {selectedCats.length === 0 && (
+            <p className="text-[10px] text-muted-foreground font-sans mt-1">Zgjidh të paktën një kategori</p>
+          )}
         </div>
 
         {/* Homepage Placement */}

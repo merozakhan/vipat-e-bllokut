@@ -1,13 +1,37 @@
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { Calendar, Clock, ArrowRight, TrendingUp, Flame, Zap, ChevronRight } from "lucide-react";
+import { Calendar, Clock, ArrowRight, TrendingUp, Flame, Zap, ChevronRight, Eye } from "lucide-react";
 import Layout from "@/components/Layout";
 import ArticleImage from "@/components/ArticleImage";
 import SEOHead from "@/components/SEOHead";
 
 export default function Home() {
-  const { data: trendingArticles, isLoading: trendingLoading } = trpc.articles.getTrending.useQuery({ limit: 8 });
-  const { data: latestArticles, isLoading: latestLoading } = trpc.articles.getPublished.useQuery({ limit: 20 });
+  // Placement-based queries
+  const { data: breakingArticles } = trpc.articles.getByPlacement.useQuery({ placement: "breaking", limit: 3 });
+  const { data: trendingArticles } = trpc.articles.getByPlacement.useQuery({ placement: "trending", limit: 5 });
+  const { data: hotArticles } = trpc.articles.getByPlacement.useQuery({ placement: "hot", limit: 4 });
+  const { data: mostReadArticles } = trpc.articles.getByPlacement.useQuery({ placement: "most_read", limit: 5 });
+
+  // Fallback: auto-trending by engagement score
+  const { data: autoTrending } = trpc.articles.getTrending.useQuery({ limit: 8 });
+  const { data: latestArticles, isLoading } = trpc.articles.getPublished.useQuery({ limit: 20 });
+
+  // Use placement articles if available, otherwise fallback to auto-trending
+  const heroArticle = breakingArticles?.[0] || autoTrending?.[0];
+  const secondaryHero = breakingArticles?.slice(1, 3) || [];
+  const trendingList = (trendingArticles?.length ? trendingArticles : autoTrending?.slice(1, 6)) || [];
+  const hotList = (hotArticles?.length ? hotArticles : autoTrending?.slice(1, 3)) || [];
+  const mostReadList = (mostReadArticles?.length ? mostReadArticles : autoTrending?.slice(3, 8)) || [];
+
+  // Latest articles excluding those already shown
+  const shownIds = new Set([
+    heroArticle?.id,
+    ...secondaryHero.map(a => a.id),
+    ...trendingList.map(a => a.id),
+    ...hotList.map(a => a.id),
+    ...mostReadList.map(a => a.id),
+  ].filter(Boolean));
+  const filteredLatest = latestArticles?.filter(a => !shownIds.has(a.id)) || [];
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "";
@@ -39,17 +63,6 @@ export default function Home() {
     return `${days} ditë më parë`;
   };
 
-  // Hero = top trending article
-  const heroArticle = trendingArticles?.[0];
-  // Secondary trending (next 2)
-  const secondaryTrending = trendingArticles?.slice(1, 3) || [];
-  // Sidebar trending (next 5)
-  const sidebarTrending = trendingArticles?.slice(3, 8) || [];
-
-  // Latest articles excluding those already shown in trending
-  const trendingIds = new Set(trendingArticles?.map(a => a.id) || []);
-  const filteredLatest = latestArticles?.filter(a => !trendingIds.has(a.id)) || [];
-
   return (
     <Layout>
       <SEOHead
@@ -57,7 +70,8 @@ export default function Home() {
         description="Portali kryesor i lajmeve shqiptare. Lajme të fundit nga Shqipëria, Kosova dhe bota. Politikë, ekonomi, sport, kulturë, teknologji dhe më shumë."
         url="/"
       />
-      {/* ═══ HERO: Most Controversial Article ═══ */}
+
+      {/* ═══ HERO: Breaking / Top Article ═══ */}
       {heroArticle && (
         <section className="border-b border-red-900/30">
           <div className="container py-4 md:py-8">
@@ -76,10 +90,17 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
                       <div className="flex items-center gap-2 mb-2 md:mb-3">
-                        <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] md:text-xs font-bold uppercase tracking-wider rounded animate-pulse font-sans">
-                          <Flame className="w-3 h-3 inline mr-1" />
-                          Trending
-                        </span>
+                        {breakingArticles?.length ? (
+                          <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] md:text-xs font-bold uppercase tracking-wider rounded animate-pulse font-sans">
+                            <Zap className="w-3 h-3 inline mr-1" />
+                            Breaking
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] md:text-xs font-bold uppercase tracking-wider rounded animate-pulse font-sans">
+                            <Flame className="w-3 h-3 inline mr-1" />
+                            Trending
+                          </span>
+                        )}
                         <span className="px-2 py-0.5 bg-white/10 backdrop-blur-sm text-white/90 text-[10px] md:text-xs font-medium rounded font-sans">
                           {getTimeAgo(heroArticle.publishedAt)}
                         </span>
@@ -101,10 +122,10 @@ export default function Home() {
                   </div>
                 </Link>
 
-                {/* Secondary Trending - 2 cards below hero */}
-                {secondaryTrending.length > 0 && (
+                {/* Secondary Hero / Hot Articles */}
+                {hotList.length > 0 && (
                   <div className="grid grid-cols-2 gap-3 md:gap-4 mt-3 md:mt-4">
-                    {secondaryTrending.map((article) => (
+                    {hotList.slice(0, 2).map((article) => (
                       <Link key={article.id} href={`/article/${article.slug}`}>
                         <div className="group relative overflow-hidden rounded-lg cursor-pointer">
                           <div className="aspect-[16/9] overflow-hidden relative">
@@ -116,8 +137,8 @@ export default function Home() {
                           </div>
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                           <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4">
-                            <span className="px-1.5 py-0.5 bg-red-600/80 text-white text-[8px] md:text-[10px] font-bold uppercase tracking-wider rounded font-sans mb-1 inline-block">
-                              <Zap className="w-2.5 h-2.5 inline mr-0.5" />
+                            <span className="px-1.5 py-0.5 bg-orange-600/80 text-white text-[8px] md:text-[10px] font-bold uppercase tracking-wider rounded font-sans mb-1 inline-block">
+                              <Flame className="w-2.5 h-2.5 inline mr-0.5" />
                               Hot
                             </span>
                             <h3 className="text-xs md:text-sm font-bold text-white leading-snug line-clamp-2 group-hover:text-gold-light transition-colors">
@@ -134,15 +155,15 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Sidebar: Trending List */}
+              {/* Sidebar: Më Të Lexuarat */}
               <div className="lg:col-span-4">
                 <div className="flex items-center gap-2 mb-3 md:mb-4">
                   <div className="w-1 h-6 bg-red-600 rounded-full" />
-                  <Flame className="w-4 h-4 text-red-500" />
+                  <Eye className="w-4 h-4 text-red-500" />
                   <h3 className="text-sm font-bold text-red-500 uppercase tracking-wider font-sans">Më Të Lexuarat</h3>
                 </div>
                 <div className="flex flex-col gap-2 md:gap-3">
-                  {sidebarTrending.map((article, index) => (
+                  {mostReadList.map((article, index) => (
                     <Link key={article.id} href={`/article/${article.slug}`}>
                       <div className="group flex gap-3 p-2.5 md:p-3 bg-card/50 rounded-lg border border-border/30 hover:border-red-600/40 hover:bg-card transition-all cursor-pointer">
                         <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-red-600/10 border border-red-600/30 flex items-center justify-center">
@@ -158,7 +179,6 @@ export default function Home() {
                             <span>{getReadingTime(article.content)}</span>
                           </div>
                         </div>
-                        {/* Small thumbnail */}
                         <div className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden hidden sm:block">
                           <ArticleImage
                             src={article.featuredImage}
@@ -176,18 +196,63 @@ export default function Home() {
         </section>
       )}
 
+      {/* ═══ TRENDING Section ═══ */}
+      {trendingList.length > 0 && (
+        <section className="py-6 md:py-10 border-b border-border/30">
+          <div className="container">
+            <div className="flex items-center gap-2 mb-4 md:mb-6">
+              <div className="w-1 h-7 bg-purple-500 rounded-full" />
+              <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-purple-500" />
+              <h2 className="text-lg md:text-2xl font-black text-foreground">Trending</h2>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+              {trendingList.slice(0, 4).map((article) => (
+                <Link key={article.id} href={`/article/${article.slug}`}>
+                  <div className="group bg-card/50 rounded-lg overflow-hidden border border-border/30 hover:border-purple-500/30 transition-all cursor-pointer h-full flex flex-col">
+                    <div className="relative aspect-[16/10] overflow-hidden">
+                      <ArticleImage
+                        src={article.featuredImage}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        showOverlay
+                      />
+                      <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-purple-600/80 text-white text-[8px] font-bold uppercase tracking-wider rounded font-sans">
+                        <TrendingUp className="w-2.5 h-2.5 inline mr-0.5" />
+                        Trending
+                      </span>
+                    </div>
+                    <div className="p-2.5 md:p-4 flex-1 flex flex-col">
+                      <h3 className="text-xs md:text-sm font-bold text-card-foreground leading-snug line-clamp-2 group-hover:text-purple-400 transition-colors">
+                        {article.title}
+                      </h3>
+                      <div className="flex items-center justify-between text-[9px] md:text-[10px] text-muted-foreground mt-auto pt-2 border-t border-border/30 font-sans">
+                        <span>{getTimeAgo(article.publishedAt)}</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5 text-purple-500/50" />
+                          {getReadingTime(article.content)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ═══ LATEST NEWS Grid ═══ */}
       <section className="py-6 md:py-12">
         <div className="container">
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-2">
               <div className="w-1 h-7 bg-gold rounded-full" />
-              <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-gold" />
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-gold" />
               <h2 className="text-lg md:text-2xl font-black text-foreground">Lajmet e Fundit</h2>
             </div>
           </div>
 
-          {latestLoading || trendingLoading ? (
+          {isLoading ? (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-card rounded-lg overflow-hidden border border-border/30">

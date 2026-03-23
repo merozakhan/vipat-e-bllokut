@@ -199,6 +199,28 @@ export async function clearAllArticles() {
   await db.delete(articles);
 }
 
+export async function getArticlesByPlacement(placement: string, limit: number = 10) {
+  const cacheKey = `placement:${placement}:${limit}`;
+  const cached = getCached<Awaited<ReturnType<typeof getAllArticles>>>(cacheKey);
+  if (cached) return cached;
+
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(articles)
+    .where(and(
+      eq(articles.status, "published"),
+      eq(articles.homepagePlacement, placement as any),
+    ))
+    .orderBy(articles.homepagePosition, desc(articles.publishedAt))
+    .limit(limit);
+
+  setCache(cacheKey, result, 2 * 60 * 1000); // 2 min cache
+  return result;
+}
+
 export async function searchArticles(query: string, limit: number = 20) {
   const db = await getDb();
   if (!db) return [];

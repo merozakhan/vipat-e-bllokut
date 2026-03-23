@@ -155,7 +155,8 @@ export default function AdminHealth() {
   const { data: blockedWords } = trpc.admin.blockedWordsGet.useQuery();
   const utils = trpc.useUtils();
   const updateBlockedWords = trpc.admin.blockedWordsSet.useMutation({
-    onSuccess: () => utils.admin.blockedWordsGet.invalidate(),
+    onSuccess: () => { utils.admin.blockedWordsGet.invalidate(); toast.success("Blocked words updated"); },
+    onError: (e) => toast.error("Failed: " + e.message),
   });
 
   const fetchHealth = async () => {
@@ -441,7 +442,7 @@ export default function AdminHealth() {
                 <span key={word} className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-xs font-semibold text-red-400 font-sans">
                   {word}
                   <button
-                    onClick={() => updateBlockedWords.mutate({ words: blockedWords.filter(w => w !== word) })}
+                    onClick={() => updateBlockedWords.mutate({ words: (blockedWords || []).filter(w => w !== word) })}
                     className="hover:text-red-300 ml-0.5"
                   >
                     <X className="w-3 h-3" />
@@ -455,8 +456,14 @@ export default function AdminHealth() {
             <form
               onSubmit={e => {
                 e.preventDefault();
-                if (newWord.trim() && blockedWords) {
-                  updateBlockedWords.mutate({ words: [...blockedWords, newWord.trim()] });
+                const word = newWord.trim().toLowerCase();
+                if (word) {
+                  const current = blockedWords || [];
+                  if (current.includes(word)) {
+                    toast.error("Word already blocked");
+                    return;
+                  }
+                  updateBlockedWords.mutate({ words: [...current, word] });
                   setNewWord("");
                 }
               }}

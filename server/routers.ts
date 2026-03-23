@@ -269,7 +269,7 @@ export const appRouter = router({
           title: input.title,
           slug,
           content: input.content,
-          excerpt: input.excerpt || input.content.replace(/<[^>]*>/g, "").substring(0, 300) + "...",
+          excerpt: null,
           featuredImage: input.featuredImage || null,
           status,
           authorId: ctx.user.id,

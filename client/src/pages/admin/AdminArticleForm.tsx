@@ -21,7 +21,6 @@ export default function AdminArticleForm() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [excerpt, setExcerpt] = useState("");
   const [featuredImage, setFeaturedImage] = useState("");
   const [status, setStatus] = useState<"draft" | "published">("published");
   const [selectedCats, setSelectedCats] = useState<number[]>([]);
@@ -34,6 +33,12 @@ export default function AdminArticleForm() {
   const { data: mediaFiles } = trpc.admin.mediaList.useQuery(
     { limit: 100 },
     { enabled: showMediaPicker }
+  );
+
+  // Get articles in the selected placement to show occupied positions
+  const { data: placementArticles } = trpc.articles.getByPlacement.useQuery(
+    { placement: placement as any, limit: 10 },
+    { enabled: !!placement }
   );
 
   const { data: existing } = trpc.admin.articlesGetById.useQuery(
@@ -52,21 +57,35 @@ export default function AdminArticleForm() {
   });
   const uploadMutation = trpc.admin.uploadImage.useMutation();
 
+  // Find "Të Gjitha" category ID
+  const teGjithaId = allCategories?.find(c => c.slug === "te-gjitha")?.id;
+
+  // Pre-select "Të Gjitha" on mount for new articles
+  useEffect(() => {
+    if (!isEdit && teGjithaId && !selectedCats.includes(teGjithaId)) {
+      setSelectedCats(prev => prev.includes(teGjithaId) ? prev : [teGjithaId, ...prev]);
+    }
+  }, [teGjithaId, isEdit]);
+
   // Load existing article data for edit
   useEffect(() => {
     if (existing) {
       setTitle(existing.title);
       setContent(existing.content);
-      setExcerpt(existing.excerpt || "");
       setFeaturedImage(existing.featuredImage || "");
       setStatus(existing.status as "draft" | "published");
       setPlacement(existing.homepagePlacement || "");
       setPosition(existing.homepagePosition || 1);
       if (existing.categories?.length) {
-        setSelectedCats(existing.categories.map((c: any) => c.id));
+        const catIds = existing.categories.map((c: any) => c.id);
+        // Ensure te-gjitha is always included
+        if (teGjithaId && !catIds.includes(teGjithaId)) {
+          catIds.unshift(teGjithaId);
+        }
+        setSelectedCats(catIds);
       }
     }
-  }, [existing]);
+  }, [existing, teGjithaId]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -101,7 +120,6 @@ export default function AdminArticleForm() {
     const data = {
       title,
       content,
-      excerpt: excerpt || undefined,
       featuredImage: featuredImage || undefined,
       status,
       categoryIds: selectedCats.length > 0 ? selectedCats : undefined,
@@ -115,6 +133,16 @@ export default function AdminArticleForm() {
       createMutation.mutate(data);
     }
   };
+
+  // Build occupied positions map for selected placement
+  const occupiedPositions = new Map<number, string>();
+  if (placementArticles) {
+    for (const a of placementArticles) {
+      if (a.homepagePosition && (!isEdit || a.id !== parseInt(params.id || "0"))) {
+        occupiedPositions.set(a.homepagePosition, a.title);
+      }
+    }
+  }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
@@ -235,22 +263,21 @@ export default function AdminArticleForm() {
           />
         </div>
 
-        {/* Excerpt */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Përshkrimi i shkurtër (opsional)</label>
-          <textarea
-            value={excerpt}
-            onChange={(e) => setExcerpt(e.target.value)}
-            rows={2}
-            className="w-full px-4 py-2.5 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans text-sm resize-y"
-            placeholder="Përmbledhje e shkurtër (gjenerohet automatikisht nëse lihet bosh)"
-          />
-        </div>
-
         {/* Categories */}
         <div>
           <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Kategoritë</label>
           <div className="flex flex-wrap gap-2">
+            {/* Të Gjitha — always checked, not removable */}
+            {allCategories?.filter(c => c.slug === "te-gjitha").map((cat) => (
+              <div
+                key={cat.id}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold font-sans border bg-gold/20 border-gold/50 text-gold cursor-not-allowed opacity-80"
+                title="Gjithmonë e zgjedhur"
+              >
+                {cat.name} ✓
+              </div>
+            ))}
+            {/* Other categories — toggleable */}
             {allCategories?.filter(c => c.slug !== "te-gjitha").map((cat) => (
               <button
                 key={cat.id}
@@ -268,9 +295,6 @@ export default function AdminArticleForm() {
               </button>
             ))}
           </div>
-          {selectedCats.length === 0 && (
-            <p className="text-[10px] text-muted-foreground font-sans mt-1">Zgjidh të paktën një kategori</p>
-          )}
         </div>
 
         {/* Homepage Placement */}
@@ -279,7 +303,7 @@ export default function AdminArticleForm() {
             <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Seksioni i Faqes Kryesore</label>
             <select
               value={placement}
-              onChange={(e) => setPlacement(e.target.value)}
+              onChange={(e) => { setPlacement(e.target.value); setPosition(1); }}
               className="w-full px-4 py-2.5 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans text-sm"
             >
               {PLACEMENTS.map((p) => (
@@ -289,16 +313,36 @@ export default function AdminArticleForm() {
           </div>
           {placement && (
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Pozicioni (1-5)</label>
-              <select
-                value={position}
-                onChange={(e) => setPosition(parseInt(e.target.value))}
-                className="w-full px-4 py-2.5 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans text-sm"
-              >
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Pozicioni</label>
+              <div className="flex flex-col gap-1.5">
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const occupied = occupiedPositions.get(n);
+                  const isSelected = position === n;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setPosition(n)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-sans border transition-colors text-left ${
+                        isSelected
+                          ? "bg-gold/20 border-gold/50 text-gold"
+                          : occupied
+                            ? "bg-card border-border/50 text-muted-foreground/60"
+                            : "bg-card border-border/50 text-foreground hover:border-gold/30"
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 text-[10px] font-bold ${isSelected ? 'border-gold text-gold' : 'border-border'}">
+                        {n}
+                      </span>
+                      {occupied ? (
+                        <span className="truncate text-[10px]">Zënë: {occupied.substring(0, 40)}{occupied.length > 40 ? "…" : ""}</span>
+                      ) : (
+                        <span className="text-[10px]">I lirë</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

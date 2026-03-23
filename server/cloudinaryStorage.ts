@@ -16,6 +16,21 @@ import { v2 as cloudinary } from "cloudinary";
 
 let configured = false;
 
+// Watermark overlay transformation — bottom-right text stamp
+const WATERMARK_OVERLAY = {
+  overlay: {
+    font_family: "Arial",
+    font_size: 18,
+    font_weight: "bold",
+    text: "Vipat e Bllokut",
+  },
+  gravity: "south_east",
+  x: 15,
+  y: 15,
+  color: "#FFFFFF",
+  opacity: 70,
+};
+
 function ensureConfigured(): boolean {
   if (configured) return true;
 
@@ -86,7 +101,8 @@ export async function uploadImageFromUrl(imageUrl: string, folder: string = "vip
           folder,
           resource_type: "image",
           transformation: [
-            { quality: "auto", fetch_format: "auto" }, // auto-optimize
+            { quality: "auto", fetch_format: "auto" },
+            WATERMARK_OVERLAY,
           ],
         },
         (error, result) => {
@@ -118,6 +134,7 @@ export async function uploadImageBase64(base64Data: string, filename: string, fo
         folder,
         public_id: filename,
         resource_type: "image",
+        transformation: [WATERMARK_OVERLAY],
       }
     );
     return result.secure_url;

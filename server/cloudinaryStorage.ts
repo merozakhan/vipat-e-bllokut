@@ -16,14 +16,12 @@ import { v2 as cloudinary } from "cloudinary";
 
 let configured = false;
 
-// Logo watermark overlay — pre-uploaded to Cloudinary as vipat-assets/vipat-watermark
+// Logo watermark overlay — centered, large, semi-transparent
 const WATERMARK_OVERLAY = {
   overlay: "vipat-assets:vipat-watermark",
-  gravity: "south_east",
-  width: 130,
-  opacity: 45,
-  x: 10,
-  y: 10,
+  gravity: "center",
+  width: 350,
+  opacity: 35,
 };
 
 function ensureConfigured(): boolean {

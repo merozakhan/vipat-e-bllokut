@@ -8,10 +8,9 @@ import RichTextEditor from "@/components/RichTextEditor";
 
 const PLACEMENTS = [
   { value: "", label: "Asnjë" },
-  { value: "breaking", label: "Breaking" },
-  { value: "trending", label: "Trending" },
-  { value: "hot", label: "Hot" },
-  { value: "most_read", label: "Më të lexuarat" },
+  { value: "breaking", label: "Breaking (Hero — Pozicioni 1 = lajmi kryesor)" },
+  { value: "hot", label: "Hot (2 karta nën hero)" },
+  { value: "most_read", label: "Më të lexuarat (lista anësore)" },
 ];
 
 export default function AdminArticleForm() {

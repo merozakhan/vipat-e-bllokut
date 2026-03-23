@@ -286,7 +286,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="text-center py-16">
-              <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <Layers className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
               <h3 className="text-lg font-bold text-foreground mb-2">Asnjë Lajm Akoma</h3>
               <p className="text-muted-foreground font-sans text-sm">Lajmet e reja po vijnë së shpejti.</p>
             </div>

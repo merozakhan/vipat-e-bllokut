@@ -21,7 +21,7 @@ function BreakingNewsTicker() {
       <div className="container flex items-center">
         <div className="flex-shrink-0 bg-accent text-accent-foreground px-4 py-2 text-xs font-bold uppercase tracking-widest font-sans flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-accent-foreground pulse-dot" />
-          Breaking
+          Lajm i Fundit
         </div>
         <div className="overflow-hidden flex-1 py-2 ml-4">
           <div className="animate-ticker flex whitespace-nowrap">
@@ -70,11 +70,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const newsletterMutation = trpc.contact.newsletter.useMutation({
     onSuccess: () => {
-      toast.success("Thank you for subscribing! You'll receive our latest news updates.");
+      toast.success("Faleminderit për abonimin! Do të merrni lajmet më të fundit.");
       setNewsletterEmail("");
     },
     onError: () => {
-      toast.error("Something went wrong. Please try again.");
+      toast.error("Diçka shkoi keq. Provoni përsëri.");
     },
   });
 
@@ -86,10 +86,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const mainNav = [
-    { href: "/", label: "Home" },
-    { href: "/about", label: "About" },
-    { href: "/advertise", label: "Advertise" },
-    { href: "/contact", label: "Contact" },
+    { href: "/", label: "Kryefaqja" },
+    { href: "/about", label: "Rreth Nesh" },
+    { href: "/advertise", label: "Reklamoni" },
+    { href: "/contact", label: "Kontakt" },
   ];
 
   return (
@@ -208,13 +208,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search articles..."
+                    placeholder="Kërko artikuj..."
                     className="w-full pl-12 pr-4 py-3 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm input-premium"
                     autoFocus
                   />
                 </div>
                 <Button type="submit" className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans">
-                  Search
+                  Kërko
                 </Button>
               </form>
             </div>
@@ -245,7 +245,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {/* Categories in mobile menu */}
               {categories && categories.length > 0 && (
                 <div className="border-t border-border/50 pt-4 mb-4">
-                  <p className="px-4 text-[10px] text-gold/60 uppercase tracking-[0.2em] font-sans font-semibold mb-2">Categories</p>
+                  <p className="px-4 text-[10px] text-gold/60 uppercase tracking-[0.2em] font-sans font-semibold mb-2">Kategoritë</p>
                   <div className="grid grid-cols-2 gap-1">
                     {categories.map((cat) => (
                       <Link key={cat.id} href={`/category/${cat.slug}`}>
@@ -260,13 +260,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
               {/* Legal & Social in mobile menu */}
               <div className="border-t border-border/50 pt-4">
-                <p className="px-4 text-[10px] text-gold/60 uppercase tracking-[0.2em] font-sans font-semibold mb-2">Legal</p>
+                <p className="px-4 text-[10px] text-gold/60 uppercase tracking-[0.2em] font-sans font-semibold mb-2">Ligjore</p>
                 <div className="grid grid-cols-2 gap-1 mb-4">
-                  <Link href="/privacy-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Privacy Policy</span></Link>
-                  <Link href="/terms"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Terms of Service</span></Link>
+                  <Link href="/privacy-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Politika e Privatësisë</span></Link>
+                  <Link href="/terms"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Kushtet e Shërbimit</span></Link>
                   <Link href="/gdpr"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">GDPR</span></Link>
-                  <Link href="/cookie-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Cookie Policy</span></Link>
-                  <Link href="/editorial-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Editorial Policy</span></Link>
+                  <Link href="/cookie-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Politika e Cookies</span></Link>
+                  <Link href="/editorial-policy"><span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold rounded-lg transition-colors">Politika Editoriale</span></Link>
                 </div>
                 <a
                   href="https://www.instagram.com/vipat_e_bllokut_al"
@@ -275,7 +275,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   className="flex items-center gap-2 px-4 py-3 text-sm text-foreground/70 hover:text-gold font-sans"
                 >
                   <Instagram className="w-4 h-4" />
-                  Follow us on Instagram
+                  Na ndiqni në Instagram
                 </a>
               </div>
             </div>
@@ -325,25 +325,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm mb-5">
               <Mail className="w-3.5 h-3.5 text-gold" />
-              <span className="text-[11px] text-white/80 uppercase tracking-[0.2em] font-sans font-semibold">Stay Informed</span>
+              <span className="text-[11px] text-white/80 uppercase tracking-[0.2em] font-sans font-semibold">Qëndroni të Informuar</span>
             </div>
             <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
-              Subscribe to Our Newsletter
+              Abonohu në Buletinin Tonë
             </h3>
             <p className="text-sm text-white/60 font-sans mb-6 max-w-md mx-auto">
-              Get the latest Albanian news delivered directly to your inbox every morning. No spam, unsubscribe at any time.
+              Merrni lajmet më të fundit shqiptare direkt në emailin tuaj çdo mëngjes. Pa spam, çabonohu në çdo kohë.
             </p>
             <form onSubmit={handleNewsletter} className="flex flex-col sm:flex-row items-center gap-3 max-w-lg mx-auto">
               <input
                 type="email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Enter your email address"
+                placeholder="Shkruani adresën tuaj email"
                 className="w-full sm:flex-1 px-5 py-3.5 bg-white/10 backdrop-blur-sm text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm placeholder:text-white/40"
                 required
               />
               <Button type="submit" className="w-full sm:w-auto bg-gold hover:bg-gold-dark text-[oklch(0.15_0.01_250)] font-sans px-8 py-3.5 text-sm uppercase tracking-wider font-bold rounded-lg">
-                Subscribe
+                Abonohu
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </form>
@@ -365,7 +365,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 Vipat E Bllokut
               </h3>
               <p className="text-sm text-white/40 font-sans leading-relaxed">
-                Albania's premier digital news and media platform. Delivering truth, insight, and perspective to the Albanian diaspora worldwide since 2026.
+                Platforma kryesore dixhitale e lajmeve dhe medias shqiptare. Sjellim të vërtetën, analizën dhe perspektivën për diasporën shqiptare në të gjithë botën që nga viti 2026.
               </p>
             </div>
             <a
@@ -385,7 +385,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
                 <Newspaper className="w-3.5 h-3.5" />
-                Categories
+                Kategoritë
               </h4>
               <div className="space-y-3 font-sans">
                 {categories?.map((cat) => (
@@ -402,27 +402,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
                 <Users className="w-3.5 h-3.5" />
-                Company
+                Kompania
               </h4>
               <div className="space-y-3 font-sans">
                 <Link href="/about">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    About Us
+                    Rreth Nesh
                   </span>
                 </Link>
                 <Link href="/contact">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Contact
+                    Kontakt
                   </span>
                 </Link>
                 <Link href="/advertise">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Advertise
+                    Reklamoni
                   </span>
                 </Link>
                 <Link href="/editorial-policy">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Editorial Policy
+                    Politika Editoriale
                   </span>
                 </Link>
               </div>
@@ -432,27 +432,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
                 <Shield className="w-3.5 h-3.5" />
-                Legal
+                Ligjore
               </h4>
               <div className="space-y-3 font-sans">
                 <Link href="/privacy-policy">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Privacy Policy
+                    Politika e Privatësisë
                   </span>
                 </Link>
                 <Link href="/terms">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Terms of Service
+                    Kushtet e Shërbimit
                   </span>
                 </Link>
                 <Link href="/gdpr">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    GDPR Compliance
+                    Përputhshmëria GDPR
                   </span>
                 </Link>
                 <Link href="/cookie-policy">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Cookie Policy
+                    Politika e Cookies
                   </span>
                 </Link>
               </div>
@@ -462,27 +462,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
                 <BookOpen className="w-3.5 h-3.5" />
-                Resources
+                Burime
               </h4>
               <div className="space-y-3 font-sans">
                 <Link href="/search">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Search Articles
+                    Kërko Artikuj
                   </span>
                 </Link>
                 <Link href="/editorial-policy">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Editorial Standards
+                    Standardet Editoriale
                   </span>
                 </Link>
                 <Link href="/advertise">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Media Kit
+                    Paketa Mediatike
                   </span>
                 </Link>
                 <Link href="/contact">
                   <span className="block text-[13px] text-white/40 hover:text-gold hover:translate-x-1 transition-all">
-                    Submit a Tip
+                    Dërgo një Këshillë
                   </span>
                 </Link>
               </div>
@@ -492,7 +492,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="col-span-2">
               <h4 className="text-[11px] font-bold text-gold uppercase tracking-[0.2em] mb-5 font-sans flex items-center gap-2">
                 <Megaphone className="w-3.5 h-3.5" />
-                Contact Us
+                Na Kontaktoni
               </h4>
               <div className="space-y-4 font-sans">
                 <div className="flex items-start gap-3">
@@ -528,8 +528,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Globe className="w-4 h-4 text-gold/70" />
                   </div>
                   <span className="text-[13px] text-white/50">
-                    Company No: 17079235<br />
-                    Registered in England & Wales
+                    Nr. Kompanisë: 17079235<br />
+                    Regjistruar në Angli dhe Uells
                   </span>
                 </div>
               </div>
@@ -543,19 +543,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
                 <p className="text-[11px] text-white/30 font-sans">
-                  &copy; {new Date().getFullYear()} Vipat E Bllokut Ltd. All rights reserved.
+                  &copy; {new Date().getFullYear()} Vipat E Bllokut Ltd. Të gjitha të drejtat e rezervuara.
                 </p>
                 <span className="hidden sm:block text-white/10">|</span>
                 <p className="text-[11px] text-white/20 font-sans">
-                  UK Company Registration No: 17079235 | Registered in England & Wales
+                  Nr. Regjistrimit: 17079235 | Regjistruar në Angli dhe Uells
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-white/30 font-sans">
                 <Link href="/privacy-policy">
-                  <span className="hover:text-gold transition-colors">Privacy</span>
+                  <span className="hover:text-gold transition-colors">Privatësia</span>
                 </Link>
                 <Link href="/terms">
-                  <span className="hover:text-gold transition-colors">Terms</span>
+                  <span className="hover:text-gold transition-colors">Kushtet</span>
                 </Link>
                 <Link href="/cookie-policy">
                   <span className="hover:text-gold transition-colors">Cookies</span>
@@ -564,7 +564,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <span className="hover:text-gold transition-colors">GDPR</span>
                 </Link>
                 <Link href="/editorial-policy">
-                  <span className="hover:text-gold transition-colors">Editorial</span>
+                  <span className="hover:text-gold transition-colors">Editoriale</span>
                 </Link>
               </div>
             </div>

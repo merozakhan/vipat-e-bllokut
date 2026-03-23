@@ -16,13 +16,13 @@ export default function About() {
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-[2px] bg-gold" />
-              <span className="text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">About Us</span>
+              <span className="text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Rreth Nesh</span>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
-              The Voice of <span className="text-gradient-gold">Albania</span>
+              Zëri i <span className="text-gradient-gold">Shqipërisë</span>
             </h1>
             <p className="text-lg text-muted-foreground font-sans leading-relaxed">
-              Vipat E Bllokut is a premium news and media company dedicated to delivering accurate, timely, and insightful coverage of Albania and the Albanian diaspora worldwide. Registered in the United Kingdom, we combine international journalistic standards with deep local expertise.
+              Vipat E Bllokut është një kompani e nivelit të lartë e lajmeve dhe medias, e dedikuar në ofrimin e mbulimit të saktë, të shpejtë dhe analitik për Shqipërinë dhe diasporën shqiptare në të gjithë botën. E regjistruar në Mbretërinë e Bashkuar, ne kombinojmë standardet ndërkombëtare të gazetarisë me ekspertizë të thellë vendore.
             </p>
           </div>
         </div>
@@ -37,13 +37,13 @@ export default function About() {
                 <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center">
                   <Target className="w-6 h-6 text-gold" />
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Our Mission</h2>
+                <h2 className="text-2xl font-bold text-foreground">Misioni Ynë</h2>
               </div>
               <p className="text-muted-foreground font-sans leading-relaxed mb-4">
-                To provide the Albanian community with reliable, unbiased, and comprehensive news coverage that informs, educates, and empowers. We believe in the power of quality journalism to strengthen communities and drive positive change.
+                T'i ofrojmë komunitetit shqiptar mbulim lajmesh të besueshëm, të paanshëm dhe gjithëpërfshirës që informon, edukon dhe fuqizon. Ne besojmë në fuqinë e gazetarisë cilësore për të forcuar komunitetet dhe nxitur ndryshime pozitive.
               </p>
               <p className="text-muted-foreground font-sans leading-relaxed">
-                Our editorial team is committed to upholding the highest standards of journalistic integrity, ensuring every story we publish meets rigorous fact-checking and ethical guidelines.
+                Ekipi ynë editorial është i përkushtuar në ruajtjen e standardeve më të larta të integritetit gazetaresk, duke siguruar që çdo histori që publikojmë i plotëson udhëzimet rigoroze të verifikimit të fakteve dhe etikës.
               </p>
             </div>
             <div>
@@ -51,13 +51,13 @@ export default function About() {
                 <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center">
                   <Globe className="w-6 h-6 text-gold" />
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Our Vision</h2>
+                <h2 className="text-2xl font-bold text-foreground">Vizioni Ynë</h2>
               </div>
               <p className="text-muted-foreground font-sans leading-relaxed mb-4">
-                To become the most trusted and influential Albanian media platform globally, bridging the gap between Albania and its diaspora through world-class digital journalism.
+                Të bëhemi platforma mediatike shqiptare më e besuar dhe me ndikim më të madh në botë, duke lidhur Shqipërinë me diasporën e saj përmes gazetarisë dixhitale të nivelit botëror.
               </p>
               <p className="text-muted-foreground font-sans leading-relaxed">
-                We envision a future where every Albanian, whether in Tirana, London, or New York, has access to premium-quality news that reflects their heritage and keeps them connected to their roots.
+                Ne shohim një të ardhme ku çdo shqiptar, qoftë në Tiranë, Londër apo Nju-Jork, ka akses në lajme të cilësisë së lartë që pasqyrojnë trashëgiminë e tyre dhe i mbajnë të lidhur me rrënjët e tyre.
               </p>
             </div>
           </div>
@@ -69,20 +69,20 @@ export default function About() {
         <div className="container">
           <div className="text-center mb-12">
             <div className="w-12 h-[2px] bg-gold mx-auto mb-4" />
-            <h2 className="text-3xl font-bold text-foreground mb-3">Our Values</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-3">Vlerat Tona</h2>
             <p className="text-muted-foreground font-sans max-w-xl mx-auto">
-              The principles that guide every story we tell and every decision we make.
+              Parimet që udhëheqin çdo histori që tregojmë dhe çdo vendim që marrim.
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: Shield, title: "Integrity", desc: "We uphold the highest ethical standards in journalism, ensuring accuracy and fairness in every report." },
-              { icon: Zap, title: "Timeliness", desc: "Breaking news delivered as it happens, with real-time updates and comprehensive follow-up coverage." },
-              { icon: Users, title: "Community", desc: "We serve the Albanian community worldwide, giving voice to stories that matter to our people." },
-              { icon: Globe, title: "Global Reach", desc: "From London to Tirana, our coverage spans borders to keep the Albanian diaspora connected." },
-              { icon: Award, title: "Excellence", desc: "Premium quality in everything we do, from investigative journalism to multimedia storytelling." },
-              { icon: Target, title: "Impact", desc: "We aim to create meaningful change through journalism that holds power accountable." },
+              { icon: Shield, title: "Integriteti", desc: "Ruajmë standardet më të larta etike në gazetari, duke siguruar saktësi dhe paanshmëri në çdo raportim." },
+              { icon: Zap, title: "Shpejtësia", desc: "Lajme të fundit të sjella në kohë reale, me përditësime të menjëhershme dhe mbulim të plotë vijues." },
+              { icon: Users, title: "Komuniteti", desc: "I shërbejmë komunitetit shqiptar në të gjithë botën, duke i dhënë zë historive që kanë rëndësi për njerëzit tanë." },
+              { icon: Globe, title: "Përhapja Globale", desc: "Nga Londra në Tiranë, mbulimi ynë kalon kufijtë për të mbajtur diasporën shqiptare të lidhur." },
+              { icon: Award, title: "Përsosmëria", desc: "Cilësi e lartë në gjithçka që bëjmë, nga gazetaria investigative te tregimi multimedial." },
+              { icon: Target, title: "Ndikimi", desc: "Synojmë të krijojmë ndryshim domethënës përmes gazetarisë që mban pushtetin përgjegjës." },
             ].map((value, i) => (
               <div key={i} className="p-6 bg-card rounded-xl border border-border/50 hover:border-gold/30 transition-all premium-card">
                 <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center mb-4">
@@ -101,26 +101,26 @@ export default function About() {
         <div className="container">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-foreground mb-3">Company Information</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-3">Informacione mbi Kompaninë</h2>
               <div className="w-12 h-[2px] bg-gold mx-auto" />
             </div>
 
             <div className="bg-card rounded-xl border border-border/50 p-8 md:p-10">
               <div className="grid sm:grid-cols-2 gap-8">
                 <div>
-                  <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Registered Name</p>
+                  <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Emri i Regjistruar</p>
                   <p className="text-foreground font-sans">Vipat E Bllokut Ltd</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Jurisdiction</p>
-                  <p className="text-foreground font-sans">England & Wales, United Kingdom</p>
+                  <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Juridiksioni</p>
+                  <p className="text-foreground font-sans">Angli dhe Uells, Mbretëria e Bashkuar</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Registered Address</p>
+                  <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Adresa e Regjistruar</p>
                   <p className="text-foreground font-sans">Flat 1 Pmb 0512 85 Moss Bank<br />Manchester M8 5AP</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Contact</p>
+                  <p className="text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2">Kontakt</p>
                   <p className="text-foreground font-sans">+44 7476 921815<br />info@vipatebllokut.com</p>
                 </div>
               </div>

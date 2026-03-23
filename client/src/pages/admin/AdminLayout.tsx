@@ -23,10 +23,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const nav = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/articles", label: "Articles", icon: FileText },
-    { href: "/admin/media", label: "Media Library", icon: ImageIcon },
-    { href: "/admin/health", label: "System Health", icon: Activity },
+    { href: "/admin", label: "Paneli Kryesor", icon: LayoutDashboard },
+    { href: "/admin/articles", label: "Artikujt", icon: FileText },
+    { href: "/admin/media", label: "Libraria", icon: ImageIcon },
+    { href: "/admin/health", label: "Gjendja e Sistemit", icon: Activity },
   ];
 
   const isActive = (href: string) =>
@@ -86,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-sans text-muted-foreground hover:text-red-400 w-full transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                Logout
+                Dil
               </button>
             </div>
           </aside>

@@ -30,7 +30,7 @@ export default function ArticleDetail() {
 
   const getReadingTime = (content: string) => {
     const words = content.split(/\s+/).length;
-    return `${Math.ceil(words / 200)} min read`;
+    return `${Math.ceil(words / 200)} min lexim`;
   };
 
   const shareArticle = () => {
@@ -75,12 +75,12 @@ export default function ArticleDetail() {
             <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4 md:mb-6">
               <Star className="w-6 h-6 md:w-8 md:h-8 text-muted-foreground" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2 md:mb-3">Article Not Found</h2>
-            <p className="text-sm md:text-base text-muted-foreground font-sans mb-6 md:mb-8">The article you are looking for does not exist or has been removed.</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2 md:mb-3">Artikulli Nuk u Gjet</h2>
+            <p className="text-sm md:text-base text-muted-foreground font-sans mb-6 md:mb-8">Artikulli që po kërkoni nuk ekziston ose është hequr.</p>
             <Link href="/">
               <Button className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
+                Kthehu në Kryefaqje
               </Button>
             </Link>
           </div>
@@ -109,7 +109,7 @@ export default function ArticleDetail() {
               {/* Breadcrumb */}
               <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs text-muted-foreground font-sans mb-4 md:mb-6 overflow-x-auto">
                 <Link href="/">
-                  <span className="hover:text-gold transition-colors whitespace-nowrap">Home</span>
+                  <span className="hover:text-gold transition-colors whitespace-nowrap">Kryefaqja</span>
                 </Link>
                 <ChevronRight className="w-3 h-3 flex-shrink-0" />
                 {article.categories && article.categories.length > 0 && (
@@ -166,7 +166,7 @@ export default function ArticleDetail() {
                   className="border-border/50 text-muted-foreground hover:text-gold hover:border-gold/30 font-sans text-xs"
                 >
                   <Share2 className="w-3.5 h-3.5 mr-1.5" />
-                  Share
+                  Shpërndaje
                 </Button>
               </div>
             </div>
@@ -200,7 +200,7 @@ export default function ArticleDetail() {
             <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-border/50">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <p className="text-[10px] md:text-xs text-muted-foreground font-sans uppercase tracking-wider mb-1">Published</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground font-sans uppercase tracking-wider mb-1">Publikuar</p>
                   <p className="text-xs md:text-sm text-foreground font-sans">{formatDate(article.publishedAt)}</p>
                 </div>
                 <div className="flex items-center gap-2 md:gap-3">
@@ -211,12 +211,12 @@ export default function ArticleDetail() {
                     className="border-gold/30 text-gold hover:bg-gold/10 font-sans text-xs"
                   >
                     <Share2 className="w-3.5 h-3.5 mr-1.5" />
-                    Share
+                    Shpërndaje
                   </Button>
                   <Link href="/">
                     <Button variant="outline" size="sm" className="border-border/50 text-muted-foreground hover:text-foreground font-sans text-xs">
                       <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-                      Back to News
+                      Kthehu te Lajmet
                     </Button>
                   </Link>
                 </div>
@@ -231,7 +231,7 @@ export default function ArticleDetail() {
             <div className="container">
               <div className="flex items-center gap-3 mb-6 md:mb-8">
                 <div className="w-1 h-6 md:h-8 bg-gold rounded-full" />
-                <h2 className="text-xl md:text-2xl font-bold text-foreground">More Stories</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-foreground">Lajme të Tjera</h2>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
                 {relatedArticles.map((related) => (

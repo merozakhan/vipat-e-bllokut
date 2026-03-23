@@ -15,12 +15,12 @@ export default function AdminArticles() {
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl md:text-2xl font-black text-foreground">Articles</h1>
+        <h1 className="text-xl md:text-2xl font-black text-foreground">Artikujt</h1>
         <Link href="/admin/articles/new">
           <span className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gold text-navy-dark font-bold text-xs md:text-sm rounded-lg hover:bg-gold-light transition-colors cursor-pointer font-sans">
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Article</span>
-            <span className="sm:hidden">New</span>
+            <span className="hidden sm:inline">Artikull i Ri</span>
+            <span className="sm:hidden">Ri</span>
           </span>
         </Link>
       </div>
@@ -29,14 +29,14 @@ export default function AdminArticles() {
       {deleteId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card border border-border rounded-xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-foreground mb-2">Delete Article?</h3>
-            <p className="text-sm text-muted-foreground mb-4 font-sans">This action cannot be undone.</p>
+            <h3 className="text-lg font-bold text-foreground mb-2">Fshi Artikullin?</h3>
+            <p className="text-sm text-muted-foreground mb-4 font-sans">Ky veprim nuk mund të zhbëhet.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 py-2 border border-border rounded-lg text-sm font-sans text-muted-foreground hover:text-foreground">Cancel</button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 py-2 border border-border rounded-lg text-sm font-sans text-muted-foreground hover:text-foreground">Anulo</button>
               <button
                 onClick={() => { deleteMutation.mutate({ id: deleteId }); setDeleteId(null); }}
                 className="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm font-sans font-semibold hover:bg-red-600"
-              >Delete</button>
+              >Fshi</button>
             </div>
           </div>
         </div>
@@ -45,16 +45,16 @@ export default function AdminArticles() {
       {/* Desktop Table */}
       <div className="hidden md:block bg-card border border-border/50 rounded-xl overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm font-sans">Loading...</div>
+          <div className="p-8 text-center text-muted-foreground text-sm font-sans">Duke ngarkuar...</div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="border-b border-border/50 text-left">
-                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Article</th>
-                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Placement</th>
-                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Status</th>
-                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Views</th>
-                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold w-24">Actions</th>
+                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Artikulli</th>
+                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Vendosja</th>
+                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Statusi</th>
+                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold">Shikime</th>
+                <th className="px-4 py-3 text-[10px] text-muted-foreground uppercase tracking-wider font-sans font-semibold w-24">Veprime</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
@@ -104,7 +104,7 @@ export default function AdminArticles() {
       {/* Mobile Card List */}
       <div className="md:hidden space-y-2">
         {isLoading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm font-sans">Loading...</div>
+          <div className="p-8 text-center text-muted-foreground text-sm font-sans">Duke ngarkuar...</div>
         ) : articles?.map((a) => (
           <div key={a.id} className="bg-card border border-border/50 rounded-xl p-3">
             <div className="flex items-start gap-3">
@@ -117,7 +117,7 @@ export default function AdminArticles() {
                   <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full font-sans ${
                     a.status === "published" ? "bg-green-500/10 text-green-400" : "bg-yellow-500/10 text-yellow-400"
                   }`}>{a.status}</span>
-                  <span className="text-[10px] text-muted-foreground font-sans">{a.views} views</span>
+                  <span className="text-[10px] text-muted-foreground font-sans">{a.views} shikime</span>
                   {a.homepagePlacement && (
                     <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full bg-gold/10 text-gold font-sans">
                       {a.homepagePlacement}
@@ -128,11 +128,11 @@ export default function AdminArticles() {
             </div>
             <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/30">
               <a href={`/article/${a.slug}`} target="_blank" className="flex-1 text-center py-1.5 rounded-lg text-xs font-sans text-muted-foreground hover:text-foreground hover:bg-background border border-border/50">
-                View
+                Shiko
               </a>
               <Link href={`/admin/articles/${a.id}/edit`}>
                 <span className="flex-1 text-center py-1.5 rounded-lg text-xs font-sans text-gold hover:bg-gold/10 border border-gold/30 cursor-pointer px-4">
-                  Edit
+                  Ndrysho
                 </span>
               </Link>
               <button

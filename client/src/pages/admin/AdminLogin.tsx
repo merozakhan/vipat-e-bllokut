@@ -25,7 +25,7 @@ export default function AdminLogin() {
           <div className="w-14 h-14 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4">
             <Lock className="w-7 h-7 text-gold" />
           </div>
-          <h1 className="text-2xl font-black text-foreground">Admin Panel</h1>
+          <h1 className="text-2xl font-black text-foreground">Paneli i Administratorit</h1>
           <p className="text-sm text-muted-foreground font-sans mt-1">Vipat E Bllokut</p>
         </div>
 
@@ -40,13 +40,13 @@ export default function AdminLogin() {
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Password</label>
+            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Fjalëkalimi</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans"
-              placeholder="Enter admin password"
+              placeholder="Shkruani fjalëkalimin"
               autoFocus
             />
           </div>
@@ -55,7 +55,7 @@ export default function AdminLogin() {
             disabled={login.isPending || !password}
             className="w-full py-2.5 bg-gold text-navy-dark font-bold text-sm rounded-lg hover:bg-gold-light transition-colors disabled:opacity-50 font-sans"
           >
-            {login.isPending ? "Logging in..." : "Login"}
+            {login.isPending ? "Duke hyrë..." : "Hyr"}
           </button>
         </form>
       </div>

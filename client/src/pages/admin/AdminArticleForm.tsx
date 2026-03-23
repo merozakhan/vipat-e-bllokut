@@ -7,7 +7,7 @@ import AdminLayout from "./AdminLayout";
 import RichTextEditor from "@/components/RichTextEditor";
 
 const PLACEMENTS = [
-  { value: "", label: "None" },
+  { value: "", label: "Asnjë" },
   { value: "breaking", label: "Breaking" },
   { value: "trending", label: "Trending" },
   { value: "hot", label: "Hot" },
@@ -42,11 +42,11 @@ export default function AdminArticleForm() {
 
   const utils = trpc.useUtils();
   const createMutation = trpc.admin.articlesCreate.useMutation({
-    onSuccess: (data) => { toast.success("Article created"); navigate("/admin/articles"); },
+    onSuccess: (data) => { toast.success("Artikulli u krijua"); navigate("/admin/articles"); },
     onError: (e) => toast.error(e.message),
   });
   const updateMutation = trpc.admin.articlesUpdate.useMutation({
-    onSuccess: () => { toast.success("Article updated"); utils.admin.articlesList.invalidate(); navigate("/admin/articles"); },
+    onSuccess: () => { toast.success("Artikulli u përditësua"); utils.admin.articlesList.invalidate(); navigate("/admin/articles"); },
     onError: (e) => toast.error(e.message),
   });
   const uploadMutation = trpc.admin.uploadImage.useMutation();
@@ -69,7 +69,7 @@ export default function AdminArticleForm() {
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image must be under 10MB");
+      toast.error("Fotoja duhet të jetë nën 10MB");
       return;
     }
 
@@ -84,9 +84,9 @@ export default function AdminArticleForm() {
       const filename = file.name.replace(/\.[^.]+$/, "") + "-" + Date.now();
       const result = await uploadMutation.mutateAsync({ base64, filename });
       setFeaturedImage(result.url);
-      toast.success("Image uploaded");
+      toast.success("Fotoja u ngarkua");
     } catch (e: any) {
-      toast.error("Upload failed: " + e.message);
+      toast.error("Ngarkimi dështoi: " + e.message);
     } finally {
       setUploading(false);
     }
@@ -120,26 +120,26 @@ export default function AdminArticleForm() {
         <button onClick={() => navigate("/admin/articles")} className="p-1.5 rounded-lg hover:bg-card text-muted-foreground">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-xl md:text-2xl font-black text-foreground">{isEdit ? "Edit Article" : "New Article"}</h1>
+        <h1 className="text-xl md:text-2xl font-black text-foreground">{isEdit ? "Ndrysho Artikullin" : "Artikull i Ri"}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6 max-w-3xl">
         {/* Title */}
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Title</label>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Titulli</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full px-4 py-2.5 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans"
-            placeholder="Article title"
+            placeholder="Titulli i artikullit"
             required
           />
         </div>
 
         {/* Featured Image */}
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Featured Image</label>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Fotoja Kryesore</label>
           {featuredImage ? (
             <div className="relative rounded-lg overflow-hidden border border-border/50">
               <img src={featuredImage} alt="Featured" className="w-full h-48 object-cover" />
@@ -161,8 +161,8 @@ export default function AdminArticleForm() {
                     <Upload className="w-6 h-6 text-gold" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-foreground">Click to upload image</p>
-                    <p className="text-xs text-muted-foreground font-sans">JPG, PNG up to 10MB</p>
+                    <p className="text-sm font-semibold text-foreground">Kliko për të ngarkuar foto</p>
+                    <p className="text-xs text-muted-foreground font-sans">JPG, PNG deri në 10MB</p>
                   </div>
                 </>
               )}
@@ -176,7 +176,7 @@ export default function AdminArticleForm() {
               value={featuredImage}
               onChange={(e) => setFeaturedImage(e.target.value)}
               className="flex-1 px-4 py-2 bg-card border border-border/50 rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans"
-              placeholder="Or paste image URL"
+              placeholder="Ose ngjit URL-në e fotos"
             />
             <button
               type="button"
@@ -184,7 +184,7 @@ export default function AdminArticleForm() {
               className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border/50 rounded-lg text-sm font-sans text-muted-foreground hover:text-gold hover:border-gold/30 transition-colors whitespace-nowrap"
             >
               <FolderOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">Library</span>
+              <span className="hidden sm:inline">Libraria</span>
             </button>
           </div>
         </div>
@@ -194,21 +194,21 @@ export default function AdminArticleForm() {
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowMediaPicker(false)}>
             <div className="bg-card border border-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
               <div className="p-4 border-b border-border/50 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-foreground">Choose from Media Library</h3>
+                <h3 className="text-sm font-bold text-foreground">Zgjidhni nga Libraria</h3>
                 <button onClick={() => setShowMediaPicker(false)} className="p-1 text-muted-foreground hover:text-foreground">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-auto p-4">
                 {!mediaFiles?.files?.length ? (
-                  <p className="text-sm text-muted-foreground text-center py-8 font-sans">No media files yet. Upload some in the Media Library.</p>
+                  <p className="text-sm text-muted-foreground text-center py-8 font-sans">Asnjë skedar media akoma. Ngarkoni disa në Librarinë.</p>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                     {mediaFiles.files.filter(f => f.type === "image").map(file => (
                       <button
                         key={file.publicId}
                         type="button"
-                        onClick={() => { setFeaturedImage(file.url); setShowMediaPicker(false); toast.success("Image selected"); }}
+                        onClick={() => { setFeaturedImage(file.url); setShowMediaPicker(false); toast.success("Fotoja u zgjodh"); }}
                         className="aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-gold transition-colors"
                       >
                         <img src={file.url} alt="" className="w-full h-full object-cover" loading="lazy" />
@@ -223,30 +223,30 @@ export default function AdminArticleForm() {
 
         {/* Content */}
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Content</label>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Përmbajtja</label>
           <RichTextEditor
             content={content}
             onChange={setContent}
-            placeholder="Write your article content here..."
+            placeholder="Shkruani përmbajtjen e artikullit këtu..."
           />
         </div>
 
         {/* Excerpt */}
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Excerpt (optional)</label>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Përshkrimi i shkurtër (opsional)</label>
           <textarea
             value={excerpt}
             onChange={(e) => setExcerpt(e.target.value)}
             rows={2}
             className="w-full px-4 py-2.5 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans text-sm resize-y"
-            placeholder="Short summary (auto-generated from content if empty)"
+            placeholder="Përmbledhje e shkurtër (gjenerohet automatikisht nëse lihet bosh)"
           />
         </div>
 
         {/* Homepage Placement */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Homepage Section</label>
+            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Seksioni i Faqes Kryesore</label>
             <select
               value={placement}
               onChange={(e) => setPlacement(e.target.value)}
@@ -259,7 +259,7 @@ export default function AdminArticleForm() {
           </div>
           {placement && (
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Position (1-5)</label>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider font-sans mb-1.5">Pozicioni (1-5)</label>
               <select
                 value={position}
                 onChange={(e) => setPosition(parseInt(e.target.value))}
@@ -280,7 +280,7 @@ export default function AdminArticleForm() {
             onChange={(e) => setStatus(e.target.value as "draft" | "published")}
             className="px-4 py-2.5 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans text-sm"
           >
-            <option value="published">Published</option>
+            <option value="published">Publikuar</option>
             <option value="draft">Draft</option>
           </select>
           <button
@@ -288,7 +288,7 @@ export default function AdminArticleForm() {
             disabled={isPending || !title || !content}
             className="flex-1 py-2.5 bg-gold text-navy-dark font-bold text-sm rounded-lg hover:bg-gold-light transition-colors disabled:opacity-50 font-sans"
           >
-            {isPending ? "Saving..." : isEdit ? "Update Article" : "Create Article"}
+            {isPending ? "Duke ruajtur..." : isEdit ? "Përditëso Artikullin" : "Krijo Artikullin"}
           </button>
         </div>
       </form>

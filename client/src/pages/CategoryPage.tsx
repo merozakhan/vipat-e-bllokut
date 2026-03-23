@@ -38,7 +38,7 @@ export default function CategoryPage() {
 
   const getReadingTime = (content: string) => {
     const words = content.split(/\s+/).length;
-    return `${Math.ceil(words / 200)} min read`;
+    return `${Math.ceil(words / 200)} min lexim`;
   };
 
   const categoryName = category?.name || (isAllNews ? "Të Gjitha" : params.slug);
@@ -60,12 +60,12 @@ export default function CategoryPage() {
           <Link href="/">
             <Button variant="ghost" size="sm" className="mb-4 md:mb-6 text-muted-foreground hover:text-gold font-sans text-xs">
               <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-              All News
+              Të Gjitha Lajmet
             </Button>
           </Link>
           <div className="flex items-center gap-2 mb-3 md:mb-4">
             <div className="w-6 md:w-8 h-[2px] bg-gold" />
-            <span className="text-[10px] md:text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Category</span>
+            <span className="text-[10px] md:text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Kategoria</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-bold text-foreground leading-tight mb-2 md:mb-4">
             {categoryName}
@@ -90,7 +90,7 @@ export default function CategoryPage() {
                   />
                 </div>
                 <div className="flex flex-col justify-center">
-                  <span className="text-[10px] md:text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2 md:mb-3">Latest in {categoryName}</span>
+                  <span className="text-[10px] md:text-xs text-gold uppercase tracking-wider font-sans font-semibold mb-2 md:mb-3">Më të Fundit në {categoryName}</span>
                   <h2 className="text-xl md:text-3xl font-bold text-foreground leading-tight mb-2 md:mb-4 group-hover:text-gold transition-colors line-clamp-3">
                     {featuredArticle.title}
                   </h2>
@@ -178,12 +178,12 @@ export default function CategoryPage() {
               <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
                 <Star className="w-6 h-6 md:w-8 md:h-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg md:text-xl font-bold text-foreground mb-2">No Articles Yet</h3>
-              <p className="text-sm text-muted-foreground font-sans mb-6">No articles have been published in this category yet.</p>
+              <h3 className="text-lg md:text-xl font-bold text-foreground mb-2">Ende Pa Artikuj</h3>
+              <p className="text-sm text-muted-foreground font-sans mb-6">Nuk ka artikuj të publikuar në këtë kategori ende.</p>
               <Link href="/">
                 <Button className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans text-sm">
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Home
+                  Kthehu në Kryefaqje
                 </Button>
               </Link>
             </div>

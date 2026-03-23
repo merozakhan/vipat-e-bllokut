@@ -16,12 +16,12 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl md:text-2xl font-black text-foreground">Dashboard</h1>
+        <h1 className="text-xl md:text-2xl font-black text-foreground">Paneli Kryesor</h1>
         <Link href="/admin/articles/new">
           <span className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gold text-navy-dark font-bold text-xs md:text-sm rounded-lg hover:bg-gold-light transition-colors cursor-pointer font-sans">
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Article</span>
-            <span className="sm:hidden">New</span>
+            <span className="hidden sm:inline">Artikull i Ri</span>
+            <span className="sm:hidden">Ri</span>
           </span>
         </Link>
       </div>
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <p className="text-xl md:text-2xl font-black text-foreground">{articleStats?.total ?? "—"}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Total Articles</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Artikujt Gjithsej</p>
             </div>
           </div>
         </div>
@@ -46,7 +46,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <p className="text-xl md:text-2xl font-black text-foreground">{articleStats?.published ?? "—"}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Published</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Publikuar</p>
             </div>
           </div>
         </div>
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <p className="text-xl md:text-2xl font-black text-foreground">{articleStats?.draft ?? "—"}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Drafts</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Drafte</p>
             </div>
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <p className="text-xl md:text-2xl font-black text-foreground">{articleStats?.totalViews?.toLocaleString() ?? "—"}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Total Views</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Shikimet Gjithsej</p>
             </div>
           </div>
         </div>
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       <div className="bg-card border border-border/50 rounded-xl mb-6">
         <div className="p-4 border-b border-border/50 flex items-center gap-2">
           <Users className="w-4 h-4 text-gold" />
-          <h2 className="text-sm font-bold text-foreground">Visitor Analytics</h2>
+          <h2 className="text-sm font-bold text-foreground">Analitika e Vizitorëve</h2>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border/30">
           <div className="p-4 md:p-5 text-center">
@@ -91,30 +91,30 @@ export default function AdminDashboard() {
                 </span>
               )}
             </div>
-            <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Today</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Sot</p>
           </div>
           <div className="p-4 md:p-5 text-center">
             <p className="text-xl md:text-2xl font-black text-foreground mb-1">{analytics?.yesterday?.toLocaleString() ?? "—"}</p>
-            <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Yesterday</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Dje</p>
           </div>
           <div className="p-4 md:p-5 text-center">
             <p className="text-xl md:text-2xl font-black text-foreground mb-1">{analytics?.thisWeek?.toLocaleString() ?? "—"}</p>
-            <p className="text-[10px] md:text-xs text-muted-foreground font-sans">This Week</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Kjo Javë</p>
           </div>
           <div className="p-4 md:p-5 text-center">
             <p className="text-xl md:text-2xl font-black text-foreground mb-1">{analytics?.thisMonth?.toLocaleString() ?? "—"}</p>
-            <p className="text-[10px] md:text-xs text-muted-foreground font-sans">This Month</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground font-sans">Ky Muaj</p>
           </div>
         </div>
         {/* All-time bar */}
         <div className="px-4 md:px-5 py-3 border-t border-border/30 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground font-sans">All Time</span>
-          <span className="text-sm font-bold text-foreground">{analytics?.allTime?.toLocaleString() ?? "—"} views</span>
+          <span className="text-xs text-muted-foreground font-sans">Gjithë Kohës</span>
+          <span className="text-sm font-bold text-foreground">{analytics?.allTime?.toLocaleString() ?? "—"} shikime</span>
         </div>
         {/* Mini chart - daily breakdown */}
         {analytics?.dailyBreakdown && analytics.dailyBreakdown.length > 1 && (
           <div className="px-4 md:px-5 pb-4">
-            <p className="text-[10px] text-muted-foreground font-sans mb-2 uppercase tracking-wider">Last 30 Days</p>
+            <p className="text-[10px] text-muted-foreground font-sans mb-2 uppercase tracking-wider">30 Ditët e Fundit</p>
             <div className="flex items-end gap-[2px] h-16 md:h-20">
               {(() => {
                 const days = analytics.dailyBreakdown.slice().reverse();
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
         <div className="bg-card border border-border/50 rounded-xl">
           <div className="p-4 border-b border-border/50 flex items-center gap-2">
             <Trophy className="w-4 h-4 text-gold" />
-            <h2 className="text-sm font-bold text-foreground">Top Articles by Views</h2>
+            <h2 className="text-sm font-bold text-foreground">Artikujt Më të Lexuar</h2>
           </div>
           <div className="divide-y divide-border/30">
             {topArticles.map((a, i) => (
@@ -179,9 +179,9 @@ export default function AdminDashboard() {
       {/* Recent Articles */}
       <div className="bg-card border border-border/50 rounded-xl">
         <div className="p-4 border-b border-border/50 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-foreground">Recent Articles</h2>
+          <h2 className="text-sm font-bold text-foreground">Artikujt e Fundit</h2>
           <Link href="/admin/articles">
-            <span className="text-xs text-gold font-sans cursor-pointer hover:underline">View All</span>
+            <span className="text-xs text-gold font-sans cursor-pointer hover:underline">Shiko të Gjitha</span>
           </Link>
         </div>
         <div className="divide-y divide-border/30">
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs md:text-sm font-semibold text-foreground truncate">{a.title}</p>
                   <p className="text-[10px] md:text-xs text-muted-foreground font-sans">
-                    {a.views} views
+                    {a.views} shikime
                   </p>
                 </div>
                 <span className={`hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold uppercase rounded-full font-sans ${

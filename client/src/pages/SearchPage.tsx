@@ -40,7 +40,7 @@ export default function SearchPage() {
 
   const getReadingTime = (content: string) => {
     const words = content.split(/\s+/).length;
-    return `${Math.ceil(words / 200)} min read`;
+    return `${Math.ceil(words / 200)} min lexim`;
   };
 
   return (
@@ -57,18 +57,18 @@ export default function SearchPage() {
           <Link href="/">
             <Button variant="ghost" size="sm" className="mb-4 md:mb-6 text-muted-foreground hover:text-gold font-sans text-xs">
               <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-              Back to Home
+              Kthehu në Kryefaqje
             </Button>
           </Link>
           <div className="flex items-center gap-2 mb-3 md:mb-4">
             <div className="w-6 md:w-8 h-[2px] bg-gold" />
-            <span className="text-[10px] md:text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Search</span>
+            <span className="text-[10px] md:text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Kërko</span>
           </div>
           <h1 className="text-2xl md:text-5xl font-bold text-foreground leading-tight mb-4 md:mb-6">
             {activeQuery ? (
-              <>Results for "<span className="text-gradient-gold">{activeQuery}</span>"</>
+              <>Rezultate për "<span className="text-gradient-gold">{activeQuery}</span>"</>
             ) : (
-              "Search Articles"
+              "Kërko Artikuj"
             )}
           </h1>
 
@@ -80,19 +80,19 @@ export default function SearchPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search articles..."
+                placeholder="Kërko artikuj..."
                 className="w-full pl-9 md:pl-12 pr-3 md:pr-4 py-2.5 md:py-3 bg-secondary text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 font-sans text-sm"
                 autoFocus
               />
             </div>
             <Button type="submit" className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans px-4 md:px-6 text-sm">
-              Search
+              Kërko
             </Button>
           </form>
 
           {articles && activeQuery && (
             <p className="text-xs md:text-sm text-muted-foreground font-sans mt-3 md:mt-4">
-              {articles.length} {articles.length === 1 ? "result" : "results"} found
+              {articles.length} {articles.length === 1 ? "rezultat" : "rezultate"} u gjetën
             </p>
           )}
         </div>
@@ -106,8 +106,8 @@ export default function SearchPage() {
               <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
                 <Search className="w-6 h-6 md:w-8 md:h-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg md:text-xl font-bold text-foreground mb-2">Start Searching</h3>
-              <p className="text-sm text-muted-foreground font-sans">Enter a keyword or topic to find articles.</p>
+              <h3 className="text-lg md:text-xl font-bold text-foreground mb-2">Filloni Kërkimin</h3>
+              <p className="text-sm text-muted-foreground font-sans">Shkruani një fjalë kyçe ose temë për të gjetur artikuj.</p>
             </div>
           ) : isLoading ? (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
@@ -168,14 +168,14 @@ export default function SearchPage() {
               <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
                 <Search className="w-6 h-6 md:w-8 md:h-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg md:text-xl font-bold text-foreground mb-2">No Results Found</h3>
+              <h3 className="text-lg md:text-xl font-bold text-foreground mb-2">Nuk u Gjetën Rezultate</h3>
               <p className="text-sm text-muted-foreground font-sans mb-6">
-                No articles match your search for "{activeQuery}". Try different keywords.
+                Asnjë artikull nuk përputhet me kërkimin tuaj për "{activeQuery}". Provoni fjalë të tjera kyçe.
               </p>
               <Link href="/">
                 <Button className="bg-accent text-accent-foreground hover:bg-gold-dark font-sans text-sm">
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Browse All Articles
+                  Shfleto Të Gjitha Artikujt
                 </Button>
               </Link>
             </div>

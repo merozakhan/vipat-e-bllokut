@@ -58,16 +58,16 @@ function formatUptime(seconds: number): string {
 function formatTimeAgo(timestamp: string): string {
   const diff = Date.now() - new Date(timestamp).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return "tani";
+  if (mins < 60) return `${mins}m më parë`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ${mins % 60}m ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return `${hours}h ${mins % 60}m më parë`;
+  return `${Math.floor(hours / 24)}d më parë`;
 }
 
 function formatETA(isoString: string): string {
   const diff = new Date(isoString).getTime() - Date.now();
-  if (diff <= 0) return "any moment";
+  if (diff <= 0) return "çdo moment";
   const mins = Math.floor(diff / 60000);
   const hours = Math.floor(mins / 60);
   const remainMins = mins % 60;
@@ -89,9 +89,9 @@ function ServiceCard({ icon: Icon, name, status, detail, color }: {
   detail?: string; color: string;
 }) {
   const statusConfig = {
-    active: { label: "Active", dotColor: "bg-green-400", bgColor: "bg-green-500/5 border-green-500/20", textColor: "text-green-400" },
-    standby: { label: "Standby", dotColor: "bg-blue-400", bgColor: "bg-blue-500/5 border-blue-500/20", textColor: "text-blue-400" },
-    error: { label: "Error", dotColor: "bg-red-400", bgColor: "bg-red-500/5 border-red-500/20", textColor: "text-red-400" },
+    active: { label: "Aktiv", dotColor: "bg-green-400", bgColor: "bg-green-500/5 border-green-500/20", textColor: "text-green-400" },
+    standby: { label: "Në Pritje", dotColor: "bg-blue-400", bgColor: "bg-blue-500/5 border-blue-500/20", textColor: "text-blue-400" },
+    error: { label: "Gabim", dotColor: "bg-red-400", bgColor: "bg-red-500/5 border-red-500/20", textColor: "text-red-400" },
   };
   const cfg = statusConfig[status];
 
@@ -127,18 +127,18 @@ function SourceCard({ name, url, active, lastFetched, nextIn }: {
       <p className="text-[10px] text-muted-foreground font-sans truncate">{url}</p>
       <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border/20">
         <span className={`text-[10px] font-semibold font-sans ${active ? "text-green-400" : "text-blue-400"}`}>
-          {active ? "Scraping..." : "Ready"}
+          {active ? "Duke mbledhur..." : "Gati"}
         </span>
         {lastFetched && (
           <>
             <span className="text-muted-foreground/30">|</span>
-            <span className="text-[10px] text-muted-foreground font-sans">Last: {lastFetched}</span>
+            <span className="text-[10px] text-muted-foreground font-sans">Fundit: {lastFetched}</span>
           </>
         )}
         {nextIn && !active && (
           <>
             <span className="text-muted-foreground/30">|</span>
-            <span className="text-[10px] text-gold font-sans">Next: {nextIn}</span>
+            <span className="text-[10px] text-gold font-sans">Tjetra: {nextIn}</span>
           </>
         )}
       </div>
@@ -155,8 +155,8 @@ export default function AdminHealth() {
   const { data: blockedWords } = trpc.admin.blockedWordsGet.useQuery();
   const utils = trpc.useUtils();
   const updateBlockedWords = trpc.admin.blockedWordsSet.useMutation({
-    onSuccess: () => { utils.admin.blockedWordsGet.invalidate(); toast.success("Blocked words updated"); },
-    onError: (e) => toast.error("Failed: " + e.message),
+    onSuccess: () => { utils.admin.blockedWordsGet.invalidate(); toast.success("Fjalët e bllokuara u përditësuan"); },
+    onError: (e) => toast.error("Dështoi: " + e.message),
   });
 
   const fetchHealth = async () => {
@@ -167,7 +167,7 @@ export default function AdminHealth() {
       setHealth(data);
       setError(null);
     } catch (e: any) {
-      setError(e.message || "Failed to reach server");
+      setError(e.message || "Nuk u arrit dot serveri");
       setHealth(null);
     } finally {
       setLoading(false);
@@ -176,7 +176,7 @@ export default function AdminHealth() {
 
   const triggerImport = trpc.rssImport.trigger.useMutation({
     onSuccess: (data) => {
-      toast.success(`Import complete: ${data.result?.newArticles ?? 0} new articles`);
+      toast.success(`Importi përfundoi: ${data.result?.newArticles ?? 0} artikuj të rinj`);
       fetchHealth();
     },
     onError: (e) => toast.error(e.message),
@@ -184,12 +184,12 @@ export default function AdminHealth() {
 
   const rewriteAll = trpc.admin.rewriteAll.useMutation({
     onSuccess: (data) => {
-      toast.success(`Rewritten ${data.rewritten}/${data.total} articles (${data.skipped} skipped)`);
+      toast.success(`U rishkruan ${data.rewritten}/${data.total} artikuj (${data.skipped} u anashkaluan)`);
       if (data.errors && data.errors.length > 0) {
         toast.error(data.errors.join("\n"), { duration: 10000 });
       }
     },
-    onError: (e) => toast.error("Rewrite failed: " + e.message),
+    onError: (e) => toast.error("Rishkrimi dështoi: " + e.message),
   });
 
   useEffect(() => {
@@ -212,7 +212,7 @@ export default function AdminHealth() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 text-gold" />
-          <h1 className="text-xl md:text-2xl font-black text-foreground">System Health</h1>
+          <h1 className="text-xl md:text-2xl font-black text-foreground">Gjendja e Sistemit</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -225,7 +225,7 @@ export default function AdminHealth() {
             ) : (
               <Play className="w-3.5 h-3.5" />
             )}
-            {triggerImport.isPending ? "Importing..." : isRunning ? "Running..." : "Run Import"}
+            {triggerImport.isPending ? "Duke importuar..." : isRunning ? "Duke punuar..." : "Nis Importin"}
           </button>
           <button
             onClick={() => rewriteAll.mutate()}
@@ -237,7 +237,7 @@ export default function AdminHealth() {
             ) : (
               <PenTool className="w-3.5 h-3.5" />
             )}
-            {rewriteAll.isPending ? "Rewriting..." : "Rewrite All"}
+            {rewriteAll.isPending ? "Duke rishkruar..." : "Rishkruaj të Gjitha"}
           </button>
           <button
             onClick={fetchHealth}
@@ -245,7 +245,7 @@ export default function AdminHealth() {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/50 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            Rifresko
           </button>
         </div>
       </div>
@@ -254,7 +254,7 @@ export default function AdminHealth() {
         <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg mb-6">
           <div className="flex items-center gap-2 text-red-400 font-semibold text-sm">
             <XCircle className="w-4 h-4" />
-            Server Unreachable
+            Serveri i Paarritshëm
           </div>
           <p className="text-red-400/70 text-xs mt-1">{error}</p>
         </div>
@@ -276,9 +276,9 @@ export default function AdminHealth() {
                     )}
                   </div>
                   <div>
-                    <h2 className="text-lg md:text-xl font-black text-foreground capitalize">All Systems {health.status}</h2>
+                    <h2 className="text-lg md:text-xl font-black text-foreground capitalize">Të Gjitha Sistemet {health.status}</h2>
                     <p className="text-xs text-muted-foreground font-sans">
-                      Uptime: {formatUptime(health.uptime)} &middot; {new Date(health.timestamp).toLocaleTimeString()}
+                      Koha Aktive: {formatUptime(health.uptime)} &middot; {new Date(health.timestamp).toLocaleTimeString()}
                     </p>
                   </div>
                 </div>
@@ -288,15 +288,15 @@ export default function AdminHealth() {
             <div className="grid grid-cols-3 divide-x divide-border/30 bg-card/30">
               <div className="p-3 text-center">
                 <p className="text-lg md:text-xl font-black text-foreground">{health.database.publishedArticles}</p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Articles</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Artikuj</p>
               </div>
               <div className="p-3 text-center">
                 <p className="text-lg md:text-xl font-black text-foreground">{health.database.sizeMb}<span className="text-xs text-muted-foreground font-normal">MB</span></p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">DB Size</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Madhësia DB</p>
               </div>
               <div className="p-3 text-center">
                 <p className="text-lg md:text-xl font-black text-foreground">{health.database.categories}</p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Categories</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Kategori</p>
               </div>
             </div>
           </div>
@@ -305,28 +305,28 @@ export default function AdminHealth() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-4 h-4 text-gold" />
-              <h3 className="text-sm font-bold text-foreground">Pipeline Services</h3>
+              <h3 className="text-sm font-bold text-foreground">Shërbimet e Pipeline</h3>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <ServiceCard
                 icon={Globe}
                 name="Scraper"
                 status={isRunning ? "active" : "standby"}
-                detail={isRunning ? "Scraping articles now..." : nextETA ? `Next run in ${nextETA}` : hasImported ? `Last run ${formatTimeAgo(lastResult!.timestamp)}` : "Waiting for first run"}
+                detail={isRunning ? "Duke mbledhur artikuj..." : nextETA ? `Raundi tjetër në ${nextETA}` : hasImported ? `Raundi i fundit ${formatTimeAgo(lastResult!.timestamp)}` : "Në pritje të raundi të parë"}
                 color="bg-blue-500"
               />
               <ServiceCard
                 icon={PenTool}
                 name="Rewriter"
                 status={isRunning ? "active" : "standby"}
-                detail={isRunning ? "Cleaning & rewriting..." : nextETA ? `Next run in ${nextETA}` : "Ready — strips branding, formats HTML"}
+                detail={isRunning ? "Duke pastruar dhe rishkruar..." : nextETA ? `Raundi tjetër në ${nextETA}` : "Gati — pastron brendimin, formaton HTML"}
                 color="bg-purple-500"
               />
               <ServiceCard
                 icon={ImageIcon}
                 name="Cloudinary"
                 status={health.services.cloudinary === "configured" ? "active" : "error"}
-                detail={health.services.cloudinary === "configured" ? "Image uploads ready" : "Missing credentials"}
+                detail={health.services.cloudinary === "configured" ? "Ngarkimi i fotove gati" : "Kredencialet mungojnë"}
                 color="bg-pink-500"
               />
               <ServiceCard
@@ -343,8 +343,8 @@ export default function AdminHealth() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Globe className="w-4 h-4 text-gold" />
-              <h3 className="text-sm font-bold text-foreground">News Sources</h3>
-              <span className="text-[10px] text-muted-foreground font-sans ml-auto">Scraped every 3 hours</span>
+              <h3 className="text-sm font-bold text-foreground">Burimet e Lajmeve</h3>
+              <span className="text-[10px] text-muted-foreground font-sans ml-auto">Mblidhen çdo 3 orë</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <SourceCard
@@ -377,7 +377,7 @@ export default function AdminHealth() {
               <div className="p-4 border-b border-border/30 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-gold" />
-                  <h3 className="text-sm font-bold text-foreground">Last Import Results</h3>
+                  <h3 className="text-sm font-bold text-foreground">Rezultatet e Importit të Fundit</h3>
                 </div>
                 <span className="text-[10px] text-muted-foreground font-sans">{formatTimeAgo(lastResult.timestamp)}</span>
               </div>
@@ -385,15 +385,15 @@ export default function AdminHealth() {
               {/* Diagnosis for 0% */}
               {lastResult.totalFetched === 0 && (
                 <div className="px-4 py-3 bg-red-500/5 border-b border-border/20">
-                  <p className="text-xs text-red-400 font-sans font-semibold">No articles fetched — sources may be unreachable or blocking requests.</p>
+                  <p className="text-xs text-red-400 font-sans font-semibold">Asnjë artikull nuk u mblodh — burimet mund të jenë të paarritshme ose po bllokojnë kërkesat.</p>
                 </div>
               )}
               {lastResult.totalFetched > 0 && lastResult.newArticles === 0 && (
                 <div className="px-4 py-3 bg-yellow-500/5 border-b border-border/20">
                   <p className="text-xs text-yellow-400 font-sans font-semibold">
                     {lastResult.duplicatesSkipped > 0
-                      ? `All ${lastResult.totalFetched} articles were duplicates — no new content from sources.`
-                      : `${lastResult.totalFetched} fetched but none passed validation (image/content check).`}
+                      ? `Të gjithë ${lastResult.totalFetched} artikujt ishin dublikata — asnjë përmbajtje e re nga burimet.`
+                      : `${lastResult.totalFetched} u mblodhen por asnjë nuk kaloi validimin (kontrolli i fotos/përmbajtjes).`}
                   </p>
                 </div>
               )}
@@ -401,7 +401,7 @@ export default function AdminHealth() {
               {/* Success rate bar */}
               <div className="px-4 py-3 border-b border-border/20">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-muted-foreground font-sans">Success Rate</span>
+                  <span className="text-xs text-muted-foreground font-sans">Shkalla e Suksesit</span>
                   <span className={`text-xs font-bold font-sans ${successRate > 50 ? "text-green-400" : successRate > 20 ? "text-yellow-400" : "text-red-400"}`}>{successRate}%</span>
                 </div>
                 <div className="w-full bg-background rounded-full h-2">
@@ -414,12 +414,12 @@ export default function AdminHealth() {
 
               <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-border/20">
                 {[
-                  { label: "Fetched", value: lastResult.totalFetched, color: "text-foreground", bg: "" },
-                  { label: "Published", value: lastResult.newArticles, color: "text-green-400", bg: "bg-green-500/5" },
-                  { label: "Duplicates", value: lastResult.duplicatesSkipped, color: "text-blue-400", bg: "" },
-                  { label: "No Image", value: lastResult.skippedNoImage, color: "text-yellow-400", bg: "" },
-                  { label: "No Content", value: lastResult.skippedNoContent, color: "text-orange-400", bg: "" },
-                  { label: "Errors", value: lastResult.errors, color: lastResult.errors > 0 ? "text-red-400" : "text-foreground", bg: lastResult.errors > 0 ? "bg-red-500/5" : "" },
+                  { label: "Mbledhur", value: lastResult.totalFetched, color: "text-foreground", bg: "" },
+                  { label: "Publikuar", value: lastResult.newArticles, color: "text-green-400", bg: "bg-green-500/5" },
+                  { label: "Dublikata", value: lastResult.duplicatesSkipped, color: "text-blue-400", bg: "" },
+                  { label: "Pa Foto", value: lastResult.skippedNoImage, color: "text-yellow-400", bg: "" },
+                  { label: "Pa Përmbajtje", value: lastResult.skippedNoContent, color: "text-orange-400", bg: "" },
+                  { label: "Gabime", value: lastResult.errors, color: lastResult.errors > 0 ? "text-red-400" : "text-foreground", bg: lastResult.errors > 0 ? "bg-red-500/5" : "" },
                 ].map((stat) => (
                   <div key={stat.label} className={`p-3 md:p-4 text-center ${stat.bg}`}>
                     <p className={`text-lg md:text-2xl font-black ${stat.color}`}>{stat.value}</p>
@@ -434,8 +434,8 @@ export default function AdminHealth() {
           <div className="bg-card/50 rounded-xl border border-border/30 p-4 md:p-5">
             <div className="flex items-center gap-2 mb-3">
               <Ban className="w-4 h-4 text-red-400" />
-              <h3 className="text-sm font-bold text-foreground">Blocked Words</h3>
-              <span className="text-[10px] text-muted-foreground font-sans">Articles containing these words are skipped</span>
+              <h3 className="text-sm font-bold text-foreground">Fjalët e Bllokuara</h3>
+              <span className="text-[10px] text-muted-foreground font-sans">Artikujt me këto fjalë anashkalohen</span>
             </div>
             <div className="flex flex-wrap gap-2 mb-3">
               {blockedWords?.map(word => (
@@ -450,7 +450,7 @@ export default function AdminHealth() {
                 </span>
               ))}
               {(!blockedWords || blockedWords.length === 0) && (
-                <span className="text-xs text-muted-foreground font-sans">No blocked words set</span>
+                <span className="text-xs text-muted-foreground font-sans">Asnjë fjalë e bllokuar</span>
               )}
             </div>
             <form
@@ -460,7 +460,7 @@ export default function AdminHealth() {
                 if (word) {
                   const current = blockedWords || [];
                   if (current.includes(word)) {
-                    toast.error("Word already blocked");
+                    toast.error("Fjala tashmë është e bllokuar");
                     return;
                   }
                   updateBlockedWords.mutate({ words: [...current, word] });
@@ -473,7 +473,7 @@ export default function AdminHealth() {
                 type="text"
                 value={newWord}
                 onChange={e => setNewWord(e.target.value)}
-                placeholder="Add word to block..."
+                placeholder="Shto fjalë për të bllokuar..."
                 className="flex-1 px-3 py-1.5 bg-background border border-border/50 rounded-lg text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-gold/50 font-sans"
               />
               <button
@@ -482,7 +482,7 @@ export default function AdminHealth() {
                 className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-xs font-semibold font-sans hover:bg-red-500/30 disabled:opacity-50 transition-colors"
               >
                 <Plus className="w-3 h-3" />
-                Block
+                Blloko
               </button>
             </form>
           </div>
@@ -491,11 +491,11 @@ export default function AdminHealth() {
           <div className="bg-card/50 rounded-xl border border-border/30 p-4 md:p-5">
             <div className="flex items-center gap-2 mb-4">
               <HardDrive className="w-4 h-4 text-blue-400" />
-              <h3 className="text-sm font-bold text-foreground">Storage</h3>
+              <h3 className="text-sm font-bold text-foreground">Ruajtja</h3>
             </div>
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-muted-foreground font-sans">Database Usage</span>
+                <span className="text-xs text-muted-foreground font-sans">Përdorimi i Bazës së të Dhënave</span>
                 <span className={`text-xs font-bold font-sans ${health.database.sizeMb > health.database.maxSizeMb * 0.8 ? "text-red-400" : health.database.sizeMb > health.database.maxSizeMb * 0.5 ? "text-yellow-400" : "text-green-400"}`}>
                   {health.database.sizeMb}MB / {health.database.maxSizeMb}MB
                 </span>
@@ -511,16 +511,16 @@ export default function AdminHealth() {
               <div className="p-3 bg-background/50 rounded-lg">
                 <div className="flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-orange-400" />
-                  <p className="text-xs font-bold text-foreground">{health.maintenance?.wipeSchedule || "Not set"}</p>
+                  <p className="text-xs font-bold text-foreground">{health.maintenance?.wipeSchedule || "Nuk është caktuar"}</p>
                 </div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans mt-1">Auto-Cleanup Schedule</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans mt-1">Pastrimi Automatik</p>
               </div>
               <div className="p-3 bg-background/50 rounded-lg">
                 <div className="flex items-center gap-2">
                   <Shield className="w-3.5 h-3.5 text-green-400" />
-                  <p className="text-xs font-bold text-foreground">{health.maintenance?.lastWipe ? formatTimeAgo(health.maintenance.lastWipe) : "Never"}</p>
+                  <p className="text-xs font-bold text-foreground">{health.maintenance?.lastWipe ? formatTimeAgo(health.maintenance.lastWipe) : "Asnjëherë"}</p>
                 </div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans mt-1">Last Cleanup</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans mt-1">Pastrimi i Fundit</p>
               </div>
             </div>
           </div>
@@ -529,12 +529,12 @@ export default function AdminHealth() {
           <div className="bg-card/50 rounded-xl border border-border/30 p-4 md:p-5">
             <div className="flex items-center gap-2 mb-3">
               <Server className="w-4 h-4 text-gold" />
-              <h3 className="text-sm font-bold text-foreground">Server</h3>
+              <h3 className="text-sm font-bold text-foreground">Serveri</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 bg-background/50 rounded-lg text-center">
                 <p className="text-lg font-black text-foreground">{formatUptime(health.uptime)}</p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Uptime</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Koha Aktive</p>
               </div>
               <div className="p-3 bg-background/50 rounded-lg text-center">
                 <p className="text-lg font-black text-foreground">Node 22</p>
@@ -542,11 +542,11 @@ export default function AdminHealth() {
               </div>
               <div className="p-3 bg-background/50 rounded-lg text-center">
                 <p className="text-lg font-black text-green-400">Railway</p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Platform</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Platforma</p>
               </div>
               <div className="p-3 bg-background/50 rounded-lg text-center">
                 <p className="text-lg font-black text-foreground">3h</p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Import Cycle</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-sans">Cikli i Importit</p>
               </div>
             </div>
           </div>
@@ -556,15 +556,15 @@ export default function AdminHealth() {
             <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
               <div className="flex items-center gap-2 text-yellow-400 font-semibold text-sm mb-2">
                 <AlertTriangle className="w-4 h-4" />
-                No Articles Found — Diagnosis
+                Asnjë Artikull — Diagnostikimi
               </div>
               <ul className="text-xs text-yellow-400/80 space-y-1 list-disc list-inside">
-                {health.database.status !== "connected" && <li>Database is not connected. Check DATABASE_URL env var.</li>}
-                {health.database.categories === 0 && <li>No categories found. The importer auto-seeds on first run.</li>}
-                {health.services.cloudinary !== "configured" && <li>Cloudinary not configured. Articles need images to publish.</li>}
-                {!hasImported && <li>No import has run yet. First import starts 30s after server boot.</li>}
+                {health.database.status !== "connected" && <li>Baza e të dhënave nuk është e lidhur. Kontrolloni DATABASE_URL.</li>}
+                {health.database.categories === 0 && <li>Asnjë kategori nuk u gjet. Importuesi i krijon automatikisht në ekzekutimin e parë.</li>}
+                {health.services.cloudinary !== "configured" && <li>Cloudinary nuk është i konfiguruar. Artikujt kanë nevojë për foto për tu publikuar.</li>}
+                {!hasImported && <li>Asnjë import nuk ka ndodhur ende. Importi i parë fillon 30s pas nisjes së serverit.</li>}
                 {hasImported && lastResult!.newArticles === 0 && lastResult!.errors > 0 && (
-                  <li>Last import: {lastResult!.errors} errors, 0 new articles. Check server logs.</li>
+                  <li>Importi i fundit: {lastResult!.errors} gabime, 0 artikuj të rinj. Kontrolloni logjet e serverit.</li>
                 )}
               </ul>
             </div>

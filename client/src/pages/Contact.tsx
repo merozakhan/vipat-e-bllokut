@@ -7,36 +7,36 @@ import { trpc } from "@/lib/trpc";
 import SEOHead from "@/components/SEOHead";
 
 const contactReasons = [
-  { value: "general", label: "General Enquiry", desc: "General questions about our services", responseTime: "24 hours" },
-  { value: "editorial", label: "Editorial / News Tips", desc: "Submit a story tip or editorial feedback", responseTime: "12 hours" },
-  { value: "advertising", label: "Advertising & Partnerships", desc: "Discuss advertising opportunities and media partnerships", responseTime: "24 hours" },
-  { value: "marketing", label: "Marketing Collaboration", desc: "Propose marketing collaborations or brand partnerships", responseTime: "48 hours" },
-  { value: "press", label: "Press & Media Enquiries", desc: "Press releases, media accreditation, and interview requests", responseTime: "12 hours" },
-  { value: "legal", label: "Legal / Compliance", desc: "Legal matters, GDPR requests, or compliance enquiries", responseTime: "5 business days" },
-  { value: "technical", label: "Technical Support", desc: "Report website issues or technical problems", responseTime: "24 hours" },
-  { value: "careers", label: "Careers & Freelancing", desc: "Job opportunities and freelance writing positions", responseTime: "1 week" },
+  { value: "general", label: "Pyetje të Përgjithshme", desc: "Pyetje të përgjithshme rreth shërbimeve tona", responseTime: "24 orë" },
+  { value: "editorial", label: "Editoriale / Këshilla Lajmesh", desc: "Dërgoni një këshillë lajmi ose koment editorial", responseTime: "12 orë" },
+  { value: "advertising", label: "Reklama dhe Partneritete", desc: "Diskutoni mundësitë e reklamimit dhe partneriteteve mediatike", responseTime: "24 orë" },
+  { value: "marketing", label: "Bashkëpunim Marketingu", desc: "Propozoni bashkëpunime marketingu ose partneritete brendi", responseTime: "48 orë" },
+  { value: "press", label: "Pyetje për Shtypin dhe Median", desc: "Njoftimet për shtypin, akreditimet mediatike dhe kërkesat për intervista", responseTime: "12 orë" },
+  { value: "legal", label: "Ligjore / Përputhshmëri", desc: "Çështje ligjore, kërkesa GDPR ose pyetje përputhshmërie", responseTime: "5 ditë pune" },
+  { value: "technical", label: "Mbështetje Teknike", desc: "Raportoni probleme me faqen ose çështje teknike", responseTime: "24 orë" },
+  { value: "careers", label: "Karriera dhe Punë të Pavarura", desc: "Mundësi punësimi dhe pozicione të shkrimit të pavarur", responseTime: "1 javë" },
 ];
 
 const faqs = [
   {
-    q: "How can I submit a news tip?",
-    a: "Select 'Editorial / News Tips' from the contact reason dropdown and provide as much detail as possible. You can also email us directly at info@vipatebllokut.com with the subject line 'News Tip'.",
+    q: "Si mund të dërgoj një këshillë lajmi?",
+    a: "Zgjidhni 'Editoriale / Këshilla Lajmesh' nga lista e arsyeve të kontaktit dhe jepni sa më shumë detaje të jetë e mundur. Mund të na dërgoni email direkt në info@vipatebllokut.com me subjektin 'Këshillë Lajmi'.",
   },
   {
-    q: "What advertising options do you offer?",
-    a: "We offer display advertising, sponsored content, newsletter sponsorship, and custom media partnerships. Visit our Advertise page for detailed information, or select 'Advertising & Partnerships' to get in touch.",
+    q: "Çfarë opsionesh reklamimi ofroni?",
+    a: "Ofrojmë reklama banner, përmbajtje të sponsorizuar, sponsorizim buletini dhe partneritete mediatike të personalizuara. Vizitoni faqen tonë të Reklamimit për informacione të detajuara, ose zgjidhni 'Reklama dhe Partneritete' për të na kontaktuar.",
   },
   {
-    q: "How do I request deletion of my personal data?",
-    a: "Select 'Legal / Compliance' as your contact reason and specify that you wish to exercise your right to erasure under GDPR. We will process your request within 30 days.",
+    q: "Si mund të kërkoj fshirjen e të dhënave personale?",
+    a: "Zgjidhni 'Ligjore / Përputhshmëri' si arsye kontakti dhe specifikoni që dëshironi të ushtroni të drejtën tuaj për fshirje sipas GDPR. Kërkesa juaj do të përpunohet brenda 30 ditëve.",
   },
   {
-    q: "Are you hiring writers or journalists?",
-    a: "We are always looking for talented writers and journalists, particularly those with expertise in Albanian affairs. Select 'Careers & Freelancing' and include your CV or portfolio link.",
+    q: "A po punësoni shkrimtarë ose gazetarë?",
+    a: "Jemi gjithmonë në kërkim të shkrimtarëve dhe gazetarëve të talentuar, veçanërisht atyre me ekspertizë në çështjet shqiptare. Zgjidhni 'Karriera dhe Punë të Pavarura' dhe përfshini CV-në ose linkun e portofolit tuaj.",
   },
   {
-    q: "How quickly will I receive a response?",
-    a: "Response times vary by department. Editorial and press enquiries are typically answered within 12 hours. General and advertising enquiries within 24-48 hours. Legal matters within 5 business days.",
+    q: "Sa shpejt do të marr përgjigje?",
+    a: "Kohët e përgjigjes ndryshojnë sipas departamentit. Pyetjet editoriale dhe të shtypit zakonisht marrin përgjigje brenda 12 orëve. Pyetjet e përgjithshme dhe të reklamimit brenda 24-48 orëve. Çështjet ligjore brenda 5 ditëve të punës.",
   },
 ];
 
@@ -60,17 +60,17 @@ export default function Contact() {
   const contactMutation = trpc.contact.submit.useMutation({
     onSuccess: () => {
       setSubmitted(true);
-      toast.success("Message sent successfully!");
+      toast.success("Mesazhi u dërgua me sukses!");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to send message. Please try again or email us directly at info@vipatebllokut.com");
+      toast.error(error.message || "Dështoi dërgimi i mesazhit. Provoni përsëri ose na dërgoni email direkt në info@vipatebllokut.com");
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.reason || !formData.message) {
-      toast.error("Please fill in all required fields.");
+      toast.error("Ju lutem plotësoni të gjitha fushat e detyrueshme.");
       return;
     }
     contactMutation.mutate({
@@ -95,13 +95,13 @@ export default function Contact() {
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-[2px] bg-gold" />
-              <span className="text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Get In Touch</span>
+              <span className="text-xs text-gold uppercase tracking-[0.3em] font-sans font-semibold">Na Kontaktoni</span>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
-              Contact <span className="text-gradient-gold">Us</span>
+              Na <span className="text-gradient-gold">Kontaktoni</span>
             </h1>
             <p className="text-lg text-muted-foreground font-sans leading-relaxed">
-              Whether you have a news tip, business inquiry, or partnership proposal, our team is ready to assist you. Select the appropriate department below to ensure your message reaches the right team.
+              Qoftë një këshillë lajmi, pyetje biznesi ose propozim partneriteti, ekipi ynë është gati t'ju ndihmojë. Zgjidhni departamentin e duhur më poshtë për t'u siguruar që mesazhi juaj arrin ekipin e duhur.
             </p>
           </div>
         </div>

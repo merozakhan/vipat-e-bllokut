@@ -9,14 +9,20 @@ import SEOHead from "@/components/SEOHead";
 export default function CategoryPage() {
   const params = useParams<{ slug: string }>();
   const { data: category, isLoading: catLoading } = trpc.categories.getBySlug.useQuery({ slug: params.slug || "" });
-  const { data: categories } = trpc.categories.getAll.useQuery();
-  
-  const categoryId = category?.id || categories?.find((c) => c.slug === params.slug)?.id;
-  
-  const { data: articles, isLoading } = trpc.articles.getByCategory.useQuery(
-    { categoryId: categoryId || 0, limit: 30 },
-    { enabled: !!categoryId }
+
+  // For "te-gjitha" (All News), fetch published articles directly (latest first)
+  // For other categories, use the category join query
+  const isAllNews = params.slug === "te-gjitha";
+  const { data: publishedArticles, isLoading: pubLoading } = trpc.articles.getPublished.useQuery(
+    { limit: 100 },
+    { enabled: isAllNews }
   );
+  const { data: catArticles, isLoading: catArtLoading } = trpc.articles.getByCategory.useQuery(
+    { categoryId: category?.id || 0, limit: 100 },
+    { enabled: !isAllNews && !!category?.id }
+  );
+  const articles = isAllNews ? publishedArticles : catArticles;
+  const isLoading = isAllNews ? pubLoading : catArtLoading;
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "";
@@ -35,7 +41,7 @@ export default function CategoryPage() {
     return `${Math.ceil(words / 200)} min read`;
   };
 
-  const categoryName = category?.name || categories?.find((c) => c.slug === params.slug)?.name || params.slug;
+  const categoryName = category?.name || (isAllNews ? "Të Gjitha" : params.slug);
 
   // Split articles: first one as featured, rest in grid
   const featuredArticle = articles?.[0];

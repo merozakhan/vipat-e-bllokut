@@ -13,7 +13,7 @@ export default function Home() {
 
   // Categories
   const { data: allCategories } = trpc.categories.getAllWithCounts.useQuery();
-  const categoryList = allCategories?.filter(c => c.slug !== "te-gjitha") || [];
+  const categoryList = allCategories || [];
 
   // Fallback: auto-trending by engagement score
   const { data: autoTrending } = trpc.articles.getTrending.useQuery({ limit: 8 });

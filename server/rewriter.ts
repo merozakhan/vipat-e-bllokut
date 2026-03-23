@@ -54,6 +54,8 @@ const SOURCE_BRANDING = [
   /dërgoni\s+informacion[^.!?\n]*/gi,
   /mënyrë\s+anonime[^.!?\n]*/gi,
   /regjistrohuni\s+më\s+poshtë[^.!?\n]*/gi,
+  // Source prefixes at start of paragraphs (Reuters/, AP/, AFP/, etc.)
+  /^(?:Reuters|AP|AFP|DPA|ANSA|Anadolu)\s*[/|:–—-]\s*/gi,
 ];
 
 const TITLE_CLEANUP = [
@@ -440,7 +442,7 @@ function stripLeadingJunk(paragraphs: string[]): string[] {
 
 // ─── Main Rewriter ───────────────────────────────────────────────────
 
-function cleanContent(rawHtml: string): string {
+function cleanContent(rawHtml: string, title: string = ""): string {
   // Step 1: Completely strip ALL HTML to get pure text
   const plainText = stripHtmlDeep(rawHtml);
 
@@ -458,9 +460,22 @@ function cleanContent(rawHtml: string): string {
   // Step 3: Strip leading junk (Live Updates, nav crumbs, tickers)
   const withoutLeadingJunk = stripLeadingJunk(rawParagraphs);
 
+  // Step 3.5: Remove paragraphs that are the article title (avoids duplicate title)
+  const titleLower = title.toLowerCase().trim();
+  const withoutTitle = titleLower
+    ? withoutLeadingJunk.filter(p => {
+        const pLower = p.toLowerCase().trim();
+        // Skip if paragraph is the title or very similar to it
+        if (pLower === titleLower) return false;
+        if (titleLower.startsWith(pLower) && pLower.length > titleLower.length * 0.7) return false;
+        if (pLower.startsWith(titleLower) && titleLower.length > pLower.length * 0.7) return false;
+        return true;
+      })
+    : withoutLeadingJunk;
+
   // Step 4: Clean each paragraph
   let cleaned: string[] = [];
-  for (const para of withoutLeadingJunk) {
+  for (const para of withoutTitle) {
     if (isJunkLine(para)) continue;
     if (isBoilerplate(para)) continue;
 
@@ -524,7 +539,7 @@ export async function rewriteArticle(
 
   try {
     const cleanedTitle = cleanTitle(title);
-    const cleanedContent = cleanContent(content);
+    const cleanedContent = cleanContent(content, cleanedTitle);
 
     if (!cleanedContent) {
       console.warn(`[Rewriter] Content empty after cleaning: ${title.substring(0, 60)}`);

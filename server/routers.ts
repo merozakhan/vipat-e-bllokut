@@ -20,6 +20,7 @@ import {
   createArticle,
   updateArticle,
   deleteArticle,
+  clearAllArticles,
   setArticleCategories,
   getArticleCategories,
   getArticleBySlug,
@@ -303,6 +304,12 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await deleteArticle(input.id);
+        return { success: true };
+      }),
+
+    articlesClearAll: adminProcedure
+      .mutation(async () => {
+        await clearAllArticles();
         return { success: true };
       }),
 

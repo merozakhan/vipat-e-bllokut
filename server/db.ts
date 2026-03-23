@@ -191,6 +191,14 @@ export async function deleteArticle(id: number) {
   return await db.delete(articles).where(eq(articles.id, id));
 }
 
+export async function clearAllArticles() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(articleCategories);
+  await db.delete(articles);
+}
+
 export async function searchArticles(query: string, limit: number = 20) {
   const db = await getDb();
   if (!db) return [];

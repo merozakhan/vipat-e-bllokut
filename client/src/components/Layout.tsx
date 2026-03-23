@@ -165,6 +165,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </span>
                 </Link>
               ))}
+              {categories?.map((cat) => (
+                <Link key={cat.id} href={`/category/${cat.slug}`}>
+                  <span
+                    className={`px-4 py-2 text-sm font-medium font-sans uppercase tracking-wider transition-colors underline-gold ${
+                      location === `/category/${cat.slug}`
+                        ? "text-gold"
+                        : "text-foreground/70 hover:text-gold"
+                    }`}
+                  >
+                    {cat.name}
+                  </span>
+                </Link>
+              ))}
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
                 className="ml-2 p-2.5 text-foreground/70 hover:text-gold transition-colors"
@@ -222,7 +235,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-border bg-card/98 backdrop-blur-xl animate-fade-in-up">
             <div className="container py-4">
-              {/* Main Navigation */}
+              {/* Main Navigation + Categories */}
               <div className="space-y-1 mb-4">
                 {mainNav.map((link) => (
                   <Link key={link.href} href={link.href}>
@@ -237,23 +250,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </span>
                   </Link>
                 ))}
+                {categories?.map((cat) => (
+                  <Link key={cat.id} href={`/category/${cat.slug}`}>
+                    <span
+                      className={`block px-4 py-3 text-sm font-medium font-sans uppercase tracking-wider rounded-lg transition-colors ${
+                        location === `/category/${cat.slug}`
+                          ? "text-gold bg-gold/10"
+                          : "text-foreground/70 hover:text-gold hover:bg-gold/5"
+                      }`}
+                    >
+                      {cat.name}
+                    </span>
+                  </Link>
+                ))}
               </div>
-
-              {/* Categories in mobile menu */}
-              {categories && categories.length > 0 && (
-                <div className="border-t border-border/50 pt-4 mb-4">
-                  <p className="px-4 text-[10px] text-gold/60 uppercase tracking-[0.2em] font-sans font-semibold mb-2">Kategoritë</p>
-                  <div className="grid grid-cols-2 gap-1">
-                    {categories.map((cat) => (
-                      <Link key={cat.id} href={`/category/${cat.slug}`}>
-                        <span className="block px-4 py-2 text-xs font-sans text-foreground/60 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors">
-                          {cat.name}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Company & Legal in mobile menu */}
               <div className="border-t border-border/50 pt-3">

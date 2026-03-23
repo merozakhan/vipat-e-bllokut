@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -57,6 +58,13 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
       },
     },
   });
+
+  // Sync external content changes (e.g. when editing existing article loads)
+  useEffect(() => {
+    if (editor && content && editor.getHTML() !== content) {
+      editor.commands.setContent(content);
+    }
+  }, [editor, content]);
 
   if (!editor) return null;
 

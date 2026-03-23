@@ -37,6 +37,7 @@ import {
 import { uploadImageBase64, uploadMediaBase64, listMedia, deleteMedia } from "./cloudinaryStorage";
 import { getLastImportResult, isImportRunning, triggerManualImport } from "./cronScheduler";
 import { getBlockedWords, setBlockedWords } from "./rssImporter";
+import { rewriteArticle } from "./rewriter";
 import { sendContactEmail, sendNewsletterConfirmation } from "./emailService";
 
 export const appRouter = router({
@@ -346,6 +347,31 @@ export const appRouter = router({
         if (!result) throw new Error("Upload failed");
         return result;
       }),
+
+    // Rewrite all existing articles through the smart rewriter
+    rewriteAll: adminProcedure.mutation(async () => {
+      const allArts = await getAllArticles(500, 0);
+      let rewritten = 0;
+      let skipped = 0;
+      for (const art of allArts) {
+        try {
+          const result = await rewriteArticle(art.title, art.content);
+          if (result.content && result.content.length > 50) {
+            await updateArticle(art.id, {
+              title: result.title,
+              content: result.content,
+              excerpt: result.content.replace(/<[^>]*>/g, "").substring(0, 300) + "...",
+            });
+            rewritten++;
+          } else {
+            skipped++;
+          }
+        } catch {
+          skipped++;
+        }
+      }
+      return { rewritten, skipped, total: allArts.length };
+    }),
 
     // Blocked Words
     blockedWordsGet: adminProcedure.query(() => {

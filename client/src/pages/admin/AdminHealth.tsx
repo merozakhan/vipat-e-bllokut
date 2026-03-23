@@ -181,6 +181,13 @@ export default function AdminHealth() {
     onError: (e) => toast.error(e.message),
   });
 
+  const rewriteAll = trpc.admin.rewriteAll.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Rewritten ${data.rewritten} articles (${data.skipped} skipped)`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   useEffect(() => {
     fetchHealth();
     const interval = setInterval(fetchHealth, 30000);
@@ -215,6 +222,18 @@ export default function AdminHealth() {
               <Play className="w-3.5 h-3.5" />
             )}
             {triggerImport.isPending ? "Importing..." : isRunning ? "Running..." : "Run Import"}
+          </button>
+          <button
+            onClick={() => rewriteAll.mutate()}
+            disabled={rewriteAll.isPending}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-300 font-bold rounded-lg text-xs transition-colors hover:bg-purple-500/30 disabled:opacity-50 font-sans"
+          >
+            {rewriteAll.isPending ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <PenTool className="w-3.5 h-3.5" />
+            )}
+            {rewriteAll.isPending ? "Rewriting..." : "Rewrite All"}
           </button>
           <button
             onClick={fetchHealth}

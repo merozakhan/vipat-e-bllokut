@@ -222,12 +222,9 @@ function cleanTitle(title: string): string {
 
 function isBoilerplate(text: string): boolean {
   const trimmed = text.trim();
-  if (trimmed.length < 5) return true;
+  if (trimmed.length < 3) return true;
 
   const lower = trimmed.toLowerCase();
-
-  // Too short to be a real paragraph
-  if (trimmed.length < 15 && !/[.!?]/.test(trimmed)) return true;
 
   // Looks like a CSS class or JS variable
   if (/^[.#@]\w/.test(trimmed)) return true;
@@ -385,12 +382,16 @@ function cleanContent(rawHtml: string): string {
   // Step 1: Completely strip ALL HTML to get pure text
   const plainText = stripHtmlDeep(rawHtml);
 
-  if (!plainText || plainText.length < 30) return "";
+  if (!plainText || plainText.length < 20) return "";
 
-  // Step 2: Split into paragraphs
+  // Step 2: Split into paragraphs (handle both \n\n and single \n)
   const rawParagraphs = plainText
-    .split(/\n\n+|\n/)
-    .map(p => p.trim())
+    .split(/\n\n+/)
+    .flatMap(block => {
+      // Only split single newlines if the block is long
+      if (block.length > 300) return block.split(/\n/).map(p => p.trim());
+      return [block.trim()];
+    })
     .filter(p => p.length > 0);
 
   // Step 3: Clean each paragraph
@@ -400,8 +401,9 @@ function cleanContent(rawHtml: string): string {
 
     const cleanedText = cleanBranding(para);
 
-    if (cleanedText.length < 15) continue;
-    if (/[{};]/.test(cleanedText) && cleanedText.length < 80) continue;
+    // Only skip if truly empty or code-like
+    if (cleanedText.length < 8) continue;
+    if (/[{};]/.test(cleanedText) && cleanedText.length < 60) continue;
     if (/^\s*(px|em|rem|%|auto|none|inherit|flex|grid|block|inline)[\s;,]/.test(cleanedText)) continue;
 
     cleaned.push(cleanedText);

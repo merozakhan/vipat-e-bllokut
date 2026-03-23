@@ -183,9 +183,12 @@ export default function AdminHealth() {
 
   const rewriteAll = trpc.admin.rewriteAll.useMutation({
     onSuccess: (data) => {
-      toast.success(`Rewritten ${data.rewritten} articles (${data.skipped} skipped)`);
+      toast.success(`Rewritten ${data.rewritten}/${data.total} articles (${data.skipped} skipped)`);
+      if (data.errors && data.errors.length > 0) {
+        toast.error(data.errors.join("\n"), { duration: 10000 });
+      }
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error("Rewrite failed: " + e.message),
   });
 
   useEffect(() => {
@@ -378,6 +381,22 @@ export default function AdminHealth() {
                 <span className="text-[10px] text-muted-foreground font-sans">{formatTimeAgo(lastResult.timestamp)}</span>
               </div>
 
+              {/* Diagnosis for 0% */}
+              {lastResult.totalFetched === 0 && (
+                <div className="px-4 py-3 bg-red-500/5 border-b border-border/20">
+                  <p className="text-xs text-red-400 font-sans font-semibold">No articles fetched — sources may be unreachable or blocking requests.</p>
+                </div>
+              )}
+              {lastResult.totalFetched > 0 && lastResult.newArticles === 0 && (
+                <div className="px-4 py-3 bg-yellow-500/5 border-b border-border/20">
+                  <p className="text-xs text-yellow-400 font-sans font-semibold">
+                    {lastResult.duplicatesSkipped > 0
+                      ? `All ${lastResult.totalFetched} articles were duplicates — no new content from sources.`
+                      : `${lastResult.totalFetched} fetched but none passed validation (image/content check).`}
+                  </p>
+                </div>
+              )}
+
               {/* Success rate bar */}
               <div className="px-4 py-3 border-b border-border/20">
                 <div className="flex items-center justify-between mb-1.5">
@@ -387,7 +406,7 @@ export default function AdminHealth() {
                 <div className="w-full bg-background rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all ${successRate > 50 ? "bg-green-500" : successRate > 20 ? "bg-yellow-500" : "bg-red-500"}`}
-                    style={{ width: `${successRate}%` }}
+                    style={{ width: `${Math.max(successRate, 1)}%` }}
                   />
                 </div>
               </div>

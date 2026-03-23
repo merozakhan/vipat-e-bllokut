@@ -353,10 +353,11 @@ export const appRouter = router({
       const allArts = await getAllArticles(500, 0);
       let rewritten = 0;
       let skipped = 0;
+      const errors: string[] = [];
       for (const art of allArts) {
         try {
           const result = await rewriteArticle(art.title, art.content);
-          if (result.content && result.content.length > 50) {
+          if (result.content && result.content.replace(/<[^>]*>/g, "").trim().length > 30) {
             await updateArticle(art.id, {
               title: result.title,
               content: result.content,
@@ -364,13 +365,16 @@ export const appRouter = router({
             });
             rewritten++;
           } else {
+            // Content was empty after rewrite — keep original, don't destroy it
             skipped++;
+            if (errors.length < 5) errors.push(`Empty after rewrite: ${art.title.substring(0, 40)}`);
           }
-        } catch {
+        } catch (e: any) {
           skipped++;
+          if (errors.length < 5) errors.push(`Error: ${art.title.substring(0, 40)} — ${e?.message || "unknown"}`);
         }
       }
-      return { rewritten, skipped, total: allArts.length };
+      return { rewritten, skipped, total: allArts.length, errors };
     }),
 
     // Blocked Words

@@ -487,7 +487,7 @@ function cleanContent(rawHtml: string): string {
 
     const cleanedText = cleanBranding(para);
 
-    if (cleanedText.length < 8) continue;
+    if (cleanedText.length < 5) continue;
     if (/[{};]/.test(cleanedText) && cleanedText.length < 60) continue;
     if (/^\s*(px|em|rem|%|auto|none|inherit|flex|grid|block|inline)[\s;,]/.test(cleanedText)) continue;
 
@@ -520,17 +520,17 @@ function cleanContent(rawHtml: string): string {
   // Step 8: Build professional HTML
   let html = "";
 
-  // Lead paragraph — bold
-  html += `<p><strong>${cleaned[0]}</strong></p>`;
+  // Lead paragraph — plain text, CSS handles larger font via :first-child
+  html += `<p>${cleaned[0]}</p>`;
 
   for (let i = 1; i < cleaned.length; i++) {
-    // Pull quote after 2nd paragraph
-    if (i === 2 && pullQuote && cleaned.length > 4) {
+    // Pull quote after 3rd paragraph (only for longer articles)
+    if (i === 3 && pullQuote && cleaned.length > 6) {
       html += `<blockquote><p>${applyTypography(pullQuote)}</p></blockquote>`;
     }
 
-    // Visual divider every 5 paragraphs
-    if (i > 1 && i % 5 === 0 && i < cleaned.length - 1) {
+    // Visual divider only for long articles (10+ paragraphs), every 7 paragraphs
+    if (cleaned.length >= 10 && i > 2 && i % 7 === 0 && i < cleaned.length - 2) {
       html += `<hr />`;
     }
 

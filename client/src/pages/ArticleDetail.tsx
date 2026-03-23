@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link, useParams } from "wouter";
-import { Calendar, Clock, ArrowLeft, Share2, Star, ChevronRight } from "lucide-react";
+import { Calendar, Clock, ArrowLeft, Share2, Star, ChevronRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 import ArticleImage from "@/components/ArticleImage";
@@ -189,8 +189,25 @@ export default function ArticleDetail() {
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
 
+            {/* Copyright Stamp */}
+            <div className="mt-8 md:mt-10 p-4 md:p-6 bg-card/50 rounded-xl border border-border/40">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Shield className="w-4 h-4 text-gold" />
+                </div>
+                <div>
+                  <p className="text-xs md:text-sm text-foreground/80 font-sans leading-relaxed">
+                    Ky lajm është publikuar nga <strong className="text-gold">Vipat e Bllokut Ltd</strong>. Të gjitha të drejtat janë të rezervuara. Përmbajtja e këtij artikulli mbrohet nga e drejta e autorit. Riprodhimi, kopjimi ose shpërndarja pa autorizim është e ndaluar.
+                  </p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground font-sans mt-2">
+                    &copy; {new Date().getFullYear()} Vipat e Bllokut Ltd. Nr. Kompanisë: 17079235. Regjistruar në Angli dhe Uells.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Article Footer */}
-            <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-border/50">
+            <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-border/50">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <p className="text-[10px] md:text-xs text-muted-foreground font-sans uppercase tracking-wider mb-1">Publikuar</p>

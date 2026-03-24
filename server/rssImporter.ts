@@ -1097,13 +1097,14 @@ async function scrapeHoroscopeType(type: "ditor" | "javor" | "mujor"): Promise<b
     if (i < signs.length - 1) content += `<hr />`;
   }
 
-  // Generate branded horoscope image via Cloudinary with VBO logo
+  // Generate premium horoscope cover image via Cloudinary
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   let imageUrl = "";
   if (cloudName) {
-    const titleText = encodeURIComponent("Horoskopi " + label);
+    const titleText = encodeURIComponent("HOROSKOPI " + label.toUpperCase());
     const dateText = encodeURIComponent(dateFormatted);
-    imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:0d0d2b/l_vipat-assets:vipat-watermark,w_280,o_20,g_center/co_rgb:d4a843,l_text:Georgia_56_bold:${titleText}/fl_layer_apply,g_north,y_50/co_rgb:ffffff60,l_text:Arial_26:${dateText}/fl_layer_apply,g_north,y_120/co_rgb:ffffff30,l_text:Arial_20:vipatebllokut.com/fl_layer_apply,g_south,y_30/vipat-media/og-placeholder.png`;
+    // Dark purple/navy gradient bg + large VBO logo + gold title + zodiac signs + date
+    imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:080820/l_vipat-assets:vipat-watermark,w_200,o_90,g_center,y_-60/co_rgb:d4a843,l_text:Georgia_46_bold_letter_spacing_6:${titleText}/fl_layer_apply,g_center,y_80/co_rgb:ffffff50,l_text:Arial_20:${dateText}/fl_layer_apply,g_center,y_130/co_rgb:d4a84340,l_text:Georgia_30:%E2%99%88%20%E2%99%89%20%E2%99%8A%20%E2%99%8B%20%E2%99%8C%20%E2%99%8D%20%E2%99%8E%20%E2%99%8F%20%E2%99%90%20%E2%99%91%20%E2%99%92%20%E2%99%93/fl_layer_apply,g_south,y_25/co_rgb:d4a84330,l_text:Arial_12:vipatebllokut.com/fl_layer_apply,g_south_east,x_20,y_10/vipat-media/og-placeholder.png`;
   }
 
   const articleId = await insertArticle(title, slug, content, "", imageUrl, categoryId, today);

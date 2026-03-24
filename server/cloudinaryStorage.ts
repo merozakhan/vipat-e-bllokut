@@ -16,12 +16,12 @@ import { v2 as cloudinary } from "cloudinary";
 
 let configured = false;
 
-// Logo watermark overlay — centered, large, semi-transparent
+// Gold VBO logo watermark — centered, large, semi-transparent PNG
 const WATERMARK_OVERLAY = {
   overlay: "vipat-assets:vipat-watermark",
   gravity: "center",
-  width: 350,
-  opacity: 35,
+  width: 500,
+  opacity: 40,
 };
 
 function ensureConfigured(): boolean {

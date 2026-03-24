@@ -176,7 +176,7 @@ async function startServer() {
         publishedArticles: articleCount,
         categories: categoryCount,
         sizeMb: dbSizeMb,
-        maxSizeMb: 500,
+        maxSizeMb: 5000,
       },
       importer: {
         running: importRunning,
@@ -199,7 +199,7 @@ async function startServer() {
         types: ["Ditor (daily)", "Javor (weekly)", "Mujor (monthly)"],
       },
       maintenance: {
-        wipeSchedule: "Every Monday at 4:00 AM UTC",
+        wipeSchedule: "1st of every month at 4:00 AM UTC",
         lastWipe: lastWipe?.toISOString() || null,
       },
       services: {

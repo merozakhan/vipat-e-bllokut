@@ -76,9 +76,9 @@ export function startCronScheduler(): void {
     await executeImport();
   });
 
-  // Every Monday at 4:00 AM UTC: weekly wipe + refill
-  wipeTask = cron.schedule("0 4 * * 1", async () => {
-    console.log(`[Cron] Weekly wipe at ${new Date().toISOString()}`);
+  // 1st of every month at 4:00 AM UTC: monthly wipe + refill
+  wipeTask = cron.schedule("0 4 1 * *", async () => {
+    console.log(`[Cron] Monthly wipe at ${new Date().toISOString()}`);
     await executeWipeAndRefill();
   });
 
@@ -91,7 +91,7 @@ export function startCronScheduler(): void {
   console.log("[Cron] Active schedules:");
   console.log("[Cron]   - Import: every 3 hours at :00");
   console.log("[Cron]   - Horoscope: every day at 6:00 AM UTC");
-  console.log("[Cron]   - DB wipe + refill: every Monday at 4:00 AM UTC");
+  console.log("[Cron]   - DB wipe + refill: 1st of every month at 4:00 AM UTC");
 
   // On startup: run incremental import + horoscope
   setTimeout(async () => {

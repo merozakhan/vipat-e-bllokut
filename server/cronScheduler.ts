@@ -7,13 +7,14 @@
  */
 
 import cron from "node-cron";
-import { runRssImport, wipeArticles, type ImportResult } from "./rssImporter";
+import { runRssImport, wipeArticles, scrapeHoroscope, type ImportResult } from "./rssImporter";
 
 let lastImportResult: ImportResult | null = null;
 let lastWipeAt: Date | null = null;
 let isRunning = false;
 let importTask: ReturnType<typeof cron.schedule> | null = null;
 let wipeTask: ReturnType<typeof cron.schedule> | null = null;
+let horoscopeTask: ReturnType<typeof cron.schedule> | null = null;
 
 async function executeImport(): Promise<ImportResult | null> {
   if (isRunning) {
@@ -81,14 +82,23 @@ export function startCronScheduler(): void {
     await executeWipeAndRefill();
   });
 
+  // Every day at 6:00 AM UTC: daily horoscope
+  horoscopeTask = cron.schedule("0 6 * * *", async () => {
+    console.log(`[Cron] Daily horoscope at ${new Date().toISOString()}`);
+    await scrapeHoroscope();
+  });
+
   console.log("[Cron] Active schedules:");
   console.log("[Cron]   - Import: every 3 hours at :00");
+  console.log("[Cron]   - Horoscope: every day at 6:00 AM UTC");
   console.log("[Cron]   - DB wipe + refill: every Monday at 4:00 AM UTC");
 
-  // On startup: run incremental import (no wipe — keeps existing articles)
+  // On startup: run incremental import + horoscope
   setTimeout(async () => {
     console.log("[Cron] Startup: importing new articles...");
     await executeImport();
+    console.log("[Cron] Startup: checking daily horoscope...");
+    await scrapeHoroscope();
   }, 30_000);
 }
 
@@ -103,6 +113,10 @@ export function stopCronScheduler(): void {
   if (wipeTask) {
     wipeTask.stop();
     wipeTask = null;
+  }
+  if (horoscopeTask) {
+    horoscopeTask.stop();
+    horoscopeTask = null;
   }
   console.log("[Cron] Scheduler stopped.");
 }

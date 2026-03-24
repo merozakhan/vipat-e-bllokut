@@ -981,6 +981,172 @@ export async function runRssImport(): Promise<ImportResult> {
   return result;
 }
 
+// ─── Horoscope Scraper ──────────────────────────────────────────────
+
+const ZODIAC_SIGNS = [
+  { name: "Dashi", slug: "dashi", emoji: "♈", dates: "21 Mars - 19 Prill" },
+  { name: "Demi", slug: "demi", emoji: "♉", dates: "20 Prill - 20 Maj" },
+  { name: "Binjakët", slug: "binjaket", emoji: "♊", dates: "21 Maj - 20 Qershor" },
+  { name: "Gaforrja", slug: "gaforrja", emoji: "♋", dates: "21 Qershor - 22 Korrik" },
+  { name: "Luani", slug: "luani", emoji: "♌", dates: "23 Korrik - 22 Gusht" },
+  { name: "Virgjëresha", slug: "virgjeresha", emoji: "♍", dates: "23 Gusht - 22 Shtator" },
+  { name: "Peshorja", slug: "peshorja", emoji: "♎", dates: "23 Shtator - 22 Tetor" },
+  { name: "Akrepi", slug: "akrepi", emoji: "♏", dates: "23 Tetor - 21 Nëntor" },
+  { name: "Shigjetari", slug: "shigjetari", emoji: "♐", dates: "22 Nëntor - 21 Dhjetor" },
+  { name: "Bricjapi", slug: "bricjapi", emoji: "♑", dates: "22 Dhjetor - 19 Janar" },
+  { name: "Ujori", slug: "ujori", emoji: "♒", dates: "20 Janar - 18 Shkurt" },
+  { name: "Peshqit", slug: "peshqit", emoji: "♓", dates: "19 Shkurt - 20 Mars" },
+];
+
+const HOROSCOPE_URL = "https://www.horoskopishqip.com/horoskopi-ditor/";
+
+/**
+ * Scrape daily horoscope from horoskopishqip.com and create articles
+ * for each zodiac sign in the "horoskopi" category.
+ */
+export async function scrapeHoroscope(): Promise<number> {
+  console.log("[Horoscope] Starting daily horoscope scrape...");
+
+  const db = await getDb();
+  if (!db) {
+    console.error("[Horoscope] Database not available.");
+    return 0;
+  }
+
+  // Get horoskopi category
+  const horoskopiCat = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.slug, "horoskopi"))
+    .limit(1);
+
+  if (horoskopiCat.length === 0) {
+    console.error("[Horoscope] 'horoskopi' category not found.");
+    return 0;
+  }
+  const categoryId = horoskopiCat[0].id;
+
+  // Also get te-gjitha category
+  const teGjithaCat = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.slug, "te-gjitha"))
+    .limit(1);
+  const teGjithaId = teGjithaCat[0]?.id;
+
+  // Check if today's horoscope already exists
+  const today = new Date();
+  const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
+  const existingToday = await db
+    .select({ id: articles.id })
+    .from(articles)
+    .innerJoin(articleCategories, eq(articles.id, articleCategories.articleId))
+    .where(and(
+      eq(articleCategories.categoryId, categoryId),
+      sql`DATE(${articles.publishedAt}) = ${todayStr}`,
+    ))
+    .limit(1);
+
+  if (existingToday.length > 0) {
+    console.log("[Horoscope] Today's horoscope already exists. Skipping.");
+    return 0;
+  }
+
+  // Fetch the daily horoscope page
+  const html = await fetchPage(HOROSCOPE_URL);
+  if (!html) {
+    console.error("[Horoscope] Failed to fetch horoscope page.");
+    return 0;
+  }
+
+  // Parse horoscope content for each sign
+  // The page has sign images with alt text matching sign names,
+  // followed by the horoscope text in nearby elements
+  let imported = 0;
+
+  for (const sign of ZODIAC_SIGNS) {
+    try {
+      // Find content for this sign — look for the sign name and extract following text
+      // Pattern: sign image/name followed by date range and horoscope paragraph
+      const signPattern = new RegExp(
+        `(?:${sign.name}|sign_${sign.slug})[\\s\\S]*?Të lindur më:\\s*${sign.dates.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?<\\/h[1-6]>\\s*([\\s\\S]*?)(?=<(?:div|section)[^>]*class|$)`,
+        "i"
+      );
+
+      let horoscopeText = "";
+
+      // Try multiple extraction patterns
+      const patterns = [
+        // Pattern 1: After the date heading, get next paragraph(s)
+        new RegExp(`${sign.dates.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?<\\/[^>]+>\\s*<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+        // Pattern 2: Look for sign slug in image src, then get nearby text
+        new RegExp(`sign_${sign.slug}[\\s\\S]{0,500}?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+        // Pattern 3: Look for sign name as heading then paragraph
+        new RegExp(`>${sign.name}<\\/[^>]+>[\\s\\S]*?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+      ];
+
+      for (const pattern of patterns) {
+        const match = html.match(pattern);
+        if (match && match[1]) {
+          const cleaned = match[1].replace(/<[^>]*>/g, "").trim();
+          if (cleaned.length > 30) {
+            horoscopeText = cleaned;
+            break;
+          }
+        }
+      }
+
+      if (!horoscopeText) {
+        console.warn(`[Horoscope] No content found for ${sign.name}`);
+        continue;
+      }
+
+      // Build article
+      const dateFormatted = today.toLocaleDateString("sq-AL", { day: "numeric", month: "long", year: "numeric" });
+      const title = `Horoskopi Ditor - ${sign.name} ${sign.emoji} - ${dateFormatted}`;
+      const slug = generateUniqueSlug(`horoskopi-${sign.slug}-${todayStr}`);
+
+      // Build HTML content
+      const content = `<p><strong>${sign.name} ${sign.emoji}</strong> (${sign.dates})</p><p>${horoscopeText}</p>`;
+
+      // Generate horoscope image via Cloudinary text overlay
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      let imageUrl = "";
+      if (cloudName) {
+        const signText = encodeURIComponent(sign.name + " " + sign.emoji);
+        const dateText = encodeURIComponent(dateFormatted);
+        imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:1a1a2e/co_rgb:d4a843,l_text:Georgia_80_bold:${signText}/fl_layer_apply,g_center,y_-30/co_rgb:ffffff80,l_text:Arial_28:Horoskopi%20Ditor/fl_layer_apply,g_center,y_50/co_rgb:ffffff40,l_text:Arial_22:${dateText}/fl_layer_apply,g_center,y_100/vipat-media/og-placeholder.png`;
+      }
+
+      const articleId = await insertArticle(
+        title,
+        slug,
+        content,
+        "",
+        imageUrl,
+        categoryId,
+        today
+      );
+
+      if (articleId) {
+        // Also assign to te-gjitha
+        if (teGjithaId) {
+          try {
+            await db.insert(articleCategories).values({ articleId, categoryId: teGjithaId });
+          } catch {}
+        }
+        imported++;
+        console.log(`[Horoscope] ✓ ${sign.name}`);
+      }
+    } catch (error) {
+      console.error(`[Horoscope] Error for ${sign.name}:`, error);
+    }
+  }
+
+  console.log(`[Horoscope] Done: ${imported}/12 signs imported.`);
+  return imported;
+}
+
 // ─── Database Wipe ──────────────────────────────────────────────────
 
 /**

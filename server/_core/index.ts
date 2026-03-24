@@ -328,19 +328,13 @@ Sitemap: https://vipatebllokut.com/sitemap.xml
       return res.redirect(301, cachedOgImageUrl);
     }
     try {
-      const { uploadImageBase64 } = await import("../cloudinaryStorage");
-      // Generate a simple OG-friendly image via Cloudinary text overlay
       const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
       if (cloudName) {
-        // Use Cloudinary's text overlay API to generate a branded OG image
-        const ogUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:1a1a2e/co_rgb:d4a843,l_text:Georgia_72_bold:Vipat%20E%20Bllokut/fl_layer_apply,g_center,y_-40/co_rgb:ffffff80,l_text:Arial_24:Albania%20News%20%26%20Media/fl_layer_apply,g_center,y_40/co_rgb:ffffff40,l_text:Arial_18:vipatebllokut.com/fl_layer_apply,g_center,y_90/vipat-media/og-placeholder.png`;
-        // Upload a 1x1 placeholder to create the base image
-        const base64Pixel = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-        await uploadImageBase64(base64Pixel, "og-placeholder", "vipat-media").catch(() => {});
+        // Premium OG image: dark bg + VBO logo center + gold text + tagline
+        const ogUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:0a0a1e/l_vipat-assets:vipat-watermark,w_280,g_center,y_-40/co_rgb:d4a843,l_text:Georgia_42_bold:Vipat%20E%20Bllokut/fl_layer_apply,g_center,y_120/co_rgb:ffffff70,l_text:Arial_22_bold:ALBANIA%20NEWS%20%26%20MEDIA/fl_layer_apply,g_center,y_170/co_rgb:ffffff30,l_text:Arial_16:vipatebllokut.com/fl_layer_apply,g_center,y_210/co_rgb:d4a84320,l_text:Arial_14:%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80/fl_layer_apply,g_center,y_145/vipat-media/og-placeholder.png`;
         cachedOgImageUrl = ogUrl;
         return res.redirect(301, ogUrl);
       }
-      // Fallback: serve the SVG with correct content type
       res.redirect("/og-image.png");
     } catch {
       res.redirect("/og-image.png");

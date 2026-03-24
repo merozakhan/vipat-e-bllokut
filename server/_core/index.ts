@@ -336,9 +336,9 @@ Sitemap: https://vipatebllokut.com/sitemap.xml
         return res.redirect(301, ogUrl);
       }
       // Fallback: serve the SVG with correct content type
-      res.redirect("/og-image.svg");
+      res.redirect("/og-image.png");
     } catch {
-      res.redirect("/og-image.svg");
+      res.redirect("/og-image.png");
     }
   });
 

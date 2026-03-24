@@ -182,7 +182,7 @@ async function startServer() {
         running: importRunning,
         schedule: "Every 3 hours",
         nextImportAt: getNextImportTime().toISOString(),
-        sources: ["JOQ Albania", "VoxNews", "Versus"],
+        sources: ["VoxNews", "Versus"],
         lastResult: lastImport ? {
           timestamp: lastImport.timestamp,
           totalFetched: lastImport.totalFetched,
@@ -192,6 +192,11 @@ async function startServer() {
           skippedNoContent: lastImport.skippedNoContent,
           errors: lastImport.errors,
         } : null,
+      },
+      horoscope: {
+        schedule: "Every day at 6:00 AM UTC",
+        source: "horoskopishqip.com",
+        types: ["Ditor (daily)", "Javor (weekly)", "Mujor (monthly)"],
       },
       maintenance: {
         wipeSchedule: "Every Monday at 4:00 AM UTC",

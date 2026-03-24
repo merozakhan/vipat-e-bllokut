@@ -93,10 +93,10 @@ export async function uploadImageFromUrl(imageUrl: string, folder: string = "vip
         {
           folder,
           resource_type: "image",
-          transformation: [
-            { quality: "auto", fetch_format: "auto" },
-            WATERMARK_OVERLAY,
+          eager: [
+            { quality: "auto", fetch_format: "auto", ...WATERMARK_OVERLAY },
           ],
+          eager_async: false,
         },
         (error, result) => {
           if (error) reject(error);
@@ -106,8 +106,11 @@ export async function uploadImageFromUrl(imageUrl: string, folder: string = "vip
       uploadStream.end(buffer);
     });
 
-    console.log(`[Cloudinary] Uploaded: ${result.public_id} (${Math.round(buffer.byteLength / 1024)}KB)`);
-    return result.secure_url;
+    // Use the eager (watermarked) URL if available, otherwise fallback to original
+    const watermarkedUrl = result.eager?.[0]?.secure_url;
+    const finalUrl = watermarkedUrl || result.secure_url;
+    console.log(`[Cloudinary] Uploaded: ${result.public_id} (${Math.round(buffer.byteLength / 1024)}KB)${watermarkedUrl ? " +stamp" : ""}`);
+    return finalUrl;
   } catch (error: any) {
     console.warn(`[Cloudinary] Upload error: ${error?.message || error}`);
     return null;
@@ -127,10 +130,13 @@ export async function uploadImageBase64(base64Data: string, filename: string, fo
         folder,
         public_id: filename,
         resource_type: "image",
-        transformation: [WATERMARK_OVERLAY],
+        eager: [
+          { quality: "auto", fetch_format: "auto", ...WATERMARK_OVERLAY },
+        ],
+        eager_async: false,
       }
     );
-    return result.secure_url;
+    return result.eager?.[0]?.secure_url || result.secure_url;
   } catch (error: any) {
     console.warn(`[Cloudinary] Base64 upload error: ${error?.message || error}`);
     return null;

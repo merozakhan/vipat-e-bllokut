@@ -1011,108 +1011,121 @@ const HOROSCOPE_LABELS: Record<string, string> = {
 };
 
 /**
- * Scrape a single horoscope type (ditor/javor/mujor) and create articles.
+ * Parse all 12 zodiac sign texts from a horoscope HTML page.
  */
-async function scrapeHoroscopeType(type: "ditor" | "javor" | "mujor"): Promise<number> {
+function parseHoroscopeSigns(html: string): { name: string; emoji: string; dates: string; text: string }[] {
+  const results: { name: string; emoji: string; dates: string; text: string }[] = [];
+
+  for (const sign of ZODIAC_SIGNS) {
+    const escapedDates = sign.dates.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const patterns = [
+      new RegExp(`${escapedDates}[\\s\\S]*?<\\/[^>]+>\\s*<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+      new RegExp(`sign_${sign.slug}[\\s\\S]{0,500}?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+      new RegExp(`>${sign.name}<\\/[^>]+>[\\s\\S]*?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+    ];
+
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        const cleaned = match[1].replace(/<[^>]*>/g, "").trim();
+        if (cleaned.length > 30) {
+          results.push({ name: sign.name, emoji: sign.emoji, dates: sign.dates, text: cleaned });
+          break;
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Scrape one horoscope type and create a SINGLE beautiful article with all 12 signs.
+ */
+async function scrapeHoroscopeType(type: "ditor" | "javor" | "mujor"): Promise<boolean> {
   const label = HOROSCOPE_LABELS[type];
   const url = HOROSCOPE_URLS[type];
   console.log(`[Horoscope] Scraping ${label}...`);
 
   const db = await getDb();
-  if (!db) return 0;
+  if (!db) return false;
 
-  // Get categories
   const horoskopiCat = await db.select().from(categories).where(eq(categories.slug, "horoskopi")).limit(1);
-  if (horoskopiCat.length === 0) { console.error("[Horoscope] 'horoskopi' category not found."); return 0; }
+  if (horoskopiCat.length === 0) { console.error("[Horoscope] 'horoskopi' category not found."); return false; }
   const categoryId = horoskopiCat[0].id;
 
   const teGjithaCat = await db.select().from(categories).where(eq(categories.slug, "te-gjitha")).limit(1);
   const teGjithaId = teGjithaCat[0]?.id;
 
-  // Check for duplicates — use slug prefix to detect existing
+  // Check if this type already exists for today/this week/this month
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const checkSlug = type === "ditor"
-    ? `horoskopi-dashi-${todayStr}`
-    : type === "javor"
-      ? `horoskopi-javor-dashi-${todayStr.substring(0, 7)}`
-      : `horoskopi-mujor-dashi-${todayStr.substring(0, 7)}`;
+    ? `horoskopi-ditor-${todayStr}`
+    : `horoskopi-${type}-${todayStr.substring(0, 7)}`;
 
   const existing = await db.select({ id: articles.id }).from(articles)
     .where(like(articles.slug, `${checkSlug}%`)).limit(1);
   if (existing.length > 0) {
     console.log(`[Horoscope] ${label} already exists. Skipping.`);
-    return 0;
+    return false;
   }
 
   const html = await fetchPage(url);
-  if (!html) { console.error(`[Horoscope] Failed to fetch ${label} page.`); return 0; }
+  if (!html) { console.error(`[Horoscope] Failed to fetch ${label} page.`); return false; }
 
-  let imported = 0;
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const signs = parseHoroscopeSigns(html);
+  if (signs.length === 0) { console.error(`[Horoscope] No signs parsed for ${label}.`); return false; }
 
-  for (const sign of ZODIAC_SIGNS) {
-    try {
-      let horoscopeText = "";
-      const escapedDates = sign.dates.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Build one beautiful article with all signs
+  const dateFormatted = today.toLocaleDateString("sq-AL", { day: "numeric", month: "long", year: "numeric" });
+  const title = `Horoskopi ${label} - ${dateFormatted}`;
+  const slug = generateUniqueSlug(checkSlug);
 
-      const patterns = [
-        new RegExp(`${escapedDates}[\\s\\S]*?<\\/[^>]+>\\s*<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
-        new RegExp(`sign_${sign.slug}[\\s\\S]{0,500}?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
-        new RegExp(`>${sign.name}<\\/[^>]+>[\\s\\S]*?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
-      ];
-
-      for (const pattern of patterns) {
-        const match = html.match(pattern);
-        if (match && match[1]) {
-          const cleaned = match[1].replace(/<[^>]*>/g, "").trim();
-          if (cleaned.length > 30) { horoscopeText = cleaned; break; }
-        }
-      }
-
-      if (!horoscopeText) { console.warn(`[Horoscope] No ${label} content for ${sign.name}`); continue; }
-
-      const dateFormatted = today.toLocaleDateString("sq-AL", { day: "numeric", month: "long", year: "numeric" });
-      const slugPrefix = type === "ditor" ? `horoskopi-${sign.slug}-${todayStr}` :
-        `horoskopi-${type}-${sign.slug}-${todayStr.substring(0, 7)}`;
-      const title = `Horoskopi ${label} - ${sign.name} ${sign.emoji} - ${dateFormatted}`;
-      const slug = generateUniqueSlug(slugPrefix);
-
-      const content = `<p><strong>${sign.name} ${sign.emoji}</strong> (${sign.dates})</p><p>${horoscopeText}</p>`;
-
-      let imageUrl = "";
-      if (cloudName) {
-        const signText = encodeURIComponent(sign.name + " " + sign.emoji);
-        const labelText = encodeURIComponent("Horoskopi " + label);
-        imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:1a1a2e/co_rgb:d4a843,l_text:Georgia_80_bold:${signText}/fl_layer_apply,g_center,y_-30/co_rgb:ffffff80,l_text:Arial_28:${labelText}/fl_layer_apply,g_center,y_50/co_rgb:ffffff40,l_text:Arial_22:${encodeURIComponent(dateFormatted)}/fl_layer_apply,g_center,y_100/vipat-media/og-placeholder.png`;
-      }
-
-      const articleId = await insertArticle(title, slug, content, "", imageUrl, categoryId, today);
-      if (articleId) {
-        if (teGjithaId) { try { await db.insert(articleCategories).values({ articleId, categoryId: teGjithaId }); } catch {} }
-        imported++;
-        console.log(`[Horoscope] ✓ ${label} - ${sign.name}`);
-      }
-    } catch (error) {
-      console.error(`[Horoscope] Error for ${sign.name}:`, error);
-    }
+  // Build beautiful HTML content
+  let content = "";
+  for (let i = 0; i < signs.length; i++) {
+    const s = signs[i];
+    content += `<h3>${s.emoji} ${s.name} <small>(${s.dates})</small></h3>`;
+    content += `<p>${s.text}</p>`;
+    if (i < signs.length - 1) content += `<hr />`;
   }
 
-  console.log(`[Horoscope] ${label}: ${imported}/12 signs imported.`);
-  return imported;
+  // Generate branded horoscope image via Cloudinary
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  let imageUrl = "";
+  if (cloudName) {
+    const titleText = encodeURIComponent("Horoskopi " + label);
+    const dateText = encodeURIComponent(dateFormatted);
+    const zodiacRow1 = encodeURIComponent("♈ ♉ ♊ ♋ ♌ ♍");
+    const zodiacRow2 = encodeURIComponent("♎ ♏ ♐ ♑ ♒ ♓");
+    imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:0d0d2b/l_vipat-assets:vipat-watermark,w_250,o_25,g_center,y_-20/co_rgb:d4a843,l_text:Georgia_52_bold:${titleText}/fl_layer_apply,g_north,y_40/co_rgb:ffffff60,l_text:Arial_24:${dateText}/fl_layer_apply,g_north,y_100/co_rgb:d4a843,l_text:Georgia_48:${zodiacRow1}/fl_layer_apply,g_south,y_100/co_rgb:d4a843,l_text:Georgia_48:${zodiacRow2}/fl_layer_apply,g_south,y_40/vipat-media/og-placeholder.png`;
+  }
+
+  const articleId = await insertArticle(title, slug, content, "", imageUrl, categoryId, today);
+  if (articleId) {
+    if (teGjithaId) {
+      try { await db.insert(articleCategories).values({ articleId, categoryId: teGjithaId }); } catch {}
+    }
+    console.log(`[Horoscope] ✓ ${label}: ${signs.length} signs in 1 article`);
+    return true;
+  }
+
+  return false;
 }
 
 /**
- * Scrape all horoscope types: daily, weekly, monthly.
+ * Scrape all horoscope types: daily (1 article), weekly (1 article), monthly (1 article).
+ * Total: 3 articles max.
  */
 export async function scrapeHoroscope(): Promise<number> {
-  console.log("[Horoscope] Starting horoscope scrape (ditor + javor + mujor)...");
-  let total = 0;
-  total += await scrapeHoroscopeType("ditor");
-  total += await scrapeHoroscopeType("javor");
-  total += await scrapeHoroscopeType("mujor");
-  console.log(`[Horoscope] Total: ${total} articles imported.`);
-  return total;
+  console.log("[Horoscope] Starting horoscope scrape...");
+  let count = 0;
+  if (await scrapeHoroscopeType("ditor")) count++;
+  if (await scrapeHoroscopeType("javor")) count++;
+  if (await scrapeHoroscopeType("mujor")) count++;
+  console.log(`[Horoscope] Done: ${count} articles created.`);
+  return count;
 }
 
 // ─── Database Wipe ──────────────────────────────────────────────────

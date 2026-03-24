@@ -6,6 +6,7 @@ import {
   ChevronRight, Globe, Clock, Newspaper,
   Shield, BookOpen, Megaphone, Users
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function BreakingNewsTicker() {
   const { data: articles } = trpc.articles.getPublished.useQuery({ limit: 5 });

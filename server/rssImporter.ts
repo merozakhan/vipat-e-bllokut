@@ -984,19 +984,24 @@ export async function runRssImport(): Promise<ImportResult> {
 // ─── Horoscope Scraper ──────────────────────────────────────────────
 
 const ZODIAC_SIGNS = [
-  { name: "Dashi", slug: "dashi", emoji: "♈", dates: "21 Mars - 19 Prill" },
-  { name: "Demi", slug: "demi", emoji: "♉", dates: "20 Prill - 20 Maj" },
-  { name: "Binjakët", slug: "binjaket", emoji: "♊", dates: "21 Maj - 20 Qershor" },
-  { name: "Gaforrja", slug: "gaforrja", emoji: "♋", dates: "21 Qershor - 22 Korrik" },
-  { name: "Luani", slug: "luani", emoji: "♌", dates: "23 Korrik - 22 Gusht" },
-  { name: "Virgjëresha", slug: "virgjeresha", emoji: "♍", dates: "23 Gusht - 22 Shtator" },
-  { name: "Peshorja", slug: "peshorja", emoji: "♎", dates: "23 Shtator - 22 Tetor" },
-  { name: "Akrepi", slug: "akrepi", emoji: "♏", dates: "23 Tetor - 21 Nëntor" },
-  { name: "Shigjetari", slug: "shigjetari", emoji: "♐", dates: "22 Nëntor - 21 Dhjetor" },
-  { name: "Bricjapi", slug: "bricjapi", emoji: "♑", dates: "22 Dhjetor - 19 Janar" },
-  { name: "Ujori", slug: "ujori", emoji: "♒", dates: "20 Janar - 18 Shkurt" },
-  { name: "Peshqit", slug: "peshqit", emoji: "♓", dates: "19 Shkurt - 20 Mars" },
+  { name: "Dashi", slug: "dashi", english: "aries", dates: "21 Mars - 19 Prill" },
+  { name: "Demi", slug: "demi", english: "taurus", dates: "20 Prill - 20 Maj" },
+  { name: "Binjakët", slug: "binjaket", english: "gemini", dates: "21 Maj - 20 Qershor" },
+  { name: "Gaforrja", slug: "gaforrja", english: "cancer", dates: "21 Qershor - 22 Korrik" },
+  { name: "Luani", slug: "luani", english: "leo", dates: "23 Korrik - 22 Gusht" },
+  { name: "Virgjëresha", slug: "virgjeresha", english: "virgo", dates: "23 Gusht - 22 Shtator" },
+  { name: "Peshorja", slug: "peshorja", english: "libra", dates: "23 Shtator - 22 Tetor" },
+  { name: "Akrepi", slug: "akrepi", english: "scorpio", dates: "23 Tetor - 21 Nëntor" },
+  { name: "Shigjetari", slug: "shigjetari", english: "sagittarius", dates: "22 Nëntor - 21 Dhjetor" },
+  { name: "Bricjapi", slug: "bricjapi", english: "capricorn", dates: "22 Dhjetor - 19 Janar" },
+  { name: "Ujori", slug: "ujori", english: "aquarius", dates: "20 Janar - 18 Shkurt" },
+  { name: "Peshqit", slug: "peshqit", english: "pisces", dates: "19 Shkurt - 20 Mars" },
 ];
+
+function getSignIconUrl(english: string): string {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "dp8mbbbm4";
+  return `https://res.cloudinary.com/${cloudName}/image/upload/w_40,h_40,c_fit/vipat-horoscope/sign-${english}.png`;
+}
 
 const HOROSCOPE_URLS = {
   ditor: "https://www.horoskopishqip.com/horoskopi-ditor/",
@@ -1013,8 +1018,8 @@ const HOROSCOPE_LABELS: Record<string, string> = {
 /**
  * Parse all 12 zodiac sign texts from a horoscope HTML page.
  */
-function parseHoroscopeSigns(html: string): { name: string; emoji: string; dates: string; text: string }[] {
-  const results: { name: string; emoji: string; dates: string; text: string }[] = [];
+function parseHoroscopeSigns(html: string): { name: string; english: string; dates: string; text: string }[] {
+  const results: { name: string; english: string; dates: string; text: string }[] = [];
 
   for (const sign of ZODIAC_SIGNS) {
     const escapedDates = sign.dates.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1029,7 +1034,7 @@ function parseHoroscopeSigns(html: string): { name: string; emoji: string; dates
       if (match && match[1]) {
         const cleaned = match[1].replace(/<[^>]*>/g, "").trim();
         if (cleaned.length > 30) {
-          results.push({ name: sign.name, emoji: sign.emoji, dates: sign.dates, text: cleaned });
+          results.push({ name: sign.name, english: sign.english, dates: sign.dates, text: cleaned });
           break;
         }
       }
@@ -1082,24 +1087,23 @@ async function scrapeHoroscopeType(type: "ditor" | "javor" | "mujor"): Promise<b
   const title = `Horoskopi ${label} - ${dateFormatted}`;
   const slug = generateUniqueSlug(checkSlug);
 
-  // Build beautiful HTML content
+  // Build beautiful HTML content with zodiac icons
   let content = "";
   for (let i = 0; i < signs.length; i++) {
     const s = signs[i];
-    content += `<h3>${s.emoji} ${s.name} <small>(${s.dates})</small></h3>`;
+    const iconUrl = getSignIconUrl(s.english);
+    content += `<h3><img src="${iconUrl}" alt="${s.name}" style="display:inline-block;vertical-align:middle;width:36px;height:36px;margin-right:8px;" />${s.name} <small>(${s.dates})</small></h3>`;
     content += `<p>${s.text}</p>`;
     if (i < signs.length - 1) content += `<hr />`;
   }
 
-  // Generate branded horoscope image via Cloudinary
+  // Generate branded horoscope image via Cloudinary with VBO logo
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   let imageUrl = "";
   if (cloudName) {
     const titleText = encodeURIComponent("Horoskopi " + label);
     const dateText = encodeURIComponent(dateFormatted);
-    const zodiacRow1 = encodeURIComponent("♈ ♉ ♊ ♋ ♌ ♍");
-    const zodiacRow2 = encodeURIComponent("♎ ♏ ♐ ♑ ♒ ♓");
-    imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:0d0d2b/l_vipat-assets:vipat-watermark,w_250,o_25,g_center,y_-20/co_rgb:d4a843,l_text:Georgia_52_bold:${titleText}/fl_layer_apply,g_north,y_40/co_rgb:ffffff60,l_text:Arial_24:${dateText}/fl_layer_apply,g_north,y_100/co_rgb:d4a843,l_text:Georgia_48:${zodiacRow1}/fl_layer_apply,g_south,y_100/co_rgb:d4a843,l_text:Georgia_48:${zodiacRow2}/fl_layer_apply,g_south,y_40/vipat-media/og-placeholder.png`;
+    imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1200,h_630,c_fill,b_rgb:0d0d2b/l_vipat-assets:vipat-watermark,w_280,o_20,g_center/co_rgb:d4a843,l_text:Georgia_56_bold:${titleText}/fl_layer_apply,g_north,y_50/co_rgb:ffffff60,l_text:Arial_26:${dateText}/fl_layer_apply,g_north,y_120/co_rgb:ffffff30,l_text:Arial_20:vipatebllokut.com/fl_layer_apply,g_south,y_30/vipat-media/og-placeholder.png`;
   }
 
   const articleId = await insertArticle(title, slug, content, "", imageUrl, categoryId, today);

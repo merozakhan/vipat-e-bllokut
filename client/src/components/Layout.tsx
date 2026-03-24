@@ -117,13 +117,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between h-20 md:h-24">
             {/* Logo */}
             <Link href="/">
-              <div className="flex flex-col items-start">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gradient-gold tracking-tight leading-none">
-                  Vipat E Bllokut
-                </h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-8 h-[1px] bg-gold/60" />
-                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-[0.3em] font-sans font-medium">
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="Vipat E Bllokut" className="h-14 md:h-18 lg:h-20 w-auto" />
+                <div className="flex flex-col">
+                  <h1 className="text-lg md:text-2xl lg:text-3xl font-bold text-gradient-gold tracking-tight leading-none">
+                    Vipat E Bllokut
+                  </h1>
+                  <p className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-sans font-medium mt-0.5">
                     Albania News & Media
                   </p>
                 </div>
@@ -314,9 +314,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Top Row: Brand + Newsletter CTA */}
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 pb-12 border-b border-white/8">
             <div className="max-w-md">
-              <h3 className="text-3xl font-bold text-gradient-gold mb-2">
-                Vipat E Bllokut
-              </h3>
+              <div className="flex items-center gap-3 mb-2">
+                <img src="/logo.png" alt="Vipat E Bllokut" className="h-12 w-auto" />
+                <h3 className="text-2xl font-bold text-gradient-gold">
+                  Vipat E Bllokut
+                </h3>
+              </div>
               <p className="text-sm text-white/40 font-sans leading-relaxed">
                 Platforma kryesore dixhitale e lajmeve dhe medias shqiptare. Sjellim të vërtetën, analizën dhe perspektivën për diasporën shqiptare në të gjithë botën që nga viti 2026.
               </p>

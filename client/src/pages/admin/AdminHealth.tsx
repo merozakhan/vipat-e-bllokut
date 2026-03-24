@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Activity, Database, Cloud, Clock, RefreshCw, CheckCircle, XCircle,
-  AlertTriangle, Wifi, Zap, PenTool, Globe, Server,
+  AlertTriangle, Wifi, Zap, PenTool, Globe, Server, Star,
   HardDrive, ImageIcon, Shield, TrendingUp, Play, Ban, Plus, X
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -37,6 +37,11 @@ interface HealthData {
   maintenance: {
     wipeSchedule: string;
     lastWipe: string | null;
+  };
+  horoscope: {
+    schedule: string;
+    source: string;
+    types: string[];
   };
   services: {
     cloudinary: string;
@@ -348,13 +353,6 @@ export default function AdminHealth() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <SourceCard
-                name="JOQ Albania"
-                url="joq-albania.com"
-                active={!!isRunning}
-                lastFetched={hasImported ? formatTimeAgo(lastResult!.timestamp) : undefined}
-                nextIn={nextETA || undefined}
-              />
-              <SourceCard
                 name="VoxNews"
                 url="voxnews.al"
                 active={!!isRunning}
@@ -368,7 +366,25 @@ export default function AdminHealth() {
                 lastFetched={hasImported ? formatTimeAgo(lastResult!.timestamp) : undefined}
                 nextIn={nextETA || undefined}
               />
+              <SourceCard
+                name="Horoskopi"
+                url="horoskopishqip.com"
+                active={false}
+                lastFetched={undefined}
+                nextIn={health.horoscope?.schedule || "Çdo ditë në 6:00 AM"}
+              />
             </div>
+            {health.horoscope && (
+              <div className="mt-2 px-3 py-2 bg-purple-500/5 border border-purple-500/20 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider font-sans">Horoskopi</span>
+                  <span className="text-[10px] text-muted-foreground font-sans ml-auto">
+                    {health.horoscope.types.join(" · ")}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ═══ Last Import Results ═══ */}

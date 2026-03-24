@@ -117,8 +117,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between h-20 md:h-24">
             {/* Logo */}
             <Link href="/">
-              <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="Vipat E Bllokut" className="h-14 md:h-18 lg:h-20 w-auto" />
+              <div className="flex items-center gap-1">
+                <img src="/logo.png" alt="Vipat E Bllokut" className="h-14 md:h-18 lg:h-20 w-auto -mr-0.5" />
                 <div className="flex flex-col">
                   <h1 className="text-lg md:text-2xl lg:text-3xl font-bold text-gradient-gold tracking-tight leading-none">
                     Vipat E Bllokut
@@ -314,8 +314,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Top Row: Brand + Newsletter CTA */}
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 pb-12 border-b border-white/8">
             <div className="max-w-md">
-              <div className="flex items-center gap-3 mb-2">
-                <img src="/logo.png" alt="Vipat E Bllokut" className="h-12 w-auto" />
+              <div className="flex items-center gap-1 mb-2">
+                <img src="/logo.png" alt="Vipat E Bllokut" className="h-12 w-auto -mr-0.5" />
                 <h3 className="text-2xl font-bold text-gradient-gold">
                   Vipat E Bllokut
                 </h3>

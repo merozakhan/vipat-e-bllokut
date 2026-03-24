@@ -114,23 +114,32 @@ export default function SEOHead({
         "dateModified": modifiedTime || publishedTime || new Date().toISOString(),
         "author": {
           "@type": "Organization",
+          "@id": "https://vipatebllokut.com/#organization",
           "name": "Vipat E Bllokut",
           "url": SITE_URL,
         },
         "publisher": {
           "@type": "Organization",
+          "@id": "https://vipatebllokut.com/#organization",
           "name": "Vipat E Bllokut",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://vipatebllokut.com/api/og-image.png",
+            "url": "https://vipatebllokut.com/logo.png",
+            "width": 400,
+            "height": 267,
           },
         },
         "mainEntityOfPage": {
           "@type": "WebPage",
           "@id": fullUrl,
         },
+        "isPartOf": { "@id": "https://vipatebllokut.com/#website" },
+        "isAccessibleForFree": true,
         ...(section ? { "articleSection": section } : {}),
+        ...(tags ? { "keywords": tags.join(", ") } : {}),
         "inLanguage": "sq",
+        "copyrightHolder": { "@id": "https://vipatebllokut.com/#organization" },
+        "copyrightYear": new Date().getFullYear(),
       });
       document.head.appendChild(ldScript);
     }

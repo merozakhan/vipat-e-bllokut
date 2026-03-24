@@ -78,52 +78,73 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-    <!-- JSON-LD Structured Data - Organization -->
+    <!-- JSON-LD Structured Data - Organization (Google Knowledge Panel) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "NewsMediaOrganization",
+      "@id": "https://vipatebllokut.com/#organization",
       "name": "Vipat E Bllokut",
-      "alternateName": "VEB",
+      "alternateName": ["VEB", "Vipat e Bllokut News", "VBO News"],
       "url": "https://vipatebllokut.com",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://vipatebllokut.com/api/og-image.png",
-        "width": 512,
-        "height": 512
+        "url": "https://vipatebllokut.com/logo.png",
+        "width": 400,
+        "height": 267
       },
       "image": "https://vipatebllokut.com/api/og-image.png",
-      "description": "Portali kryesor i lajmeve shqiptare. Lajme të fundit nga Shqipëria, Kosova dhe bota.",
+      "description": "Portali kryesor i lajmeve shqiptare. Lajme të fundit nga Shqipëria, Kosova dhe bota. Politikë, ekonomi, sport, kulturë, teknologji dhe më shumë.",
+      "slogan": "Albania News & Media",
       "address": {
         "@type": "PostalAddress",
         "streetAddress": "Flat 1 Pmb 0512 85 Moss Bank",
         "addressLocality": "Manchester",
         "postalCode": "M8 5AP",
+        "addressRegion": "Greater Manchester",
         "addressCountry": "GB"
       },
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "telephone": "+44-7476-921815",
-        "contactType": "customer service",
-        "email": "info@vipatebllokut.com",
-        "availableLanguage": ["Albanian", "English"]
-      },
+      "contactPoint": [
+        {
+          "@type": "ContactPoint",
+          "telephone": "+44-7476-921815",
+          "contactType": "customer service",
+          "email": "info@vipatebllokut.com",
+          "availableLanguage": ["Albanian", "English"]
+        },
+        {
+          "@type": "ContactPoint",
+          "telephone": "+44-7476-921815",
+          "contactType": "editorial",
+          "email": "info@vipatebllokut.com"
+        }
+      ],
       "sameAs": [
         "https://www.instagram.com/vipat_e_bllokut_al/"
       ],
-      "foundingDate": "2024",
-      "publishingPrinciples": "https://vipatebllokut.com/editorial-policy"
+      "foundingDate": "2026",
+      "legalName": "Vipat E Bllokut Ltd",
+      "taxID": "17079235",
+      "areaServed": ["AL", "XK", "MK", "GB"],
+      "knowsLanguage": ["sq", "en"],
+      "publishingPrinciples": "https://vipatebllokut.com/editorial-policy",
+      "actionableFeedbackPolicy": "https://vipatebllokut.com/contact",
+      "correctionsPolicy": "https://vipatebllokut.com/editorial-policy",
+      "ethicsPolicy": "https://vipatebllokut.com/editorial-policy",
+      "masthead": "https://vipatebllokut.com/about"
     }
     </script>
 
-    <!-- JSON-LD Structured Data - WebSite with SearchAction -->
+    <!-- JSON-LD Structured Data - WebSite (Google Search Box) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
+      "@id": "https://vipatebllokut.com/#website",
       "name": "Vipat E Bllokut",
       "alternateName": "VEB - Albania News & Media",
       "url": "https://vipatebllokut.com",
+      "publisher": { "@id": "https://vipatebllokut.com/#organization" },
       "potentialAction": {
         "@type": "SearchAction",
         "target": {
@@ -132,7 +153,9 @@
         },
         "query-input": "required name=search_term_string"
       },
-      "inLanguage": "sq"
+      "inLanguage": "sq",
+      "copyrightHolder": { "@id": "https://vipatebllokut.com/#organization" },
+      "copyrightYear": "2026"
     }
     </script>
   </head>

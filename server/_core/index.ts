@@ -209,41 +209,65 @@ async function startServer() {
     });
   });
 
-  // robots.txt
+  // robots.txt — optimized for Google News
   app.get("/robots.txt", (_req, res) => {
     res.type("text/plain").send(`User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /search
+Disallow: /admin
+Disallow: /search?
+
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Googlebot-News
+Allow: /
 
 Sitemap: https://vipatebllokut.com/sitemap.xml
+Sitemap: https://vipatebllokut.com/sitemap-news.xml
 
 # Vipat E Bllokut - Albania News & Media
 # https://vipatebllokut.com
 `);
   });
 
-  // Dynamic sitemap.xml
+  // Main sitemap.xml — full site structure
   app.get("/sitemap.xml", async (_req, res) => {
     try {
       const { getPublishedArticles, getAllCategories } = await import("../db");
-      const allArticles = await getPublishedArticles(500);
+      const allArticles = await getPublishedArticles(1000);
       const allCategories = await getAllCategories();
       const now = new Date().toISOString();
 
       let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
       xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
-      xml += `        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"\n`;
-      xml += `        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
+      xml += `        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"\n`;
+      xml += `        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n`;
 
-      // Homepage
+      // Homepage — highest priority
       xml += `  <url>\n    <loc>https://vipatebllokut.com/</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>hourly</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+
+      // Category pages — high priority
+      for (const cat of allCategories) {
+        xml += `  <url>\n    <loc>https://vipatebllokut.com/category/${cat.slug}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>hourly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+      }
+
+      // Article pages — with image data for Google Images
+      for (const article of allArticles) {
+        const pubDate = article.publishedAt ? new Date(article.publishedAt).toISOString() : now;
+        xml += `  <url>\n    <loc>https://vipatebllokut.com/article/${article.slug}</loc>\n    <lastmod>${pubDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n`;
+        if (article.featuredImage) {
+          xml += `    <image:image>\n      <image:loc>${escapeXml(article.featuredImage)}</image:loc>\n      <image:title>${escapeXml(article.title)}</image:title>\n      <image:caption>${escapeXml(article.title)}</image:caption>\n    </image:image>\n`;
+        }
+        xml += `  </url>\n`;
+      }
 
       // Static pages
       const staticPages = [
-        { path: "/about", priority: "0.7", freq: "monthly" },
-        { path: "/contact", priority: "0.6", freq: "monthly" },
-        { path: "/advertise", priority: "0.6", freq: "monthly" },
+        { path: "/about", priority: "0.6", freq: "monthly" },
+        { path: "/contact", priority: "0.5", freq: "monthly" },
+        { path: "/advertise", priority: "0.5", freq: "monthly" },
         { path: "/editorial-policy", priority: "0.4", freq: "yearly" },
         { path: "/privacy-policy", priority: "0.3", freq: "yearly" },
         { path: "/terms", priority: "0.3", freq: "yearly" },
@@ -254,16 +278,46 @@ Sitemap: https://vipatebllokut.com/sitemap.xml
         xml += `  <url>\n    <loc>https://vipatebllokut.com${page.path}</loc>\n    <changefreq>${page.freq}</changefreq>\n    <priority>${page.priority}</priority>\n  </url>\n`;
       }
 
-      // Category pages
-      for (const cat of allCategories) {
-        xml += `  <url>\n    <loc>https://vipatebllokut.com/category/${cat.slug}</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
-      }
+      xml += `</urlset>`;
+      res.set("Cache-Control", "public, max-age=3600");
+      res.type("application/xml").send(xml);
+    } catch (error) {
+      console.error("[Sitemap] Error:", error);
+      res.status(500).send("Error generating sitemap");
+    }
+  });
 
-      // Article pages with news sitemap extension
-      for (const article of allArticles) {
-        const pubDate = article.publishedAt ? new Date(article.publishedAt).toISOString() : now;
-        xml += `  <url>\n    <loc>https://vipatebllokut.com/article/${article.slug}</loc>\n    <lastmod>${pubDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n`;
-        xml += `    <news:news>\n      <news:publication>\n        <news:name>Vipat E Bllokut</news:name>\n        <news:language>sq</news:language>\n      </news:publication>\n      <news:publication_date>${pubDate}</news:publication_date>\n      <news:title>${escapeXml(article.title)}</news:title>\n    </news:news>\n`;
+  // Google News sitemap — only articles from last 48 hours (Google News requirement)
+  app.get("/sitemap-news.xml", async (_req, res) => {
+    try {
+      const { getPublishedArticles } = await import("../db");
+      const recentArticles = await getPublishedArticles(200);
+      const now = new Date();
+      const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+
+      // Google News only indexes articles from last 2 days
+      const newsArticles = recentArticles.filter(a => {
+        const pubDate = a.publishedAt ? new Date(a.publishedAt) : new Date(a.createdAt);
+        return pubDate >= twoDaysAgo;
+      });
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
+      xml += `        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"\n`;
+      xml += `        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
+
+      for (const article of newsArticles) {
+        const pubDate = article.publishedAt ? new Date(article.publishedAt).toISOString() : now.toISOString();
+        xml += `  <url>\n`;
+        xml += `    <loc>https://vipatebllokut.com/article/${article.slug}</loc>\n`;
+        xml += `    <news:news>\n`;
+        xml += `      <news:publication>\n`;
+        xml += `        <news:name>Vipat E Bllokut</news:name>\n`;
+        xml += `        <news:language>sq</news:language>\n`;
+        xml += `      </news:publication>\n`;
+        xml += `      <news:publication_date>${pubDate}</news:publication_date>\n`;
+        xml += `      <news:title>${escapeXml(article.title)}</news:title>\n`;
+        xml += `    </news:news>\n`;
         if (article.featuredImage) {
           xml += `    <image:image>\n      <image:loc>${escapeXml(article.featuredImage)}</image:loc>\n      <image:title>${escapeXml(article.title)}</image:title>\n    </image:image>\n`;
         }
@@ -271,10 +325,11 @@ Sitemap: https://vipatebllokut.com/sitemap.xml
       }
 
       xml += `</urlset>`;
+      res.set("Cache-Control", "public, max-age=900");
       res.type("application/xml").send(xml);
     } catch (error) {
-      console.error("[Sitemap] Error generating sitemap:", error);
-      res.status(500).send("Error generating sitemap");
+      console.error("[News Sitemap] Error:", error);
+      res.status(500).send("Error generating news sitemap");
     }
   });
 

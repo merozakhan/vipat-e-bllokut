@@ -264,54 +264,98 @@ const STOP_WORDS = new Set([
 ]);
 
 /**
+ * Normalize Albanian diacritics for keyword comparison.
+ * ë→e, ç→c, à/á/â→a, è/é/ê→e, etc.
+ */
+function normalizeDiacritics(text: string): string {
+  return text
+    .replace(/[ëË]/g, "e")
+    .replace(/[çÇ]/g, "c")
+    .replace(/[àáâãäå]/g, "a")
+    .replace(/[èéêë]/g, "e")
+    .replace(/[ìíîï]/g, "i")
+    .replace(/[òóôõö]/g, "o")
+    .replace(/[ùúûü]/g, "u")
+    .replace(/[ÀÁÂÃÄÅÆàáâãäåæ]/g, "a")
+    .replace(/[ÈÉÊËèéêë]/g, "e")
+    .replace(/[ÌÍÎÏìíîï]/g, "i")
+    .replace(/[ÒÓÔÕÖòóôõö]/g, "o")
+    .replace(/[ÙÚÛÜùúûü]/g, "u")
+    .replace(/[ñÑ]/g, "n")
+    .replace(/[ÿŸ]/g, "y");
+}
+
+/**
  * Extract significant content words from text (skip stop words, short words).
+ * Normalizes diacritics so "ështe" and "eshte" match.
  */
 function extractKeywords(text: string): Set<string> {
-  const words = text
+  const words = normalizeDiacritics(text)
     .toLowerCase()
-    .replace(/[^\w\sëçàáâãäåèéêìíîòóôùúû]/g, " ")
+    .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
     .filter(w => w.length > 3 && !STOP_WORDS.has(w));
   return new Set(words);
 }
 
 /**
- * Check if a trailing paragraph is off-topic compared to the article's main content.
- * Compares keyword overlap between the paragraph and the article title + first paragraphs.
- * Returns true if the paragraph appears to be about a completely different topic.
+ * Remove off-topic paragraphs that don't belong to this article.
+ * Scraped content often includes teasers/summaries of unrelated articles.
+ *
+ * Strategy: build a "topic fingerprint" from the title + all paragraphs that
+ * are clearly on-topic, then remove any paragraph that shares zero meaningful
+ * keywords with the article's topic.
  */
-function isOffTopicTrailing(
-  paragraph: string,
-  title: string,
-  articleParagraphs: string[],
-  index: number
-): boolean {
-  // Only check paragraphs in the last ~30% of the article
-  const threshold = Math.max(3, Math.floor(articleParagraphs.length * 0.7));
-  if (index < threshold) return false;
+function removeOffTopicParagraphs(paragraphs: string[], title: string): string[] {
+  if (paragraphs.length <= 2) return paragraphs; // Too short to judge
 
-  // Build keyword set from title + first few paragraphs (the "topic fingerprint")
-  const topicSource = [title, ...articleParagraphs.slice(0, Math.min(5, articleParagraphs.length))].join(" ");
-  const topicKeywords = extractKeywords(topicSource);
-  if (topicKeywords.size < 3) return false; // Not enough context to judge
+  // Step 1: Build core topic keywords from title
+  const titleKeywords = extractKeywords(title);
 
-  // Get keywords from this paragraph
-  const paraKeywords = extractKeywords(paragraph);
-  if (paraKeywords.size < 3) return false; // Too short to judge reliably
+  // Step 2: Score each paragraph by how many keywords it shares with the title
+  // Paragraphs with ANY title keyword overlap are "anchored" to the topic
+  const scores: number[] = paragraphs.map(p => {
+    const pKeywords = extractKeywords(p);
+    if (pKeywords.size === 0) return 1; // Very short, keep by default
+    let titleOverlap = 0;
+    const arr = Array.from(pKeywords);
+    for (let i = 0; i < arr.length; i++) {
+      if (titleKeywords.has(arr[i])) titleOverlap++;
+    }
+    return titleOverlap;
+  });
 
-  // Count how many of this paragraph's keywords appear in the topic
-  let overlap = 0;
-  const paraArr = Array.from(paraKeywords);
-  for (let i = 0; i < paraArr.length; i++) {
-    if (topicKeywords.has(paraArr[i])) overlap++;
+  // Step 3: Build an expanded topic fingerprint from title + all anchored paragraphs
+  const anchoredText = [title];
+  for (let i = 0; i < paragraphs.length; i++) {
+    if (scores[i] > 0) anchoredText.push(paragraphs[i]);
   }
+  const topicKeywords = extractKeywords(anchoredText.join(" "));
 
-  const overlapRatio = overlap / paraKeywords.size;
+  if (topicKeywords.size < 3) return paragraphs; // Not enough context
 
-  // If less than 15% keyword overlap, this paragraph is about something else entirely
-  if (overlapRatio < 0.15) return true;
+  // Step 4: Check every paragraph — if it has enough keywords and NONE overlap
+  // with the full topic, it's about something else
+  return paragraphs.filter((p, idx) => {
+    const pKeywords = extractKeywords(p);
+    // Short paragraphs or first 2 paragraphs: keep
+    if (pKeywords.size < 4 || idx < 2) return true;
 
-  return false;
+    let overlap = 0;
+    const arr = Array.from(pKeywords);
+    for (let i = 0; i < arr.length; i++) {
+      if (topicKeywords.has(arr[i])) overlap++;
+    }
+
+    const overlapRatio = overlap / pKeywords.size;
+
+    // Zero or near-zero overlap = completely different topic
+    if (overlapRatio < 0.1) {
+      return false;
+    }
+
+    return true;
+  });
 }
 
 // ─── HTML Stripping ──────────────────────────────────────────────────
@@ -647,15 +691,8 @@ function cleanContent(rawHtml: string, title: string = ""): string {
 
   if (cleaned.length === 0) return "";
 
-  // Step 4.5: Remove off-topic trailing paragraphs (cross-article content)
-  // Work backwards: once we hit an off-topic paragraph, remove it and everything after
-  for (let i = cleaned.length - 1; i >= Math.max(3, Math.floor(cleaned.length * 0.7)); i--) {
-    if (isOffTopicTrailing(cleaned[i], title, cleaned, i)) {
-      cleaned = cleaned.slice(0, i);
-    } else {
-      break; // Stop as soon as we find an on-topic paragraph
-    }
-  }
+  // Step 4.5: Remove off-topic paragraphs (cross-article teasers/content)
+  cleaned = removeOffTopicParagraphs(cleaned, title);
 
   if (cleaned.length === 0) return "";
 

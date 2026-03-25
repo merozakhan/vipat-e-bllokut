@@ -307,17 +307,24 @@ function scrapeMediadeskArticlePage(html: string, siteName: string): ScrapedArti
 
   if (!title || title.length < 5) return null;
 
-  // 3. Extract content — Mediadesk uses content-col or layout-form_article-body
+  // 3. Extract content — strip all card/related sections first, then find article body
+  // Pre-clean: remove all card sections, related articles, sidebars from HTML before extraction
+  let cleanedHtml = html
+    .replace(/<div[^>]*class="[^"]*(?:a-card|related|suggested|trending|sidebar|widget|teaser|more-news|article-list|latest-news)[^"]*"[\s\S]*?(?:<\/div>\s*){1,5}/gi, "")
+    .replace(/<p[^>]*class="[^"]*(?:a-card_excerpt|excerpt|desc|teaser|card)[^"]*"[^>]*>[\s\S]*?<\/p>/gi, "");
+
   let content = "";
   const contentPatterns = [
+    // layout-form_article-body is the most precise (Mediadesk article body)
+    /<div[^>]*class="[^"]*layout-form_article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    // content-col stopped before related/share sections
     /<div[^>]*class="[^"]*content-col[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div[^>]*class="[^"]*(?:related|share|social|writer|suggested)[^"]*")/i,
     /<div[^>]*class="[^"]*content-col[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*class="[^"]*layout-form_article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
     /<div[^>]*class="[^"]*article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
   ];
 
   for (const pattern of contentPatterns) {
-    const match = html.match(pattern);
+    const match = cleanedHtml.match(pattern);
     if (match && match[1]) {
       const cleaned = cleanArticleHtml(match[1]);
       if (cleaned.length > 100) {
@@ -327,12 +334,13 @@ function scrapeMediadeskArticlePage(html: string, siteName: string): ScrapedArti
     }
   }
 
-  // Fallback: all paragraphs
+  // Fallback: only <p> tags WITHOUT card/excerpt/teaser classes from pre-cleaned HTML
   if (content.length < 100) {
-    const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+    const paragraphs = cleanedHtml.match(/<p(?:\s[^>]*)?>[\s\S]*?<\/p>/gi) || [];
     const text = paragraphs
+      .filter(p => !/class="[^"]*(?:a-card|excerpt|desc|teaser|card|meta|widget)[^"]*"/i.test(p))
       .map(p => stripHtml(p))
-      .filter(p => p.length > 30 && !isJunkText(p))
+      .filter(p => p.length > 30 && !isJunkText(p) && !isSourceBoilerplate(p))
       .join("\n\n");
     if (text.length > 100) content = text;
   }
@@ -452,23 +460,25 @@ function cleanArticleHtml(html: string): string {
     .replace(/<form[\s\S]*?<\/form>/gi, "")
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
     .replace(/<svg[\s\S]*?<\/svg>/gi, "")
-    .replace(/<!--[\s\S]*?-->/g, "");
+    .replace(/<!--[\s\S]*?-->/g, "")
+    // Remove entire card/teaser/related sections (these contain other articles)
+    .replace(/<div[^>]*class="[^"]*(?:a-card|related|suggested|trending|sidebar|widget|teaser|more-news|article-list)[^"]*"[^>]*>[\s\S]*?<\/div>/gi, "")
+    // Remove p tags with card/excerpt/desc classes (other article teasers)
+    .replace(/<p[^>]*class="[^"]*(?:a-card_excerpt|excerpt|desc|teaser|card)[^"]*"[^>]*>[\s\S]*?<\/p>/gi, "");
 
-  const paragraphs = cleaned.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
-  const stripped = paragraphs.map(p => stripHtml(p));
-  const text = stripped
-    .filter((p, idx) => {
+  // Only get <p> tags without suspicious classes
+  const paragraphs = cleaned.match(/<p(?:\s[^>]*)?>[\s\S]*?<\/p>/gi) || [];
+  const text = paragraphs
+    .filter(p => {
+      // Skip p tags with card/excerpt/teaser classes
+      if (/class="[^"]*(?:a-card|excerpt|desc|teaser|card|meta|widget)[^"]*"/i.test(p)) return false;
+      return true;
+    })
+    .map(p => stripHtml(p))
+    .filter(p => {
       if (p.length < 20) return false;
       if (isJunkText(p)) return false;
       if (isSourceBoilerplate(p)) return false;
-      // Filter promotional cross-article teasers
-      if (/^\s*lexo\s+(edhe|gjithashtu|më\s+shumë)\s*[:–—-]/i.test(p)) return false;
-      if (/^\s*LEXO\s+(EDHE|GJITHASHTU)\b/.test(p)) return false;
-      if (/^\s*shiko\s+(edhe|gjithashtu)\s*[:–—-]/i.test(p)) return false;
-      if (/^\s*m[eë]\s+shum[eë]\s+nga\s/i.test(p)) return false;
-      // Short trailing paragraph with no sentence structure = likely a teaser headline
-      if (idx >= stripped.length - 2 && p.length < 120 && p.length > 15 &&
-          /^[A-ZÇËÀÁÂ]/.test(p) && !/[.!?]$/.test(p)) return false;
       return true;
     })
     .join("\n\n");

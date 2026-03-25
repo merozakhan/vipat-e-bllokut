@@ -142,33 +142,73 @@ TITULL: [titulli i pastër]
 [paragrafi 3]
 ...`;
 
-// Rate limit: wait between AI calls to stay under Groq's 12k TPM
-let lastAiCall = 0;
+// ─── AI Provider Rotation ───────────────────────────────────────────
+
+interface AiProvider {
+  name: string;
+  url: string;
+  model: string;
+  getKey: () => string;
+  rateLimitUntil: number; // timestamp when rate limit expires
+  minDelay: number; // min ms between calls
+  lastCall: number;
+}
+
+const providers: AiProvider[] = [
+  {
+    name: "Groq",
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    model: "llama-3.3-70b-versatile",
+    getKey: () => ENV.groqApiKey,
+    rateLimitUntil: 0,
+    minDelay: 8000,
+    lastCall: 0,
+  },
+  {
+    name: "Cerebras",
+    url: "https://api.cerebras.ai/v1/chat/completions",
+    model: "qwen-3-235b-a22b-instruct-2507",
+    getKey: () => ENV.cerebrasApiKey,
+    rateLimitUntil: 0,
+    minDelay: 3000,
+    lastCall: 0,
+  },
+];
+
+function getAvailableProvider(): AiProvider | null {
+  const now = Date.now();
+  for (const p of providers) {
+    if (!p.getKey()) continue; // No API key
+    if (now < p.rateLimitUntil) continue; // Rate limited
+    return p;
+  }
+  return null;
+}
 
 async function aiClean(title: string, plainText: string): Promise<{ title: string; content: string } | null> {
-  const apiKey = ENV.groqApiKey;
-  if (!apiKey) {
-    console.warn("[Rewriter AI] No GROQ_API_KEY set, skipping AI clean");
+  const provider = getAvailableProvider();
+  if (!provider) {
+    console.warn("[Rewriter AI] No AI providers available, skipping");
     return null;
   }
 
-  // Wait at least 8s between AI calls to respect Groq rate limits (12k TPM)
+  // Respect per-provider rate limits
   const now = Date.now();
-  const elapsed = now - lastAiCall;
-  if (elapsed < 8000) {
-    await new Promise(r => setTimeout(r, 8000 - elapsed));
+  const elapsed = now - provider.lastCall;
+  if (elapsed < provider.minDelay) {
+    await new Promise(r => setTimeout(r, provider.minDelay - elapsed));
   }
-  lastAiCall = Date.now();
+  provider.lastCall = Date.now();
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch(provider.url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${provider.getKey()}`,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: provider.model,
         messages: [
           { role: "system", content: AI_SYSTEM_PROMPT },
           { role: "user", content: `TITULLI: ${title}\n\nTEKSTI:\n${plainText.substring(0, 6000)}` },
@@ -180,15 +220,25 @@ async function aiClean(title: string, plainText: string): Promise<{ title: strin
 
     if (!res.ok) {
       const errText = await res.text();
-      console.warn(`[Rewriter AI] Groq API error ${res.status}: ${errText.substring(0, 200)}`);
-      // On rate limit, wait extra before next call
-      if (res.status === 429) lastAiCall = Date.now() + 15000;
+      console.warn(`[Rewriter AI] ${provider.name} error ${res.status}: ${errText.substring(0, 200)}`);
+      if (res.status === 429) {
+        // Rate limited — disable this provider for a while and try next
+        provider.rateLimitUntil = Date.now() + 60_000; // 1 min cooldown
+        console.log(`[Rewriter AI] ${provider.name} rate limited, trying next provider...`);
+        // Try the next available provider
+        const next = getAvailableProvider();
+        if (next && next !== provider) {
+          return aiClean(title, plainText);
+        }
+      }
       return null;
     }
 
     const data = await res.json();
     const response = data?.choices?.[0]?.message?.content;
     if (!response || typeof response !== "string") return null;
+
+    console.log(`[Rewriter AI] ${provider.name} cleaned`);
 
     // Parse the response
     const titleMatch = response.match(/^TITULL:\s*(.+)/m);
@@ -217,7 +267,7 @@ async function aiClean(title: string, plainText: string): Promise<{ title: strin
       html += `<p>${paragraphs[i]}</p>`;
     }
 
-    console.log(`[Rewriter AI] Cleaned: ${paragraphs.length} paragraphs`);
+    console.log(`[Rewriter AI] ${provider.name}: ${paragraphs.length} paragraphs`);
     return { title: cleanedTitle, content: html };
   } catch (error) {
     console.warn(`[Rewriter AI] Failed, will use fallback:`, error);

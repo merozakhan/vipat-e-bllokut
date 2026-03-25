@@ -69,38 +69,7 @@ async function executeWipeAndRefill(): Promise<void> {
  * - On startup: run an incremental import (30s delay)
  */
 export function startCronScheduler(): void {
-  console.log("[Cron] Initializing scheduler...");
-
-  // Every 3 hours at minute 0: incremental import
-  importTask = cron.schedule("0 */3 * * *", async () => {
-    console.log(`[Cron] Scheduled import at ${new Date().toISOString()}`);
-    await executeImport();
-  });
-
-  // 1st of every month at 4:00 AM UTC: monthly wipe + refill
-  wipeTask = cron.schedule("0 4 1 * *", async () => {
-    console.log(`[Cron] Monthly wipe at ${new Date().toISOString()}`);
-    await executeWipeAndRefill();
-  });
-
-  // Every 3 hours at :30 minute: horoscope scrape (offset from import)
-  horoscopeTask = cron.schedule("30 */3 * * *", async () => {
-    console.log(`[Cron] Horoscope scrape at ${new Date().toISOString()}`);
-    await scrapeHoroscope();
-  });
-
-  console.log("[Cron] Active schedules:");
-  console.log("[Cron]   - Import: every 3 hours at :00");
-  console.log("[Cron]   - Horoscope: every 3 hours at :30");
-  console.log("[Cron]   - DB wipe + refill: 1st of every month at 4:00 AM UTC");
-
-  // On startup: import fresh articles + horoscope
-  setTimeout(async () => {
-    console.log("[Cron] Startup: importing new articles...");
-    await executeImport();
-    console.log("[Cron] Startup: checking horoscope...");
-    await scrapeHoroscope();
-  }, 30_000);
+  console.log("[Cron] ALL SCRAPERS DISABLED — no imports, no horoscope, no wipe scheduled.");
 }
 
 /**

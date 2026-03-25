@@ -1,9 +1,10 @@
 /**
  * Cron Scheduler for Automated News Import + Database Maintenance
  *
- * - Every 3 hours: import new articles from JOQ, VoxNews, Versus (max 50 per run)
- * - Every Monday at 4 AM: wipe all articles and refill fresh (keeps DB under 500MB)
- * - On startup: import new articles (no wipe — preserves existing content)
+ * - Every 3 hours at :00: import new articles from VoxNews, Versus (max 50 per run)
+ * - Every 3 hours at :30: scrape horoscopes (daily, weekly, monthly)
+ * - 1st of every month at 4 AM: wipe all articles and refill fresh
+ * - On startup: import new articles + scrape horoscopes
  */
 
 import cron from "node-cron";

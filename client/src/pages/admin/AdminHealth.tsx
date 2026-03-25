@@ -371,7 +371,7 @@ export default function AdminHealth() {
                 url="horoskopishqip.com"
                 active={false}
                 lastFetched={undefined}
-                nextIn={health.horoscope?.schedule || "Çdo ditë në 6:00 AM"}
+                nextIn={health.horoscope?.schedule || "Çdo 3 orë në :30"}
               />
             </div>
             {health.horoscope && (

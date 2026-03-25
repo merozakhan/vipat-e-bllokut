@@ -82,22 +82,22 @@ export function startCronScheduler(): void {
     await executeWipeAndRefill();
   });
 
-  // Every day at 6:00 AM UTC: daily horoscope
-  horoscopeTask = cron.schedule("0 6 * * *", async () => {
-    console.log(`[Cron] Daily horoscope at ${new Date().toISOString()}`);
+  // Every 3 hours at :30 minute: horoscope scrape (offset from import)
+  horoscopeTask = cron.schedule("30 */3 * * *", async () => {
+    console.log(`[Cron] Horoscope scrape at ${new Date().toISOString()}`);
     await scrapeHoroscope();
   });
 
   console.log("[Cron] Active schedules:");
   console.log("[Cron]   - Import: every 3 hours at :00");
-  console.log("[Cron]   - Horoscope: every day at 6:00 AM UTC");
+  console.log("[Cron]   - Horoscope: every 3 hours at :30");
   console.log("[Cron]   - DB wipe + refill: 1st of every month at 4:00 AM UTC");
 
-  // On startup: run incremental import + horoscope
+  // On startup: wipe DB + fresh import + horoscope (clean deploy)
   setTimeout(async () => {
-    console.log("[Cron] Startup: importing new articles...");
-    await executeImport();
-    console.log("[Cron] Startup: checking daily horoscope...");
+    console.log("[Cron] Startup: wiping DB for fresh deploy...");
+    await executeWipeAndRefill();
+    console.log("[Cron] Startup: checking horoscope...");
     await scrapeHoroscope();
   }, 30_000);
 }

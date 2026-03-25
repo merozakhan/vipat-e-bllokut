@@ -455,9 +455,22 @@ function cleanArticleHtml(html: string): string {
     .replace(/<!--[\s\S]*?-->/g, "");
 
   const paragraphs = cleaned.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
-  const text = paragraphs
-    .map(p => stripHtml(p))
-    .filter(p => p.length >= 20 && !isJunkText(p) && !isSourceBoilerplate(p))
+  const stripped = paragraphs.map(p => stripHtml(p));
+  const text = stripped
+    .filter((p, idx) => {
+      if (p.length < 20) return false;
+      if (isJunkText(p)) return false;
+      if (isSourceBoilerplate(p)) return false;
+      // Filter promotional cross-article teasers
+      if (/^\s*lexo\s+(edhe|gjithashtu|më\s+shumë)\s*[:–—-]/i.test(p)) return false;
+      if (/^\s*LEXO\s+(EDHE|GJITHASHTU)\b/.test(p)) return false;
+      if (/^\s*shiko\s+(edhe|gjithashtu)\s*[:–—-]/i.test(p)) return false;
+      if (/^\s*m[eë]\s+shum[eë]\s+nga\s/i.test(p)) return false;
+      // Short trailing paragraph with no sentence structure = likely a teaser headline
+      if (idx >= stripped.length - 2 && p.length < 120 && p.length > 15 &&
+          /^[A-ZÇËÀÁÂ]/.test(p) && !/[.!?]$/.test(p)) return false;
+      return true;
+    })
     .join("\n\n");
 
   return (text || "").substring(0, 50000);
@@ -1017,16 +1030,27 @@ const HOROSCOPE_LABELS: Record<string, string> = {
 
 /**
  * Parse all 12 zodiac sign texts from a horoscope HTML page.
+ * Uses multiple strategies: date-based, class-based, name-based, and section-based.
  */
 function parseHoroscopeSigns(html: string): { name: string; english: string; dates: string; text: string }[] {
   const results: { name: string; english: string; dates: string; text: string }[] = [];
 
   for (const sign of ZODIAC_SIGNS) {
     const escapedDates = sign.dates.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedName = sign.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const patterns = [
+      // Pattern 1: dates followed by a paragraph
       new RegExp(`${escapedDates}[\\s\\S]*?<\\/[^>]+>\\s*<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+      // Pattern 2: class containing the sign slug
       new RegExp(`sign_${sign.slug}[\\s\\S]{0,500}?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
-      new RegExp(`>${sign.name}<\\/[^>]+>[\\s\\S]*?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+      // Pattern 3: sign name in a heading/link followed by paragraph
+      new RegExp(`>${escapedName}<\\/[^>]+>[\\s\\S]*?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+      // Pattern 4: sign name in any tag, then grab all text until next sign or section
+      new RegExp(`${escapedName}[\\s\\S]{0,100}?${escapedDates}[\\s\\S]*?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+      // Pattern 5: broader — sign name anywhere, grab the nearest <p> after it
+      new RegExp(`${escapedName}[\\s\\S]{0,300}?<p[^>]*>([\\s\\S]*?)<\\/p>`, "i"),
+      // Pattern 6: sign name in a div/section, grab text content (no <p> tags)
+      new RegExp(`>${escapedName}<[\\s\\S]{0,200}?${escapedDates}[\\s\\S]{0,100}?<\\/[^>]+>\\s*([^<]{30,})`, "i"),
     ];
 
     for (const pattern of patterns) {
@@ -1076,11 +1100,23 @@ async function scrapeHoroscopeType(type: "ditor" | "javor" | "mujor"): Promise<b
     return false;
   }
 
-  const html = await fetchPage(url);
-  if (!html) { console.error(`[Horoscope] Failed to fetch ${label} page.`); return false; }
-
-  const signs = parseHoroscopeSigns(html);
-  if (signs.length === 0) { console.error(`[Horoscope] No signs parsed for ${label}.`); return false; }
+  // Retry up to 3 times with delay — source can be flaky
+  let html: string | null = null;
+  let signs: { name: string; english: string; dates: string; text: string }[] = [];
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    html = await fetchPage(url);
+    if (!html) {
+      console.warn(`[Horoscope] Attempt ${attempt}/3: failed to fetch ${label} page.`);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 5000 * attempt));
+      continue;
+    }
+    signs = parseHoroscopeSigns(html);
+    if (signs.length >= 6) break; // At least half the signs parsed = good enough
+    console.warn(`[Horoscope] Attempt ${attempt}/3: only ${signs.length} signs parsed for ${label}.`);
+    if (attempt < 3) await new Promise(r => setTimeout(r, 5000 * attempt));
+  }
+  if (!html) { console.error(`[Horoscope] Failed to fetch ${label} after 3 attempts.`); return false; }
+  if (signs.length === 0) { console.error(`[Horoscope] No signs parsed for ${label} after 3 attempts.`); return false; }
 
   // Build one beautiful article with all signs
   const dateFormatted = today.toLocaleDateString("sq-AL", { day: "numeric", month: "long", year: "numeric" });

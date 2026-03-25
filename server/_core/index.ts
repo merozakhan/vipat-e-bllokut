@@ -194,7 +194,7 @@ async function startServer() {
         } : null,
       },
       horoscope: {
-        schedule: "Every day at 6:00 AM UTC",
+        schedule: "Every 3 hours at :30",
         source: "horoskopishqip.com",
         types: ["Ditor (daily)", "Javor (weekly)", "Mujor (monthly)"],
       },

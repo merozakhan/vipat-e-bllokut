@@ -30,11 +30,16 @@ const SOURCE_BRANDING = [
   /\bnga\s*redaksia\b/gi,
   /\bshkruar\s*nga\s*redaksia[^.!?\n]*/gi,
   /\bshkruar\s*nga\s*[A-ZÇË][a-zçë]+\s*[A-ZÇË][a-zçë]*/gi,
-  // Read more / CTA
+  // Read more / CTA / Cross-article promotions
   /lexo\s*më\s*shumë[^.!?\n]*/gi,
+  /lexo\s*edhe[^.!?\n]*/gi,
+  /lexo\s*gjithashtu[^.!?\n]*/gi,
   /lexo\s*artikullin\s*e\s*plotë[^.!?\n]*/gi,
   /kliko\s*këtu[^.!?\n]*/gi,
   /vazhdo\s*leximin[^.!?\n]*/gi,
+  /shiko\s*edhe[^.!?\n]*/gi,
+  /shiko\s*gjithashtu[^.!?\n]*/gi,
+  /më\s*shumë\s*nga\s[^.!?\n]*/gi,
   // Source / copyright
   /burim[ieë]?:\s*[^.!?\n]*/gi,
   /publikuar\s*më\s*\d{1,2}[./]\d{1,2}[./]\d{2,4}/gi,
@@ -114,6 +119,11 @@ const BOILERPLATE_PATTERNS = [
   /^©/,
   /^\s*burim/i,
   /^\s*lexo\s*më\s*shumë/i,
+  /^\s*lexo\s*edhe/i,
+  /^\s*lexo\s*gjithashtu/i,
+  /^\s*shiko\s*edhe/i,
+  /^\s*shiko\s*gjithashtu/i,
+  /^\s*më\s*shumë\s*nga\s/i,
   /^\s*nuk\s*lejohet/i,
   /^\s*të\s*gjitha\s*të\s*drejtat/i,
   /^\s*shkruar\s*nga/i,
@@ -158,6 +168,62 @@ const BOILERPLATE_ANYWHERE = [
   /created\s+and\s+monetized/i,
   /monetized\s+by/i,
 ];
+
+// ─── Promotional / Cross-article Teaser Detection ──────────────────
+// Short paragraphs that promote or link to other articles on the source site.
+// These typically appear at the end of articles as "related" teasers.
+
+const PROMO_PATTERNS = [
+  // "Lexo edhe:", "Lexo gjithashtu:", "Shiko edhe:", "Lajmi tjetër:" etc.
+  /^\s*lexo\s+(edhe|gjithashtu|më\s+shumë)\s*[:–—-]/i,
+  /^\s*shiko\s+(edhe|gjithashtu)\s*[:–—-]/i,
+  /^\s*lajmi?\s+tjete?ër\s*[:–—-]/i,
+  /^\s*artikull\s+i?\s*tjete?ër\s*[:–—-]/i,
+  /^\s*më\s+shumë\s*[:–—-]/i,
+  /^\s*m[eë]\s+shum[eë]\s+nga\s/i,
+  // "LEXO EDHE" standalone (all caps)
+  /^\s*LEXO\s+(EDHE|GJITHASHTU)\b/,
+  // Patterns like "Ndërsa..." or "Kujtojmë se..." used as transitions to other articles
+  /^\s*kujtojmë\s+se\s+/i,
+  // Very short teaser-like paragraphs that reference other articles
+  /^\s*shih\s+(edhe|gjithashtu)\s*[:–—-]/i,
+];
+
+/**
+ * Detect if a paragraph is a promotional cross-article teaser.
+ * These are short descriptions meant to promote/link to other articles.
+ */
+function isPromotionalTeaser(text: string, allParagraphs: string[], index: number): boolean {
+  const trimmed = text.trim();
+
+  // Direct pattern match
+  if (PROMO_PATTERNS.some(p => p.test(trimmed))) return true;
+
+  // Short paragraph at the very end that looks like a teaser
+  // (typically 1-2 sentences, < 150 chars, at/near the end of the article)
+  if (index >= allParagraphs.length - 3 && trimmed.length < 150 && trimmed.length > 10) {
+    // Ends with a title-like fragment (no period, starts with capital)
+    if (/^[A-ZÇËÀÁÂ]/.test(trimmed) && !/[.!?]$/.test(trimmed) && trimmed.length < 100) {
+      return true;
+    }
+  }
+
+  // Paragraph that is just a headline/title of another article (no sentence structure)
+  // Usually short, capitalized, no period
+  if (
+    index >= allParagraphs.length - 2 &&
+    trimmed.length < 120 &&
+    trimmed.length > 15 &&
+    /^[A-ZÇËÀÁÂ]/.test(trimmed) &&
+    !/[.!?]$/.test(trimmed) &&
+    !/[,;:]/.test(trimmed) &&
+    (trimmed.match(/\s/g) || []).length >= 2 // at least 3 words
+  ) {
+    return true;
+  }
+
+  return false;
+}
 
 // ─── HTML Stripping ──────────────────────────────────────────────────
 
@@ -475,9 +541,11 @@ function cleanContent(rawHtml: string, title: string = ""): string {
 
   // Step 4: Clean each paragraph
   let cleaned: string[] = [];
-  for (const para of withoutTitle) {
+  for (let idx = 0; idx < withoutTitle.length; idx++) {
+    const para = withoutTitle[idx];
     if (isJunkLine(para)) continue;
     if (isBoilerplate(para)) continue;
+    if (isPromotionalTeaser(para, withoutTitle, idx)) continue;
 
     const cleanedText = cleanBranding(para);
 

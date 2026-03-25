@@ -12,7 +12,7 @@
  * Fallback: if AI is unavailable, uses basic regex cleaning.
  */
 
-import { invokeLLM } from "./_core/llm";
+import { ENV } from "./_core/env";
 
 // ─── Title Cleanup (always regex — simple & reliable) ───────────────
 
@@ -143,19 +143,38 @@ TITULL: [titulli i pastër]
 ...`;
 
 async function aiClean(title: string, plainText: string): Promise<{ title: string; content: string } | null> {
+  const apiKey = ENV.groqApiKey;
+  if (!apiKey) {
+    console.warn("[Rewriter AI] No GROQ_API_KEY set, skipping AI clean");
+    return null;
+  }
+
   try {
-    const result = await invokeLLM({
-      messages: [
-        { role: "system", content: AI_SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `TITULLI: ${title}\n\nTEKSTI:\n${plainText.substring(0, 15000)}`,
-        },
-      ],
-      maxTokens: 8192,
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: AI_SYSTEM_PROMPT },
+          { role: "user", content: `TITULLI: ${title}\n\nTEKSTI:\n${plainText.substring(0, 12000)}` },
+        ],
+        max_tokens: 8192,
+        temperature: 0.1,
+      }),
     });
 
-    const response = result.choices?.[0]?.message?.content;
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`[Rewriter AI] Groq API error ${res.status}: ${errText.substring(0, 200)}`);
+      return null;
+    }
+
+    const data = await res.json();
+    const response = data?.choices?.[0]?.message?.content;
     if (!response || typeof response !== "string") return null;
 
     // Parse the response

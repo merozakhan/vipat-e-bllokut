@@ -93,10 +93,10 @@ export function startCronScheduler(): void {
   console.log("[Cron]   - Horoscope: every 3 hours at :30");
   console.log("[Cron]   - DB wipe + refill: 1st of every month at 4:00 AM UTC");
 
-  // On startup: wipe DB + fresh import + horoscope (clean deploy)
+  // On startup: import fresh articles + horoscope
   setTimeout(async () => {
-    console.log("[Cron] Startup: wiping DB for fresh deploy...");
-    await executeWipeAndRefill();
+    console.log("[Cron] Startup: importing new articles...");
+    await executeImport();
     console.log("[Cron] Startup: checking horoscope...");
     await scrapeHoroscope();
   }, 30_000);

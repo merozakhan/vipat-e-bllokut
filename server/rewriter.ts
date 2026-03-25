@@ -199,6 +199,10 @@ function isPromotionalTeaser(text: string, allParagraphs: string[], index: numbe
   // Direct pattern match
   if (PROMO_PATTERNS.some(p => p.test(trimmed))) return true;
 
+  // Tag-like lines: all lowercase keywords with no sentence structure
+  // e.g. "levizja shqiperia behet adriatik lapaj"
+  if (isTagLine(trimmed)) return true;
+
   // Short paragraph at the very end that looks like a teaser
   // (typically 1-2 sentences, < 150 chars, at/near the end of the article)
   if (index >= allParagraphs.length - 3 && trimmed.length < 150 && trimmed.length > 10) {
@@ -221,6 +225,91 @@ function isPromotionalTeaser(text: string, allParagraphs: string[], index: numbe
   ) {
     return true;
   }
+
+  return false;
+}
+
+/**
+ * Detect tag-like lines: all lowercase keywords with no punctuation or sentence structure.
+ * e.g. "levizja shqiperia behet adriatik lapaj"
+ */
+function isTagLine(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length > 200 || trimmed.length < 5) return false;
+  // No sentence-ending punctuation, no commas/colons — just words
+  if (/[.!?;:,]/.test(trimmed)) return false;
+  // All lowercase (or very few uppercase)
+  const upperCount = (trimmed.match(/[A-ZÇËÀÁÂÃÄÅÈÉÊÌÍÎÒÓÔÙÚÛ]/g) || []).length;
+  if (upperCount > 2) return false;
+  // At least 2 spaces (3+ words)
+  const words = trimmed.split(/\s+/);
+  if (words.length < 3) return false;
+  // No word longer than ~20 chars (tags are short words)
+  if (words.some(w => w.length > 25)) return false;
+  return true;
+}
+
+// ─── Topic Coherence ────────────────────────────────────────────────
+// Albanian stop words that appear in every article regardless of topic
+
+const STOP_WORDS = new Set([
+  "dhe", "nga", "per", "nje", "tek", "kjo", "ky", "ato", "ata", "eshte", "jane",
+  "kane", "nuk", "por", "edhe", "qe", "se", "ne", "te", "me", "ka", "do",
+  "pas", "para", "mbi", "nen", "ndaj", "sipas", "rreth", "gjate", "deri",
+  "ishte", "ishin", "duke", "si", "apo", "ose", "i", "e", "u", "sa",
+  "the", "of", "in", "to", "and", "for", "on", "at", "by", "with", "has",
+  "sot", "dje", "neser", "tha", "tjeter", "kete", "cila", "cilet", "bere",
+  "mund", "duhet", "pritet", "pasi", "nese", "keshtu", "atehere", "megjithate",
+  "qeverise", "kryeministri", "ministri", "parlamenti", "shqiperi", "tirane",
+]);
+
+/**
+ * Extract significant content words from text (skip stop words, short words).
+ */
+function extractKeywords(text: string): Set<string> {
+  const words = text
+    .toLowerCase()
+    .replace(/[^\w\sëçàáâãäåèéêìíîòóôùúû]/g, " ")
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !STOP_WORDS.has(w));
+  return new Set(words);
+}
+
+/**
+ * Check if a trailing paragraph is off-topic compared to the article's main content.
+ * Compares keyword overlap between the paragraph and the article title + first paragraphs.
+ * Returns true if the paragraph appears to be about a completely different topic.
+ */
+function isOffTopicTrailing(
+  paragraph: string,
+  title: string,
+  articleParagraphs: string[],
+  index: number
+): boolean {
+  // Only check paragraphs in the last ~30% of the article
+  const threshold = Math.max(3, Math.floor(articleParagraphs.length * 0.7));
+  if (index < threshold) return false;
+
+  // Build keyword set from title + first few paragraphs (the "topic fingerprint")
+  const topicSource = [title, ...articleParagraphs.slice(0, Math.min(5, articleParagraphs.length))].join(" ");
+  const topicKeywords = extractKeywords(topicSource);
+  if (topicKeywords.size < 3) return false; // Not enough context to judge
+
+  // Get keywords from this paragraph
+  const paraKeywords = extractKeywords(paragraph);
+  if (paraKeywords.size < 3) return false; // Too short to judge reliably
+
+  // Count how many of this paragraph's keywords appear in the topic
+  let overlap = 0;
+  const paraArr = Array.from(paraKeywords);
+  for (let i = 0; i < paraArr.length; i++) {
+    if (topicKeywords.has(paraArr[i])) overlap++;
+  }
+
+  const overlapRatio = overlap / paraKeywords.size;
+
+  // If less than 15% keyword overlap, this paragraph is about something else entirely
+  if (overlapRatio < 0.15) return true;
 
   return false;
 }
@@ -554,6 +643,18 @@ function cleanContent(rawHtml: string, title: string = ""): string {
     if (/^\s*(px|em|rem|%|auto|none|inherit|flex|grid|block|inline)[\s;,]/.test(cleanedText)) continue;
 
     cleaned.push(cleanedText);
+  }
+
+  if (cleaned.length === 0) return "";
+
+  // Step 4.5: Remove off-topic trailing paragraphs (cross-article content)
+  // Work backwards: once we hit an off-topic paragraph, remove it and everything after
+  for (let i = cleaned.length - 1; i >= Math.max(3, Math.floor(cleaned.length * 0.7)); i--) {
+    if (isOffTopicTrailing(cleaned[i], title, cleaned, i)) {
+      cleaned = cleaned.slice(0, i);
+    } else {
+      break; // Stop as soon as we find an on-topic paragraph
+    }
   }
 
   if (cleaned.length === 0) return "";

@@ -142,12 +142,23 @@ TITULL: [titulli i pastër]
 [paragrafi 3]
 ...`;
 
+// Rate limit: wait between AI calls to stay under Groq's 12k TPM
+let lastAiCall = 0;
+
 async function aiClean(title: string, plainText: string): Promise<{ title: string; content: string } | null> {
   const apiKey = ENV.groqApiKey;
   if (!apiKey) {
     console.warn("[Rewriter AI] No GROQ_API_KEY set, skipping AI clean");
     return null;
   }
+
+  // Wait at least 8s between AI calls to respect Groq rate limits (12k TPM)
+  const now = Date.now();
+  const elapsed = now - lastAiCall;
+  if (elapsed < 8000) {
+    await new Promise(r => setTimeout(r, 8000 - elapsed));
+  }
+  lastAiCall = Date.now();
 
   try {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -160,9 +171,9 @@ async function aiClean(title: string, plainText: string): Promise<{ title: strin
         model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: AI_SYSTEM_PROMPT },
-          { role: "user", content: `TITULLI: ${title}\n\nTEKSTI:\n${plainText.substring(0, 12000)}` },
+          { role: "user", content: `TITULLI: ${title}\n\nTEKSTI:\n${plainText.substring(0, 6000)}` },
         ],
-        max_tokens: 8192,
+        max_tokens: 4096,
         temperature: 0.1,
       }),
     });
@@ -170,6 +181,8 @@ async function aiClean(title: string, plainText: string): Promise<{ title: strin
     if (!res.ok) {
       const errText = await res.text();
       console.warn(`[Rewriter AI] Groq API error ${res.status}: ${errText.substring(0, 200)}`);
+      // On rate limit, wait extra before next call
+      if (res.status === 429) lastAiCall = Date.now() + 15000;
       return null;
     }
 

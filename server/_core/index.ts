@@ -199,7 +199,7 @@ async function startServer() {
         types: ["Ditor (daily)", "Javor (weekly)", "Mujor (monthly)"],
       },
       maintenance: {
-        wipeSchedule: "1st of every month at 4:00 AM UTC",
+        wipeSchedule: "Manual only (no auto cleanup)",
         lastWipe: lastWipe?.toISOString() || null,
       },
       services: {

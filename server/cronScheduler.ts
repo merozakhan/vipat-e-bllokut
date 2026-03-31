@@ -64,12 +64,51 @@ async function executeWipeAndRefill(): Promise<void> {
 
 /**
  * Start the cron scheduler.
- * - Every 3 hours: import new articles (incremental)
- * - Every Monday at 4:00 AM UTC: wipe DB + refill (weekly cleanup)
- * - On startup: run an incremental import (30s delay)
+ * - Every 3 hours at :00: import new articles (incremental)
+ * - Every 3 hours at :30: scrape horoscopes
+ * - DB wipe is manual only (no auto cleanup)
+ * - On startup: run an incremental import + horoscope (30s delay)
  */
 export function startCronScheduler(): void {
-  console.log("[Cron] ALL SCRAPERS DISABLED — no imports, no horoscope, no wipe scheduled.");
+  // Every 3 hours at :00 — import news articles
+  importTask = cron.schedule("0 */3 * * *", async () => {
+    console.log("[Cron] Running scheduled RSS import...");
+    const result = await executeImport();
+    if (result) {
+      console.log(`[Cron] Import done: ${result.newArticles} new, ${result.duplicatesSkipped} dupes, ${result.errors} errors`);
+    }
+  });
+
+  // Every 3 hours at :30 — scrape horoscopes
+  horoscopeTask = cron.schedule("30 */3 * * *", async () => {
+    console.log("[Cron] Running scheduled horoscope scrape...");
+    try {
+      const count = await scrapeHoroscope();
+      console.log(`[Cron] Horoscope done: ${count} articles created`);
+    } catch (error) {
+      console.error("[Cron] Horoscope scrape failed:", error);
+    }
+  });
+
+  // No automatic DB wipe — manual only
+
+  console.log("[Cron] Scheduler started: news every 3h at :00, horoscope every 3h at :30, NO auto DB wipe");
+
+  // On startup: import + horoscope after 30s delay
+  setTimeout(async () => {
+    console.log("[Cron] Startup: running initial import...");
+    const result = await executeImport();
+    if (result) {
+      console.log(`[Cron] Startup import: ${result.newArticles} new articles`);
+    }
+    console.log("[Cron] Startup: running initial horoscope scrape...");
+    try {
+      const count = await scrapeHoroscope();
+      console.log(`[Cron] Startup horoscope: ${count} articles created`);
+    } catch (error) {
+      console.error("[Cron] Startup horoscope failed:", error);
+    }
+  }, 30_000);
 }
 
 /**

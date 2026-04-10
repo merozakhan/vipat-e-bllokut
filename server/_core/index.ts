@@ -396,13 +396,9 @@ Sitemap: https://vipatebllokut.com/sitemap-news.xml
     }
   });
 
-  // Page view tracking (non-blocking)
-  app.use((req, _res, next) => {
-    if (req.method === "GET" && !req.path.startsWith("/api/") && !req.path.startsWith("/assets/") && !req.path.includes(".")) {
-      import("../db").then(({ trackPageView }) => trackPageView(req.path)).catch(() => {});
-    }
-    next();
-  });
+  // Page view tracking is handled client-side via the
+  // articles.trackPageView tRPC mutation, so SPA navigation is counted
+  // and vulnerability scanners hitting random paths are not.
 
   // tRPC API
   app.use(

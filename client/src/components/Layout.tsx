@@ -47,6 +47,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const { data: allCategories } = trpc.categories.getAllWithCounts.useQuery();
   const categories = allCategories;
+  const trackPageView = trpc.articles.trackPageView.useMutation();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -57,6 +58,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMobileMenuOpen(false);
     setSearchOpen(false);
+    // Real visitor analytics: fire on every SPA route change.
+    // Server filters bots and non-SPA paths so admin views don't pollute.
+    if (!location.startsWith("/admin")) {
+      trackPageView.mutate({ path: location });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
   const handleSearch = (e: React.FormEvent) => {

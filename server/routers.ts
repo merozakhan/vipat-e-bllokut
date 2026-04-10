@@ -100,6 +100,43 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Real visitor analytics: called by the SPA on every wouter route change.
+    // Filters bot user-agents and accepts only paths that match a real SPA route,
+    // so vulnerability scanners (/manager/html, /realms/..., /wp-*) cannot pollute data.
+    trackPageView: publicProcedure
+      .input(z.object({ path: z.string().max(500) }))
+      .mutation(async ({ input, ctx }) => {
+        const path = input.path.split("?")[0].split("#")[0];
+
+        // Allowlist: only public SPA routes count as visitor traffic
+        const isValidRoute =
+          path === "/" ||
+          /^\/article\/[^/]+$/.test(path) ||
+          /^\/category\/[^/]+$/.test(path) ||
+          path === "/search" ||
+          path === "/about" ||
+          path === "/contact" ||
+          path === "/advertise" ||
+          path === "/privacy-policy" ||
+          path === "/terms" ||
+          path === "/gdpr" ||
+          path === "/cookie-policy" ||
+          path === "/editorial-policy";
+        if (!isValidRoute) return { tracked: false, reason: "invalid_route" };
+
+        // Bot UA filter — exclude crawlers from visitor counts
+        const ua = String(ctx.req.headers["user-agent"] || "").toLowerCase();
+        const isBot =
+          !ua ||
+          /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|whatsapp|telegrambot|twitterbot|linkedinbot|embedly|quora link preview|pinterest|baiduspider|yandex|duckduckgo|applebot|petalbot|semrush|ahrefs|mj12|dotbot|screaming frog/i.test(
+            ua,
+          );
+        if (isBot) return { tracked: false, reason: "bot" };
+
+        await trackPageView(path);
+        return { tracked: true };
+      }),
+
     search: publicProcedure
       .input(z.object({ query: z.string(), limit: z.number().max(50).optional() }))
       .query(async ({ input }) => {

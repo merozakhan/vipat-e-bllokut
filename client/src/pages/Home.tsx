@@ -180,7 +180,7 @@ export default function Home() {
                             <span>{getReadingTime(article.content)}</span>
                           </div>
                         </div>
-                        <div className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden hidden sm:block">
+                        <div className="relative flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden hidden sm:block">
                           <ArticleImage
                             src={article.featuredImage}
                             alt={article.title}

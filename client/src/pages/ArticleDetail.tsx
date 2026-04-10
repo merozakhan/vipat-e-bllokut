@@ -169,7 +169,7 @@ export default function ArticleDetail() {
         {/* Featured Image */}
         {article.featuredImage && (
           <div className="container py-4 md:py-8">
-            <div className="rounded-lg md:rounded-xl overflow-hidden border border-border/30">
+            <div className="relative rounded-lg md:rounded-xl overflow-hidden border border-border/30">
               <ArticleImage
                 src={article.featuredImage}
                 alt={article.title}

@@ -633,9 +633,7 @@ const DEFAULT_CATEGORIES = [
   { name: "Të Gjitha", slug: "te-gjitha", description: "Lajme të përgjithshme" },
   { name: "Showbiz", slug: "showbiz", description: "Lajme nga bota e showbizit" },
   { name: "Sports", slug: "sports", description: "Lajme sportive" },
-  { name: "Teknologji", slug: "teknologji", description: "Lajme nga bota e teknologjisë" },
   { name: "Horoskopi", slug: "horoskopi", description: "Horoskopi ditor" },
-  { name: "Turizëm në Shqipëri", slug: "turizem-ne-shqiperi", description: "Turizmi dhe destinacionet në Shqipëri" },
 ];
 
 async function seedDefaultCategories(): Promise<void> {

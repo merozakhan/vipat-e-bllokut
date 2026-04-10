@@ -400,15 +400,15 @@ export const appRouter = router({
     }),
 
     // Blocked Words
-    blockedWordsGet: adminProcedure.query(() => {
-      return getBlockedWords();
+    blockedWordsGet: adminProcedure.query(async () => {
+      return await getBlockedWords();
     }),
 
     blockedWordsSet: adminProcedure
       .input(z.object({ words: z.array(z.string()) }))
-      .mutation(({ input }) => {
-        setBlockedWords(input.words);
-        return { success: true, words: getBlockedWords() };
+      .mutation(async ({ input }) => {
+        await setBlockedWords(input.words);
+        return { success: true, words: await getBlockedWords() };
       }),
 
     mediaDelete: adminProcedure

@@ -24,14 +24,88 @@ import { rewriteArticle } from "./rewriter";
 
 // ─── Blocked Words ──────────────────────────────────────────────────
 // Articles containing any of these words (case-insensitive) are skipped entirely.
-let blockedWords: string[] = ["rraja", "capaj"];
+// Persisted in the `site_settings` table so values survive Railway restarts.
+const DEFAULT_BLOCKED_WORDS = ["rraja", "capaj"];
+let blockedWords: string[] = [...DEFAULT_BLOCKED_WORDS];
+let blockedWordsLoaded = false;
+let siteSettingsTableReady = false;
 
-export function getBlockedWords(): string[] {
+async function ensureSiteSettingsTable(): Promise<void> {
+  if (siteSettingsTableReady) return;
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS site_settings (
+      \`key\` varchar(64) NOT NULL PRIMARY KEY,
+      value text NOT NULL,
+      updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`);
+    siteSettingsTableReady = true;
+  } catch (e) {
+    console.warn("[BlockedWords] Failed to ensure site_settings table:", e);
+    siteSettingsTableReady = true; // avoid tight retry loops
+  }
+}
+
+async function loadBlockedWordsFromDb(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await ensureSiteSettingsTable();
+  try {
+    const rows = await db.execute(
+      sql`SELECT value FROM site_settings WHERE \`key\` = 'blocked_words' LIMIT 1`
+    );
+    // drizzle mysql2 returns [rows, fields] for raw execute
+    const record = Array.isArray(rows) ? (rows[0] as any) : (rows as any);
+    const first = Array.isArray(record) ? record[0] : record?.[0];
+    const value = first?.value;
+    if (typeof value === "string" && value.length > 0) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          blockedWords = parsed.map(String);
+        }
+      } catch {
+        // Fallback: comma-separated
+        blockedWords = value.split(",").map(w => w.trim()).filter(Boolean);
+      }
+    }
+  } catch (e) {
+    console.warn("[BlockedWords] Failed to load from DB:", e);
+  }
+}
+
+export async function ensureBlockedWordsLoaded(): Promise<void> {
+  if (blockedWordsLoaded) return;
+  blockedWordsLoaded = true;
+  await loadBlockedWordsFromDb();
+}
+
+export async function getBlockedWords(): Promise<string[]> {
+  await ensureBlockedWordsLoaded();
   return [...blockedWords];
 }
 
-export function setBlockedWords(words: string[]): void {
-  blockedWords = words.map(w => w.toLowerCase().trim()).filter(w => w.length > 0);
+export async function setBlockedWords(words: string[]): Promise<void> {
+  const normalized = words.map(w => w.toLowerCase().trim()).filter(w => w.length > 0);
+  blockedWords = normalized;
+  blockedWordsLoaded = true;
+
+  const db = await getDb();
+  if (!db) {
+    console.warn("[BlockedWords] DB unavailable; change will not persist across restarts");
+    return;
+  }
+  await ensureSiteSettingsTable();
+  try {
+    const payload = JSON.stringify(normalized);
+    await db.execute(sql`
+      INSERT INTO site_settings (\`key\`, value) VALUES ('blocked_words', ${payload})
+      ON DUPLICATE KEY UPDATE value = ${payload}
+    `);
+  } catch (e) {
+    console.error("[BlockedWords] Failed to persist to DB:", e);
+  }
 }
 
 function containsBlockedWord(text: string): string | null {
@@ -768,6 +842,12 @@ export interface ImportResult {
 export async function runRssImport(): Promise<ImportResult> {
   const startTime = Date.now();
   console.log("[Scraper] Starting multi-source scrape...");
+
+  // Reload blocked words from DB so changes made via admin panel take effect
+  // on the next scrape run even after a server restart.
+  blockedWordsLoaded = false;
+  await ensureBlockedWordsLoaded();
+  console.log(`[Scraper] Blocked words loaded (${blockedWords.length}): ${blockedWords.join(", ") || "(none)"}`);
 
   const result: ImportResult = {
     totalFetched: 0,

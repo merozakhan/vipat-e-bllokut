@@ -66,10 +66,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const mainNav = [
-    { href: "/", label: "Faqja Kryesore" },
-  ];
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* ═══════════════ TOP UTILITY BAR ═══════════════ */}
@@ -133,24 +129,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
-              {mainNav.map((link) => (
-                <Link key={link.href} href={link.href}>
-                  <span
-                    className={`px-4 py-2 text-sm font-medium font-sans uppercase tracking-wider transition-colors underline-gold ${
-                      location === link.href
-                        ? "text-gold"
-                        : "text-foreground/70 hover:text-gold"
-                    }`}
-                  >
-                    {link.label}
-                  </span>
-                </Link>
-              ))}
               {categories?.map((cat) => (
-                <Link key={cat.id} href={cat.slug === "te-gjitha" ? "/" : `/category/${cat.slug}`}>
+                <Link key={cat.id} href={`/category/${cat.slug}`}>
                   <span
                     className={`px-4 py-2 text-sm font-medium font-sans uppercase tracking-wider transition-colors underline-gold ${
-                      (cat.slug === "te-gjitha" ? location === "/" : location === `/category/${cat.slug}`)
+                      location === `/category/${cat.slug}`
                         ? "text-gold"
                         : "text-foreground/70 hover:text-gold"
                     }`}
@@ -216,26 +199,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-border bg-card/98 backdrop-blur-xl animate-fade-in-up">
             <div className="container py-4">
-              {/* Main Navigation + Categories */}
+              {/* Categories */}
               <div className="space-y-1 mb-4">
-                {mainNav.map((link) => (
-                  <Link key={link.href} href={link.href}>
-                    <span
-                      className={`block px-4 py-3 text-sm font-medium font-sans uppercase tracking-wider rounded-lg transition-colors ${
-                        location === link.href
-                          ? "text-gold bg-gold/10"
-                          : "text-foreground/70 hover:text-gold hover:bg-gold/5"
-                      }`}
-                    >
-                      {link.label}
-                    </span>
-                  </Link>
-                ))}
                 {categories?.map((cat) => (
-                  <Link key={cat.id} href={cat.slug === "te-gjitha" ? "/" : `/category/${cat.slug}`}>
+                  <Link key={cat.id} href={`/category/${cat.slug}`}>
                     <span
                       className={`block px-4 py-3 text-sm font-medium font-sans uppercase tracking-wider rounded-lg transition-colors ${
-                        (cat.slug === "te-gjitha" ? location === "/" : location === `/category/${cat.slug}`)
+                        location === `/category/${cat.slug}`
                           ? "text-gold bg-gold/10"
                           : "text-foreground/70 hover:text-gold hover:bg-gold/5"
                       }`}
@@ -282,9 +252,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="container">
             <div className="flex items-center gap-1 py-2 overflow-x-auto scrollbar-hide">
               {categories.map((cat) => (
-                <Link key={cat.id} href={cat.slug === "te-gjitha" ? "/" : `/category/${cat.slug}`}>
+                <Link key={cat.id} href={`/category/${cat.slug}`}>
                   <span className={`px-4 py-1.5 text-xs font-semibold font-sans uppercase tracking-wider rounded-full transition-all whitespace-nowrap ${
-                    (cat.slug === "te-gjitha" ? location === "/" : location === `/category/${cat.slug}`)
+                    location === `/category/${cat.slug}`
                       ? "bg-gold/15 text-gold"
                       : "text-muted-foreground hover:text-gold hover:bg-gold/5"
                   }`}>

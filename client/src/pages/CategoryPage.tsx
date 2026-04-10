@@ -60,7 +60,7 @@ export default function CategoryPage() {
           <Link href="/">
             <Button variant="ghost" size="sm" className="mb-4 md:mb-6 text-muted-foreground hover:text-gold font-sans text-xs">
               <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-              Të Gjitha Lajmet
+              Kryefaqja
             </Button>
           </Link>
           <div className="flex items-center gap-2 mb-3 md:mb-4">
